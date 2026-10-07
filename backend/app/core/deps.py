@@ -2,10 +2,10 @@
 
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.client import ClientInfo
+from app.core.client import ClientInfo, current_client
 from app.core.db import get_session
 
 # scope="function" commits before the response is sent, so a client never
@@ -13,12 +13,8 @@ from app.core.db import get_session
 SessionDep = Annotated[AsyncSession, Depends(get_session, scope="function")]
 
 
-def get_client_info(request: Request) -> ClientInfo:
-    user_agent = request.headers.get("user-agent")
-    return ClientInfo(
-        ip=request.client.host if request.client else None,
-        user_agent=user_agent[:500] if user_agent else None,
-    )
+def get_client_info() -> ClientInfo:
+    return current_client.get()
 
 
 ClientInfoDep = Annotated[ClientInfo, Depends(get_client_info)]

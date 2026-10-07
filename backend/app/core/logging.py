@@ -10,6 +10,7 @@ import structlog
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.core.client import ClientInfo, current_client
 from app.core.config import get_settings
 from app.core.ids import new_id
 
@@ -129,7 +130,8 @@ class RequestContextMiddleware:
             await self.app(scope, receive, send)
             return
 
-        incoming = dict(scope["headers"]).get(REQUEST_ID_HEADER.lower().encode())
+        headers = dict(scope["headers"])
+        incoming = headers.get(REQUEST_ID_HEADER.lower().encode())
         request_id = incoming.decode()[:64] if incoming else str(new_id())
         status_code = 500
         started = time.perf_counter()
@@ -141,6 +143,14 @@ class RequestContextMiddleware:
                 MutableHeaders(scope=message)[REQUEST_ID_HEADER] = request_id
             await send(message)
 
+        client = scope.get("client")
+        user_agent = headers.get(b"user-agent")
+        client_token = current_client.set(
+            ClientInfo(
+                ip=client[0] if client else None,
+                user_agent=user_agent.decode("latin-1")[:500] if user_agent else None,
+            )
+        )
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(request_id=request_id)
         try:
@@ -154,3 +164,4 @@ class RequestContextMiddleware:
                 duration_ms=round((time.perf_counter() - started) * 1000, 1),
             )
             structlog.contextvars.clear_contextvars()
+            current_client.reset(client_token)

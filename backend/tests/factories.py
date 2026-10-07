@@ -7,8 +7,12 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.permissions import Role
 from app.core.security import create_access_token, generate_token, hash_password, hash_token
 from app.modules.auth.models import UserSession
+from app.modules.organizations import service as organizations
+from app.modules.organizations.models import Membership, Organization
+from app.modules.organizations.schemas import OrganizationSettings
 from app.modules.users.models import User
 
 PASSWORD = "correct-horse-battery"
@@ -48,3 +52,33 @@ async def auth_headers(session: AsyncSession, user: User) -> dict[str, str]:
     await session.flush()
     token, _ = create_access_token(user.id, user_session.id)
     return {"Authorization": f"Bearer {token}"}
+
+
+async def create_organization(
+    session: AsyncSession,
+    owner: User,
+    *,
+    name: str = "Acme Print",
+    settings: dict[str, Any] | None = None,
+) -> Organization:
+    organization, _ = await organizations.create(session, name=name, owner=owner)
+    if settings is not None:
+        organization.settings = OrganizationSettings(**settings).model_dump(mode="json")
+        await session.flush()
+    return organization
+
+
+async def add_member(
+    session: AsyncSession, organization: Organization, role: Role, **user_overrides: Any
+) -> User:
+    user = await create_user(session, **user_overrides)
+    session.add(Membership(organization_id=organization.id, user_id=user.id, role=role))
+    await session.flush()
+    return user
+
+
+async def member_headers(
+    session: AsyncSession, organization: Organization, role: Role
+) -> dict[str, str]:
+    """Create a new member with `role` and return their Authorization header."""
+    return await auth_headers(session, await add_member(session, organization, role))

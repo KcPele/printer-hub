@@ -48,7 +48,7 @@ def decode_cursor(cursor: str) -> uuid.UUID:
 
 async def paginate[M: Any](
     session: AsyncSession,
-    stmt: Select[tuple[M]],
+    stmt: Select[M],
     id_column: InstrumentedAttribute[uuid.UUID],
     params: PageParams,
 ) -> tuple[list[M], str | None]:

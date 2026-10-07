@@ -22,6 +22,7 @@ from app.core.security import (
     hash_token,
     verify_password,
 )
+from app.modules.audit import service as audit
 from app.modules.auth.models import UserSession
 from app.modules.users import service as users
 from app.modules.users.models import User
@@ -105,7 +106,15 @@ async def login(
     password_ok = await to_thread.run_sync(verify_password, password, password_hash)
     if user is None or not password_ok or not user.is_active:
         raise _invalid_credentials()
-    return user, await _open_session(session, user, client)
+    tokens = await _open_session(session, user, client)
+    audit.record(
+        session,
+        action="user.logged_in",
+        target_type="session",
+        target_id=tokens.session_id,
+        actor_user_id=user.id,
+    )
+    return user, tokens
 
 
 async def refresh(session: AsyncSession, *, refresh_token: str, client: ClientInfo) -> IssuedTokens:
@@ -219,6 +228,13 @@ async def change_password(
             "auth.current_password_incorrect", "The current password is incorrect."
         )
     user.password_hash = await to_thread.run_sync(hash_password, new_password)
+    audit.record(
+        session,
+        action="user.password_changed",
+        target_type="user",
+        target_id=user.id,
+        actor_user_id=user.id,
+    )
     await session.execute(
         update(UserSession)
         .where(
