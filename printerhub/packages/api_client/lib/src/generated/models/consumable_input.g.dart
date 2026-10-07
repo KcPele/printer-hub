@@ -19,9 +19,9 @@ ConsumableInput _$ConsumableInputFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ConsumableInputToJson(ConsumableInput instance) =>
     <String, dynamic>{
-      'color': instance.color,
+      'color': ?instance.color,
       'kind': instance.kind,
-      'level_percent': instance.levelPercent,
+      'level_percent': ?instance.levelPercent,
       'name': instance.name,
-      'state': instance.state,
+      'state': instance.state.toJson(),
     };

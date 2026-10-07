@@ -24,7 +24,7 @@ Backend-first, mobile-first printer and scanner platform. This repo is a monorep
 
 ## The mobile app has three themes
 
-The user picks a theme in Settings and it applies at once. **One layout, three skins:** every screen is built once and must look right in all three. A theme changes colour, type, shape, and elevation; layout, navigation, and wording stay the same. The files in `design/` are references for each skin's look, not screens to copy.
+The user picks a theme in Settings and it applies at once. **Mint is the default.** **One layout, three skins:** every screen is built once and must look right in all three. A theme changes colour, type, shape, and elevation; layout, navigation, and wording stay the same. The files in `design/` are references for each skin's look, not screens to copy.
 
 All three ship light only. Each theme is a set of tokens per brightness, so a dark variant is added in `app_ui` without touching a screen.
 
@@ -59,6 +59,9 @@ A change is done when `make app-check` passes: formatting, `very_good_analysis` 
 - **Three flavors**, each with its own entry point and app ID: `development` (`.dev`), `staging` (`.stg`), `production` (`com.kcpele.printerhub`). Run one with `make app-dev`, or `flutter run --flavor <name> --target lib/main_<name>.dart`.
 - **A feature is a folder** under `lib/` with `view/`, `cubit/` or `bloc/`, and a barrel file. Tests mirror the path under `test/`.
 - **State lives in blocs and cubits.** A view renders state and sends events; it holds no logic and calls no repository.
+- **Tests run on a pretend API, not mocks of repositories.** `TestBackend` in `test/helpers/` puts the real client and repositories on a fake network. Inside `testWidgets`, a repository call awaited directly must go through `tester.runAsync`; under the fake clock it never completes.
+- **Where someone belongs is decided in one function**, `redirectFor` in `app_router.dart`, from the session's stage. A screen never checks whether the user is signed in.
+- **A form is a `SubmitCubit` subclass** with one `submit` method, and its screen ends with `SubmitSection`. API failures become words in `lib/errors/error_messages.dart` and nowhere else.
 - **Routes** are named in `AppRoutes` and built in `lib/app/router/app_router.dart`. The four areas (Home, Printers, Activity, Settings) are branches of one shell; a screen inside an area is a child route of that branch.
 - **An empty list is a designed screen.** Use `EmptyState` from `app_ui` with an illustration and one sentence. A button is added only when the thing it starts exists.
 - **Every user-facing string** goes in `lib/l10n/arb/app_en.arb` and is read through `context.l10n`.

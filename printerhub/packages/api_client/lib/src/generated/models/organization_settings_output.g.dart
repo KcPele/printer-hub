@@ -24,8 +24,10 @@ OrganizationSettingsOutput _$OrganizationSettingsOutputFromJson(
 Map<String, dynamic> _$OrganizationSettingsOutputToJson(
   OrganizationSettingsOutput instance,
 ) => <String, dynamic>{
-  'color_printing_roles': instance.colorPrintingRoles,
-  'document_retention_days': instance.documentRetentionDays,
-  'document_storage_mode': instance.documentStorageMode,
-  'max_copies_per_job': instance.maxCopiesPerJob,
+  'color_printing_roles': instance.colorPrintingRoles
+      .map((e) => e.toJson())
+      .toList(),
+  'document_retention_days': ?instance.documentRetentionDays,
+  'document_storage_mode': instance.documentStorageMode.toJson(),
+  'max_copies_per_job': ?instance.maxCopiesPerJob,
 };

@@ -34,18 +34,18 @@ ConnectionRead _$ConnectionReadFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ConnectionReadToJson(ConnectionRead instance) =>
     <String, dynamic>{
-      'configuration': instance.configuration,
+      'configuration': instance.configuration.toJson(),
       'created_at': instance.createdAt.toIso8601String(),
       'has_credentials': instance.hasCredentials,
-      'health': instance.health,
+      'health': instance.health.toJson(),
       'id': instance.id,
-      'last_error': instance.lastError,
-      'last_failure_at': instance.lastFailureAt?.toIso8601String(),
-      'last_latency_ms': instance.lastLatencyMs,
-      'last_success_at': instance.lastSuccessAt?.toIso8601String(),
+      'last_error': ?instance.lastError,
+      'last_failure_at': ?instance.lastFailureAt?.toIso8601String(),
+      'last_latency_ms': ?instance.lastLatencyMs,
+      'last_success_at': ?instance.lastSuccessAt?.toIso8601String(),
       'printer_id': instance.printerId,
       'priority': instance.priority,
-      'purposes': instance.purposes,
-      'type': instance.type,
+      'purposes': instance.purposes.map((e) => e.toJson()).toList(),
+      'type': instance.type.toJson(),
       'updated_at': instance.updatedAt.toIso8601String(),
     };

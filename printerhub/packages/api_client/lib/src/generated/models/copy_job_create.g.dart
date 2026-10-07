@@ -30,14 +30,14 @@ CopyJobCreate _$CopyJobCreateFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$CopyJobCreateToJson(CopyJobCreate instance) =>
     <String, dynamic>{
-      'connection_id': instance.connectionId,
-      'document_id': instance.documentId,
-      'execution_mode': instance.executionMode,
-      'id': instance.id,
-      'page_count': instance.pageCount,
+      'connection_id': ?instance.connectionId,
+      'document_id': ?instance.documentId,
+      'execution_mode': instance.executionMode.toJson(),
+      'id': ?instance.id,
+      'page_count': ?instance.pageCount,
       'printer_id': instance.printerId,
-      'settings': instance.settings,
-      'submitted_at': instance.submittedAt?.toIso8601String(),
-      'title': instance.title,
+      'settings': ?instance.settings?.toJson(),
+      'submitted_at': ?instance.submittedAt?.toIso8601String(),
+      'title': ?instance.title,
       'type': instance.type,
     };

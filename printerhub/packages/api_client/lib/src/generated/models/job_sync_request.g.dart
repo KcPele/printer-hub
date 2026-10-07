@@ -14,4 +14,4 @@ JobSyncRequest _$JobSyncRequestFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$JobSyncRequestToJson(JobSyncRequest instance) =>
-    <String, dynamic>{'items': instance.items};
+    <String, dynamic>{'items': instance.items.map((e) => e.toJson()).toList()};

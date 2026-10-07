@@ -15,6 +15,6 @@ PageJobRead _$PageJobReadFromJson(Map<String, dynamic> json) => PageJobRead(
 
 Map<String, dynamic> _$PageJobReadToJson(PageJobRead instance) =>
     <String, dynamic>{
-      'items': instance.items,
-      'next_cursor': instance.nextCursor,
+      'items': instance.items.map((e) => e.toJson()).toList(),
+      'next_cursor': ?instance.nextCursor,
     };

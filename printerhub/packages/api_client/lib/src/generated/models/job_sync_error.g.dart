@@ -12,4 +12,4 @@ JobSyncError _$JobSyncErrorFromJson(Map<String, dynamic> json) => JobSyncError(
 );
 
 Map<String, dynamic> _$JobSyncErrorToJson(JobSyncError instance) =>
-    <String, dynamic>{'code': instance.code, 'detail': instance.detail};
+    <String, dynamic>{'code': instance.code, 'detail': ?instance.detail};

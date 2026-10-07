@@ -14,7 +14,7 @@ PresetUpdate _$PresetUpdateFromJson(Map<String, dynamic> json) => PresetUpdate(
 
 Map<String, dynamic> _$PresetUpdateToJson(PresetUpdate instance) =>
     <String, dynamic>{
-      'is_default': instance.isDefault,
-      'name': instance.name,
-      'settings': instance.settings,
+      'is_default': ?instance.isDefault,
+      'name': ?instance.name,
+      'settings': ?instance.settings,
     };

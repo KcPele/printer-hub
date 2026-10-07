@@ -27,9 +27,9 @@ Map<String, dynamic> _$PresetCreateCopyPresetCreateToJson(
 ) => <String, dynamic>{
   'is_default': instance.isDefault,
   'name': instance.name,
-  'printer_id': instance.printerId,
-  'scope': instance.scope,
-  'settings': instance.settings,
+  'printer_id': ?instance.printerId,
+  'scope': instance.scope.toJson(),
+  'settings': ?instance.settings?.toJson(),
   'type': instance.type,
 };
 
@@ -51,9 +51,9 @@ Map<String, dynamic> _$PresetCreatePrintPresetCreateToJson(
 ) => <String, dynamic>{
   'is_default': instance.isDefault,
   'name': instance.name,
-  'printer_id': instance.printerId,
-  'scope': instance.scope,
-  'settings': instance.settings,
+  'printer_id': ?instance.printerId,
+  'scope': instance.scope.toJson(),
+  'settings': ?instance.settings?.toJson(),
   'type': instance.type,
 };
 
@@ -75,8 +75,8 @@ Map<String, dynamic> _$PresetCreateScanPresetCreateToJson(
 ) => <String, dynamic>{
   'is_default': instance.isDefault,
   'name': instance.name,
-  'printer_id': instance.printerId,
-  'scope': instance.scope,
-  'settings': instance.settings,
+  'printer_id': ?instance.printerId,
+  'scope': instance.scope.toJson(),
+  'settings': ?instance.settings?.toJson(),
   'type': instance.type,
 };

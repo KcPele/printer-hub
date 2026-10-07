@@ -31,13 +31,13 @@ CopySettingsOutput _$CopySettingsOutputFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$CopySettingsOutputToJson(CopySettingsOutput instance) =>
     <String, dynamic>{
       'collate': instance.collate,
-      'color_mode': instance.colorMode,
+      'color_mode': instance.colorMode.toJson(),
       'copies': instance.copies,
-      'media_size': instance.mediaSize,
-      'method': instance.method,
-      'output_duplex': instance.outputDuplex,
-      'scale_percent': instance.scalePercent,
-      'scaling': instance.scaling,
+      'media_size': ?instance.mediaSize,
+      'method': instance.method.toJson(),
+      'output_duplex': instance.outputDuplex.toJson(),
+      'scale_percent': ?instance.scalePercent,
+      'scaling': instance.scaling.toJson(),
       'source_duplex': instance.sourceDuplex,
-      'tray': instance.tray,
+      'tray': ?instance.tray,
     };

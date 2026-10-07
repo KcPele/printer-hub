@@ -28,31 +28,31 @@ void main() {
       await pump(tester);
 
       expect(find.byType(AppThemePreview), findsNWidgets(3));
-      expect(previewOf(tester, 'Volt').theme, AppTheme.volt);
-      expect(previewOf(tester, 'Indigo').theme, AppTheme.indigo);
       expect(previewOf(tester, 'Mint').theme, AppTheme.mint);
+      expect(previewOf(tester, 'Indigo').theme, AppTheme.indigo);
+      expect(previewOf(tester, 'Volt').theme, AppTheme.volt);
     });
 
     testWidgets('marks the theme in use', (tester) async {
       await pump(tester);
 
-      expect(previewOf(tester, 'Volt').selected, isTrue);
+      expect(previewOf(tester, 'Mint').selected, isTrue);
       expect(previewOf(tester, 'Indigo').selected, isFalse);
-      expect(previewOf(tester, 'Mint').selected, isFalse);
+      expect(previewOf(tester, 'Volt').selected, isFalse);
     });
 
     testWidgets('applies a theme as soon as it is tapped', (tester) async {
       final cubit = await pump(tester);
 
-      await tester.tap(find.text('Mint'));
+      await tester.tap(find.text('Volt'));
       await tester.pumpAndSettle();
 
-      expect(cubit.state, AppThemeId.mint);
-      expect(previewOf(tester, 'Mint').selected, isTrue);
+      expect(cubit.state, AppThemeId.volt);
+      expect(previewOf(tester, 'Volt').selected, isTrue);
       expect(
         Theme.of(tester.element(find.byType(ThemePicker)))
             .extension<AppColors>(),
-        AppTheme.mint.light.colors,
+        AppTheme.volt.light.colors,
       );
     });
 

@@ -21,12 +21,12 @@ AuditLogRead _$AuditLogReadFromJson(Map<String, dynamic> json) => AuditLogRead(
 Map<String, dynamic> _$AuditLogReadToJson(AuditLogRead instance) =>
     <String, dynamic>{
       'action': instance.action,
-      'actor_user_id': instance.actorUserId,
+      'actor_user_id': ?instance.actorUserId,
       'created_at': instance.createdAt.toIso8601String(),
-      'detail': instance.detail,
+      'detail': ?instance.detail,
       'id': instance.id,
-      'ip': instance.ip,
-      'outcome': instance.outcome,
-      'target_id': instance.targetId,
+      'ip': ?instance.ip,
+      'outcome': instance.outcome.toJson(),
+      'target_id': ?instance.targetId,
       'target_type': instance.targetType,
     };

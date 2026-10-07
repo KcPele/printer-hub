@@ -17,7 +17,7 @@ MediaTrayOutput _$MediaTrayOutputFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$MediaTrayOutputToJson(MediaTrayOutput instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'media_size': instance.mediaSize,
-      'media_type': instance.mediaType,
+      'media_size': ?instance.mediaSize,
+      'media_type': ?instance.mediaType,
       'name': instance.name,
     };

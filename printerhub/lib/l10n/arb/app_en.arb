@@ -296,5 +296,244 @@
     "settingsGallerySubtitle": "Every shared widget in the current theme",
     "@settingsGallerySubtitle": {
         "description": "Explains the design gallery entry in Settings"
+    },
+    "errorUnreachable": "Can't reach PrinterHub. Check your connection and try again.",
+    "@errorUnreachable": {
+        "description": "Shown when the API cannot be reached"
+    },
+    "errorGeneric": "Something went wrong. Try again.",
+    "@errorGeneric": {
+        "description": "Shown for an error with no better message"
+    },
+    "errorInvalidCredentials": "That email and password don't match.",
+    "@errorInvalidCredentials": {
+        "description": "Shown when sign-in is refused"
+    },
+    "errorEmailTaken": "There is already an account with that email. Sign in instead.",
+    "@errorEmailTaken": {
+        "description": "Shown when registering with an email that is in use"
+    },
+    "errorCodeInvalid": "That code is wrong or has expired. Request a new one.",
+    "@errorCodeInvalid": {
+        "description": "Shown when an emailed code is rejected"
+    },
+    "errorPasswordIncorrect": "That password is not right.",
+    "@errorPasswordIncorrect": {
+        "description": "Shown when the current password is rejected"
+    },
+    "errorRateLimited": "Too many attempts. Wait a moment and try again.",
+    "@errorRateLimited": {
+        "description": "Shown when the API limits attempts"
+    },
+    "errorSoleOwner": "You are the only owner of a workspace. Make someone else an owner or delete the workspace first.",
+    "@errorSoleOwner": {
+        "description": "Shown when an account cannot be deleted"
+    },
+    "fieldEmail": "Email",
+    "@fieldEmail": {
+        "description": "Label of the email field"
+    },
+    "fieldPassword": "Password",
+    "@fieldPassword": {
+        "description": "Label of the password field"
+    },
+    "fieldNewPassword": "New password",
+    "@fieldNewPassword": {
+        "description": "Label of the new password field"
+    },
+    "fieldName": "Your name",
+    "@fieldName": {
+        "description": "Label of the name field"
+    },
+    "fieldCode": "6-digit code",
+    "@fieldCode": {
+        "description": "Label of the field for an emailed code"
+    },
+    "fieldShowPassword": "Show password",
+    "@fieldShowPassword": {
+        "description": "Tooltip of the button that reveals the password"
+    },
+    "fieldHidePassword": "Hide password",
+    "@fieldHidePassword": {
+        "description": "Tooltip of the button that hides the password"
+    },
+    "validationEmail": "Enter your email address.",
+    "@validationEmail": {
+        "description": "Shown under an empty or malformed email"
+    },
+    "validationPassword": "Enter your password.",
+    "@validationPassword": {
+        "description": "Shown under an empty password"
+    },
+    "validationPasswordLength": "Use at least 8 characters.",
+    "@validationPasswordLength": {
+        "description": "Shown under a password that is too short"
+    },
+    "validationName": "Enter your name.",
+    "@validationName": {
+        "description": "Shown under an empty name"
+    },
+    "validationCode": "Enter the 6 digits from the email.",
+    "@validationCode": {
+        "description": "Shown under a malformed code"
+    },
+    "validationWorkspace": "Give the workspace a name.",
+    "@validationWorkspace": {
+        "description": "Shown under an empty workspace name"
+    },
+    "signInTitle": "Welcome back",
+    "@signInTitle": {
+        "description": "Title of the sign-in screen"
+    },
+    "signInSubtitle": "Sign in to reach your printers.",
+    "@signInSubtitle": {
+        "description": "Text under the sign-in title"
+    },
+    "signInAction": "Sign in",
+    "@signInAction": {
+        "description": "Button that signs in"
+    },
+    "signInForgot": "Forgot password?",
+    "@signInForgot": {
+        "description": "Link to the password reset screen"
+    },
+    "signInCreate": "New here? Create an account",
+    "@signInCreate": {
+        "description": "Link to the registration screen"
+    },
+    "registerTitle": "Create your account",
+    "@registerTitle": {
+        "description": "Title of the registration screen"
+    },
+    "registerSubtitle": "It takes a minute. Your printers and history go with you.",
+    "@registerSubtitle": {
+        "description": "Text under the registration title"
+    },
+    "registerAction": "Create account",
+    "@registerAction": {
+        "description": "Button that registers"
+    },
+    "registerSignIn": "Already have an account? Sign in",
+    "@registerSignIn": {
+        "description": "Link to the sign-in screen"
+    },
+    "forgotTitle": "Reset your password",
+    "@forgotTitle": {
+        "description": "Title of the forgot-password screen"
+    },
+    "forgotSubtitle": "Enter your email and we will send a 6-digit code.",
+    "@forgotSubtitle": {
+        "description": "Text under the forgot-password title"
+    },
+    "forgotAction": "Send code",
+    "@forgotAction": {
+        "description": "Button that requests a reset code"
+    },
+    "resetTitle": "Choose a new password",
+    "@resetTitle": {
+        "description": "Title of the reset-password screen"
+    },
+    "resetSubtitle": "Enter the code we sent to {email}.",
+    "@resetSubtitle": {
+        "description": "Text under the reset-password title",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "resetAction": "Change password",
+    "@resetAction": {
+        "description": "Button that sets the new password"
+    },
+    "resetDone": "Password changed. Sign in with the new one.",
+    "@resetDone": {
+        "description": "Shown after the password was reset"
+    },
+    "verifyTitle": "Verify your email",
+    "@verifyTitle": {
+        "description": "Title of the email verification screen"
+    },
+    "verifySubtitle": "Enter the 6-digit code we sent to {email}.",
+    "@verifySubtitle": {
+        "description": "Text under the verification title",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "verifyAction": "Verify",
+    "@verifyAction": {
+        "description": "Button that submits the verification code"
+    },
+    "verifyResend": "Send a new code",
+    "@verifyResend": {
+        "description": "Button that requests another verification code"
+    },
+    "verifyResent": "A new code is on its way.",
+    "@verifyResent": {
+        "description": "Shown after another code was requested"
+    },
+    "verifyDone": "Email verified.",
+    "@verifyDone": {
+        "description": "Shown after the email was verified"
+    },
+    "verifyBanner": "Verify your email to accept invitations and recover your account.",
+    "@verifyBanner": {
+        "description": "Reminder on Home for an unverified account"
+    },
+    "workspaceTitle": "Name your workspace",
+    "@workspaceTitle": {
+        "description": "Title of the screen that creates the first workspace"
+    },
+    "workspaceSubtitle": "A workspace holds your printers. You can invite people to it later.",
+    "@workspaceSubtitle": {
+        "description": "Text under the workspace title"
+    },
+    "workspaceField": "Workspace name",
+    "@workspaceField": {
+        "description": "Label of the workspace name field"
+    },
+    "workspaceDefaultName": "{name}'s workspace",
+    "@workspaceDefaultName": {
+        "description": "Suggested workspace name",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "workspaceAction": "Continue",
+    "@workspaceAction": {
+        "description": "Button that creates the workspace"
+    },
+    "loadingTitle": "Getting things ready",
+    "@loadingTitle": {
+        "description": "Shown while the workspace loads"
+    },
+    "loadingRetry": "Try again",
+    "@loadingRetry": {
+        "description": "Button that retries loading"
+    },
+    "settingsAccount": "Account",
+    "@settingsAccount": {
+        "description": "Heading of the account section in Settings"
+    },
+    "settingsWorkspace": "Workspace",
+    "@settingsWorkspace": {
+        "description": "Label of the workspace entry in Settings"
+    },
+    "settingsVerifyEmail": "Verify email",
+    "@settingsVerifyEmail": {
+        "description": "Settings entry that opens email verification"
+    },
+    "settingsVerifyEmailSubtitle": "Not verified yet",
+    "@settingsVerifyEmailSubtitle": {
+        "description": "Subtitle of the verify email entry"
+    },
+    "settingsSignOut": "Sign out",
+    "@settingsSignOut": {
+        "description": "Settings entry that signs out"
     }
 }

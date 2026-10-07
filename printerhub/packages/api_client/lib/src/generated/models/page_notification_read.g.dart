@@ -18,6 +18,6 @@ PageNotificationRead _$PageNotificationReadFromJson(
 Map<String, dynamic> _$PageNotificationReadToJson(
   PageNotificationRead instance,
 ) => <String, dynamic>{
-  'items': instance.items,
-  'next_cursor': instance.nextCursor,
+  'items': instance.items.map((e) => e.toJson()).toList(),
+  'next_cursor': ?instance.nextCursor,
 };

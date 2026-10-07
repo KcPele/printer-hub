@@ -1,10 +1,9 @@
 import 'dart:async';
 
 import 'package:api_client/api_client.dart';
+import 'package:api_client/testing.dart';
 import 'package:dio/dio.dart';
 import 'package:test/test.dart';
-
-import '../helpers/fake_api.dart';
 
 const _me = '/api/v1/users/me';
 const _refresh = '/api/v1/auth/refresh';
@@ -51,7 +50,7 @@ void main() {
       final user = await client.api.users.getMe();
 
       expect(user.email, 'ada@example.com');
-      expect(user.preferences.appTheme.json, 'volt');
+      expect(user.preferences.appTheme.json, 'mint');
       expect(
         network.requests.single.uri.toString(),
         'https://api.example.com$_me',

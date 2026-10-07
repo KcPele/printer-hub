@@ -10,4 +10,4 @@ MemberUpdate _$MemberUpdateFromJson(Map<String, dynamic> json) =>
     MemberUpdate(role: Role.fromJson(json['role'] as String));
 
 Map<String, dynamic> _$MemberUpdateToJson(MemberUpdate instance) =>
-    <String, dynamic>{'role': instance.role};
+    <String, dynamic>{'role': instance.role.toJson()};

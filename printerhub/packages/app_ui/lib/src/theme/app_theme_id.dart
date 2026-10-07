@@ -1,16 +1,16 @@
 /// The themes a user can choose between in Settings.
 enum AppThemeId {
-  /// Charcoal and yellow, pill shapes, flat.
-  volt,
+  /// Mint on white, medium corners, hairline borders. The default.
+  mint,
 
   /// Indigo on a cool grey, large corners, soft shadows.
   indigo,
 
-  /// Mint on white, medium corners, hairline borders.
-  mint;
+  /// Charcoal and yellow, pill shapes, flat.
+  volt;
 
   /// The theme a new install starts with.
-  static const AppThemeId fallback = AppThemeId.volt;
+  static const AppThemeId fallback = AppThemeId.mint;
 
   /// Reads a stored [name], falling back when it is missing or unknown.
   static AppThemeId fromName(String? name) {

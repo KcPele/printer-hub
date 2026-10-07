@@ -18,6 +18,6 @@ Map<String, dynamic> _$ConnectionCredentialsOutputToJson(
   ConnectionCredentialsOutput instance,
 ) => <String, dynamic>{
   'extra': instance.extra,
-  'password': instance.password,
-  'username': instance.username,
+  'password': ?instance.password,
+  'username': ?instance.username,
 };

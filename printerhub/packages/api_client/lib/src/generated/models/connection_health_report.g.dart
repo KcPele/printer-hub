@@ -17,7 +17,7 @@ ConnectionHealthReport _$ConnectionHealthReportFromJson(
 Map<String, dynamic> _$ConnectionHealthReportToJson(
   ConnectionHealthReport instance,
 ) => <String, dynamic>{
-  'error': instance.error,
-  'health': instance.health,
-  'latency_ms': instance.latencyMs,
+  'error': ?instance.error,
+  'health': instance.health.toJson(),
+  'latency_ms': ?instance.latencyMs,
 };

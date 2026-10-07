@@ -20,12 +20,12 @@ ProtocolsInput _$ProtocolsInputFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ProtocolsInputToJson(ProtocolsInput instance) =>
     <String, dynamic>{
-      'airprint': instance.airprint,
-      'escl': instance.escl,
-      'http_ews': instance.httpEws,
-      'ipp': instance.ipp,
-      'ipps': instance.ipps,
-      'mopria': instance.mopria,
-      'smb_scan': instance.smbScan,
-      'snmp': instance.snmp,
+      'airprint': ?instance.airprint,
+      'escl': ?instance.escl,
+      'http_ews': ?instance.httpEws,
+      'ipp': ?instance.ipp,
+      'ipps': ?instance.ipps,
+      'mopria': ?instance.mopria,
+      'smb_scan': ?instance.smbScan,
+      'snmp': ?instance.snmp,
     };

@@ -10,6 +10,11 @@ targets:
           # PresetRead), so those take their keys from this rule.
           # test/src/contract_test.dart decodes each variant to prove it.
           field_rename: snake
+          # A field left null is left out of the request. Sending null to a
+          # PATCH endpoint would clear a value the caller never touched.
+          include_if_null: false
+          # Nested models are written as maps, not left for the encoder.
+          explicit_to_json: true
       retrofit_generator:
         generate_for:
           - lib/src/generated/clients/**

@@ -23,11 +23,11 @@ ConnectionConfigurationInput _$ConnectionConfigurationInputFromJson(
 Map<String, dynamic> _$ConnectionConfigurationInputToJson(
   ConnectionConfigurationInput instance,
 ) => <String, dynamic>{
-  'host': instance.host,
-  'options': instance.options,
-  'path': instance.path,
-  'port': instance.port,
-  'service_name': instance.serviceName,
-  'ssid': instance.ssid,
-  'tls': instance.tls,
+  'host': ?instance.host,
+  'options': ?instance.options,
+  'path': ?instance.path,
+  'port': ?instance.port,
+  'service_name': ?instance.serviceName,
+  'ssid': ?instance.ssid,
+  'tls': ?instance.tls,
 };

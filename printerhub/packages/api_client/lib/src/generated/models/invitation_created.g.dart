@@ -23,7 +23,7 @@ Map<String, dynamic> _$InvitationCreatedToJson(InvitationCreated instance) =>
       'email': instance.email,
       'expires_at': instance.expiresAt.toIso8601String(),
       'id': instance.id,
-      'invited_by_user_id': instance.invitedByUserId,
-      'role': instance.role,
+      'invited_by_user_id': ?instance.invitedByUserId,
+      'role': instance.role.toJson(),
       'token': instance.token,
     };

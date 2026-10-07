@@ -23,8 +23,8 @@ class AppTheme {
 
   static const AppTheme mint = AppTheme(id: AppThemeId.mint, light: mintLight);
 
-  /// Every theme, in the order Settings lists them.
-  static const List<AppTheme> all = [volt, indigo, mint];
+  /// Every theme, in the order Settings lists them: the default first.
+  static const List<AppTheme> all = [mint, indigo, volt];
 
   static AppTheme of(AppThemeId id) => switch (id) {
     AppThemeId.volt => volt,

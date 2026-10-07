@@ -20,8 +20,8 @@ TrayStatusOutput _$TrayStatusOutputFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$TrayStatusOutputToJson(TrayStatusOutput instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'media_size': instance.mediaSize,
-      'media_type': instance.mediaType,
+      'media_size': ?instance.mediaSize,
+      'media_type': ?instance.mediaType,
       'name': instance.name,
-      'state': instance.state,
+      'state': instance.state.toJson(),
     };

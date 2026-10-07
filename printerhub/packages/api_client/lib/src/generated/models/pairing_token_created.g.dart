@@ -18,5 +18,5 @@ Map<String, dynamic> _$PairingTokenCreatedToJson(
 ) => <String, dynamic>{
   'deep_link': instance.deepLink,
   'expires_at': instance.expiresAt.toIso8601String(),
-  'payload': instance.payload,
+  'payload': instance.payload.toJson(),
 };

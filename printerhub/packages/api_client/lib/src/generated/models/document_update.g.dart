@@ -16,8 +16,8 @@ DocumentUpdate _$DocumentUpdateFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$DocumentUpdateToJson(DocumentUpdate instance) =>
     <String, dynamic>{
-      'file_name': instance.fileName,
-      'ocr_text': instance.ocrText,
-      'page_count': instance.pageCount,
-      'tags': instance.tags,
+      'file_name': ?instance.fileName,
+      'ocr_text': ?instance.ocrText,
+      'page_count': ?instance.pageCount,
+      'tags': ?instance.tags,
     };

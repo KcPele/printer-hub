@@ -21,11 +21,11 @@ ConnectionConfigurationOutput _$ConnectionConfigurationOutputFromJson(
 Map<String, dynamic> _$ConnectionConfigurationOutputToJson(
   ConnectionConfigurationOutput instance,
 ) => <String, dynamic>{
-  'host': instance.host,
+  'host': ?instance.host,
   'options': instance.options,
-  'path': instance.path,
-  'port': instance.port,
-  'service_name': instance.serviceName,
-  'ssid': instance.ssid,
-  'tls': instance.tls,
+  'path': ?instance.path,
+  'port': ?instance.port,
+  'service_name': ?instance.serviceName,
+  'ssid': ?instance.ssid,
+  'tls': ?instance.tls,
 };

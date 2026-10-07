@@ -1,3 +1,9 @@
+// Test support is not part of what the package ships to users.
+// coverage:ignore-file
+
+/// A stand-in for the network, for tests of anything built on the client.
+library;
+
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -83,11 +89,30 @@ Map<String, Object?> userBody({String email = 'ada@example.com'}) => {
   'name': 'Ada',
   'preferences': {
     'theme': 'system',
-    'app_theme': 'volt',
+    'app_theme': 'mint',
     'default_organization_id': null,
     'default_printer_id': null,
     'muted_notification_types': <String>[],
   },
   'is_superuser': false,
+  'created_at': '2026-10-07T10:00:00Z',
+};
+
+/// An `OrganizationRead` body.
+Map<String, Object?> organizationBody({
+  String id = '0198c0de-0000-7000-8000-00000000000b',
+  String name = 'Acme',
+  String role = 'owner',
+}) => {
+  'id': id,
+  'name': name,
+  'slug': name.toLowerCase(),
+  'role': role,
+  'settings': {
+    'color_printing_roles': ['owner', 'admin', 'operator', 'user'],
+    'document_retention_days': null,
+    'document_storage_mode': 'cloud_allowed',
+    'max_copies_per_job': null,
+  },
   'created_at': '2026-10-07T10:00:00Z',
 };

@@ -1,10 +1,15 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:api_client/api_client.dart';
 import 'package:app_ui/app_ui.dart';
+import 'package:auth_repository/auth_repository.dart';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/widgets.dart';
+import 'package:local_store/local_store.dart';
+import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
+import 'package:printerhub/app/config/app_config.dart';
 
 class AppBlocObserver extends BlocObserver {
   const new();
@@ -22,10 +27,16 @@ class AppBlocObserver extends BlocObserver {
   }
 }
 
-/// What every flavor needs before the first frame.
-typedef AppDependencies = ({PreferencesRepository preferencesRepository});
+/// What the app is built from, ready before the first frame.
+typedef AppDependencies = ({
+  PreferencesRepository preferencesRepository,
+  AuthRepository authRepository,
+  OrganizationsRepository organizationsRepository,
+  List<Organization>? keptOrganizations,
+});
 
 Future<void> bootstrap(
+  AppConfig config,
   FutureOr<Widget> Function(AppDependencies dependencies) builder,
 ) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,9 +50,28 @@ Future<void> bootstrap(
   // Volt's licensed font is registered when its files are in the build.
   await AppFonts.loadLicensed();
 
-  // The chosen theme is read before the first frame, so the app never
-  // flashes the wrong one.
+  // Everything below is read from the device, never the network, so the
+  // first frame is the right one: the chosen theme, and Home for someone
+  // who is already signed in.
   final preferencesRepository = await PreferencesRepository.open();
+  const secureStore = KeystoreSecureStore();
+  final client = PrinterHubClient(
+    baseUrl: config.apiBaseUrl,
+    tokenStore: const SecureTokenStore(secureStore),
+  );
+  final authRepository = AuthRepository(client: client, store: secureStore);
+  final organizationsRepository = OrganizationsRepository(
+    client: client,
+    store: secureStore,
+  );
+  await authRepository.restore();
 
-  runApp(await builder((preferencesRepository: preferencesRepository)));
+  runApp(
+    await builder((
+      preferencesRepository: preferencesRepository,
+      authRepository: authRepository,
+      organizationsRepository: organizationsRepository,
+      keptOrganizations: await organizationsRepository.kept(),
+    )),
+  );
 }

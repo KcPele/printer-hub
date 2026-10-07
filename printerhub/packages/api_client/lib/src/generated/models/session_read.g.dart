@@ -20,11 +20,11 @@ SessionRead _$SessionReadFromJson(Map<String, dynamic> json) => SessionRead(
 Map<String, dynamic> _$SessionReadToJson(SessionRead instance) =>
     <String, dynamic>{
       'created_at': instance.createdAt.toIso8601String(),
-      'device_id': instance.deviceId,
+      'device_id': ?instance.deviceId,
       'expires_at': instance.expiresAt.toIso8601String(),
       'id': instance.id,
-      'ip': instance.ip,
+      'ip': ?instance.ip,
       'is_current': instance.isCurrent,
       'last_used_at': instance.lastUsedAt.toIso8601String(),
-      'user_agent': instance.userAgent,
+      'user_agent': ?instance.userAgent,
     };

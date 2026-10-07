@@ -23,5 +23,5 @@ Map<String, dynamic> _$MyInvitationReadToJson(MyInvitationRead instance) =>
       'id': instance.id,
       'organization_id': instance.organizationId,
       'organization_name': instance.organizationName,
-      'role': instance.role,
+      'role': instance.role.toJson(),
     };

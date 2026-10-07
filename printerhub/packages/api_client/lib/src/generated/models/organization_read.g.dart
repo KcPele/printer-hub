@@ -23,7 +23,7 @@ Map<String, dynamic> _$OrganizationReadToJson(OrganizationRead instance) =>
       'created_at': instance.createdAt.toIso8601String(),
       'id': instance.id,
       'name': instance.name,
-      'role': instance.role,
-      'settings': instance.settings,
+      'role': instance.role.toJson(),
+      'settings': instance.settings.toJson(),
       'slug': instance.slug,
     };

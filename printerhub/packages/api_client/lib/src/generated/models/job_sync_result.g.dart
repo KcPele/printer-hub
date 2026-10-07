@@ -20,8 +20,8 @@ JobSyncResult _$JobSyncResultFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$JobSyncResultToJson(JobSyncResult instance) =>
     <String, dynamic>{
-      'error': instance.error,
+      'error': ?instance.error?.toJson(),
       'idempotency_key': instance.idempotencyKey,
-      'job': instance.job,
-      'outcome': instance.outcome,
+      'job': ?instance.job?.toJson(),
+      'outcome': instance.outcome.toJson(),
     };

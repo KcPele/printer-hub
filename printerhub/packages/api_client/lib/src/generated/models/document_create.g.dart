@@ -27,15 +27,15 @@ DocumentCreate _$DocumentCreateFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$DocumentCreateToJson(DocumentCreate instance) =>
     <String, dynamic>{
-      'checksum_sha256': instance.checksumSha256,
+      'checksum_sha256': ?instance.checksumSha256,
       'file_name': instance.fileName,
-      'id': instance.id,
+      'id': ?instance.id,
       'mime_type': instance.mimeType,
-      'ocr_text': instance.ocrText,
-      'page_count': instance.pageCount,
+      'ocr_text': ?instance.ocrText,
+      'page_count': ?instance.pageCount,
       'size_bytes': instance.sizeBytes,
-      'source': instance.source,
-      'source_printer_id': instance.sourcePrinterId,
-      'storage_mode': instance.storageMode,
-      'tags': instance.tags,
+      'source': instance.source.toJson(),
+      'source_printer_id': ?instance.sourcePrinterId,
+      'storage_mode': instance.storageMode.toJson(),
+      'tags': ?instance.tags,
     };

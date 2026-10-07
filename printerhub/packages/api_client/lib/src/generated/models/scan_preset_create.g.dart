@@ -26,8 +26,8 @@ Map<String, dynamic> _$ScanPresetCreateToJson(ScanPresetCreate instance) =>
     <String, dynamic>{
       'is_default': instance.isDefault,
       'name': instance.name,
-      'printer_id': instance.printerId,
-      'scope': instance.scope,
-      'settings': instance.settings,
+      'printer_id': ?instance.printerId,
+      'scope': instance.scope.toJson(),
+      'settings': ?instance.settings?.toJson(),
       'type': instance.type,
     };

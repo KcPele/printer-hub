@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 208" fill="none">
+  <!-- Colours here are placeholders that map to theme tokens. See
+       IllustrationPalette in lib/src/illustrations/app_illustration.dart. -->
+
+  <!-- Backdrop -->
+  <circle cx="120" cy="104" r="92" fill="#4856EB"/>
+  <ellipse cx="120" cy="196" rx="78" ry="7" fill="#1C1E2B" fill-opacity="0.14"/>
+
+  <!-- Sparks -->
+  <circle cx="40" cy="60" r="5" fill="#1C1E2B"/>
+  <path d="M206 150v16M198 158h16" stroke="#1C1E2B" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- A second card behind, for the people who will join -->
+  <rect x="64" y="50" width="136" height="92" rx="14" fill="#EFF2FA" stroke="#1C1E2B" stroke-width="4" transform="rotate(-7 132 96)"/>
+
+  <!-- The new account -->
+  <rect x="44" y="66" width="144" height="98" rx="14" fill="#FFFFFF" stroke="#1C1E2B" stroke-width="4"/>
+  <circle cx="84" cy="104" r="15" fill="#1C1E2B"/>
+  <path d="M62 146c0-13 10-21 22-21s22 8 22 21z" fill="#1C1E2B"/>
+  <path d="M122 98h46M122 114h46M122 130h28" stroke="#DCE1F0" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Added -->
+  <circle cx="186" cy="62" r="24" fill="#1C1E2B"/>
+  <path d="M186 51v22M175 62h22" stroke="#FDFDFF" stroke-width="5" stroke-linecap="round"/>
+</svg>

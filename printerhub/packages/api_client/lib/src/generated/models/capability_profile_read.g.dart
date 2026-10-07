@@ -29,7 +29,7 @@ CapabilityProfileRead _$CapabilityProfileReadFromJson(
 Map<String, dynamic> _$CapabilityProfileReadToJson(
   CapabilityProfileRead instance,
 ) => <String, dynamic>{
-  'capabilities': instance.capabilities,
+  'capabilities': instance.capabilities.toJson(),
   'display_name': instance.displayName,
   'id': instance.id,
   'manufacturer': instance.manufacturer,

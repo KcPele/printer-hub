@@ -31,11 +31,11 @@ Map<String, dynamic> _$ScanCapabilitiesInputToJson(
   ScanCapabilitiesInput instance,
 ) => <String, dynamic>{
   'adf_duplex': instance.adfDuplex,
-  'color_modes': instance.colorModes,
-  'document_formats': instance.documentFormats,
-  'max_height_mm': instance.maxHeightMm,
-  'max_width_mm': instance.maxWidthMm,
-  'resolutions_dpi': instance.resolutionsDpi,
-  'sources': instance.sources,
+  'color_modes': ?instance.colorModes?.map((e) => e.toJson()).toList(),
+  'document_formats': ?instance.documentFormats,
+  'max_height_mm': ?instance.maxHeightMm,
+  'max_width_mm': ?instance.maxWidthMm,
+  'resolutions_dpi': ?instance.resolutionsDpi,
+  'sources': ?instance.sources?.map((e) => e.toJson()).toList(),
   'supported': instance.supported,
 };

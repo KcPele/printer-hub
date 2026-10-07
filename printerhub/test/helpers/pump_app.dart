@@ -1,12 +1,18 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:auth_repository/auth_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
+import 'package:printerhub/app/app.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
+
+import 'test_backend.dart';
 
 class MockPreferencesRepository extends Mock implements PreferencesRepository;
 
@@ -18,43 +24,78 @@ class MockGoRouter extends Mock implements GoRouter;
 MockPreferencesRepository emptyPreferences({
   String? themeName,
   bool onboardingCompleted = false,
+  String? activeOrganizationId,
 }) {
   final repository = MockPreferencesRepository();
+  var theme = themeName;
   var welcomed = onboardingCompleted;
-  when(() => repository.themeName).thenReturn(themeName);
-  when(() => repository.saveThemeName(any())).thenAnswer((_) async {});
+  var organization = activeOrganizationId;
+  when(() => repository.themeName).thenAnswer((_) => theme);
+  when(() => repository.saveThemeName(any())).thenAnswer((invocation) async {
+    theme = invocation.positionalArguments.single as String;
+  });
   when(() => repository.onboardingCompleted).thenAnswer((_) => welcomed);
   when(repository.completeOnboarding).thenAnswer((_) async => welcomed = true);
+  when(() => repository.activeOrganizationId).thenAnswer((_) => organization);
+  when(() => repository.saveActiveOrganizationId(any()))
+      .thenAnswer((invocation) async {
+        organization = invocation.positionalArguments.single as String?;
+      });
   return repository;
 }
 
 /// A router that records where a screen asks to go.
 MockGoRouter recordingRouter() {
   final router = MockGoRouter();
-  when(() => router.push<Object?>(any())).thenAnswer((_) async => null);
+  when(() => router.push<Object?>(any(), extra: any(named: 'extra')))
+      .thenAnswer((_) async => null);
   when(() => router.go(any())).thenReturn(null);
+  when(router.pop).thenReturn(null);
   return router;
 }
 
 extension PumpApp on WidgetTester {
-  /// Pumps [widget] with the app's theme, strings, preferences, and theme
-  /// cubit.
+  /// Pumps [widget] with what every screen can rely on: the theme, the
+  /// strings, the repositories, and the theme and session cubits.
   ///
-  /// Pass [router] to check navigation without building other screens.
+  /// The repositories talk to [backend]. Pass [router] to check navigation
+  /// without building other screens.
   Future<void> pumpApp(
     Widget widget, {
     PreferencesRepository? preferencesRepository,
     ThemeCubit? themeCubit,
+    TestBackend? backend,
+    SessionCubit? sessionCubit,
     GoRouter? router,
-  }) {
+  }) async {
     final preferences = preferencesRepository ?? emptyPreferences();
-    final cubit = themeCubit ?? ThemeCubit(preferencesRepository: preferences);
+    final api = backend ?? TestBackend();
+    if (backend == null) addTearDown(api.close);
+    final theme = themeCubit ?? ThemeCubit(preferencesRepository: preferences);
+    final session =
+        sessionCubit ??
+        SessionCubit(
+          authRepository: api.auth,
+          organizationsRepository: api.organizations,
+          preferencesRepository: preferences,
+          keptOrganizations: await api.organizations.kept(),
+        );
+    if (sessionCubit == null) addTearDown(session.close);
 
-    return pumpWidget(
-      RepositoryProvider<PreferencesRepository>.value(
-        value: preferences,
-        child: BlocProvider.value(
-          value: cubit,
+    await pumpWidget(
+      MultiRepositoryProvider(
+        providers: [
+          RepositoryProvider<PreferencesRepository>.value(value: preferences),
+          RepositoryProvider<AuthRepository>.value(value: api.auth),
+          RepositoryProvider<OrganizationsRepository>.value(
+            value: api.organizations,
+          ),
+        ],
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: theme),
+            BlocProvider.value(value: session),
+          ],
           child: BlocBuilder<ThemeCubit, AppThemeId>(
             builder: (context, theme) => MaterialApp(
               theme: AppTheme.of(theme).data(),
@@ -68,5 +109,26 @@ extension PumpApp on WidgetTester {
         ),
       ),
     );
+  }
+
+  /// Pumps the whole app on top of [backend].
+  Future<void> pumpWholeApp(
+    TestBackend backend,
+    PreferencesRepository preferences,
+  ) async {
+    await pumpWidget(
+      App(
+        preferencesRepository: preferences,
+        authRepository: backend.auth,
+        organizationsRepository: backend.organizations,
+        keptOrganizations: await backend.organizations.kept(),
+      ),
+    );
+    await pumpAndSettle();
+  }
+
+  /// Types [text] into the field labelled [label].
+  Future<void> fill(String label, String text) {
+    return enterText(find.widgetWithText(TextFormField, label), text);
   }
 }

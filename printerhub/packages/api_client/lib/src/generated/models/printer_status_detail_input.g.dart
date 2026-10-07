@@ -28,8 +28,8 @@ PrinterStatusDetailInput _$PrinterStatusDetailInputFromJson(
 Map<String, dynamic> _$PrinterStatusDetailInputToJson(
   PrinterStatusDetailInput instance,
 ) => <String, dynamic>{
-  'alerts': instance.alerts,
-  'consumables': instance.consumables,
-  'scanner_state': instance.scannerState,
-  'trays': instance.trays,
+  'alerts': ?instance.alerts?.map((e) => e.toJson()).toList(),
+  'consumables': ?instance.consumables?.map((e) => e.toJson()).toList(),
+  'scanner_state': instance.scannerState.toJson(),
+  'trays': ?instance.trays?.map((e) => e.toJson()).toList(),
 };

@@ -21,14 +21,14 @@ JobEventRead _$JobEventReadFromJson(Map<String, dynamic> json) => JobEventRead(
 
 Map<String, dynamic> _$JobEventReadToJson(JobEventRead instance) =>
     <String, dynamic>{
-      'connection_id': instance.connectionId,
-      'connection_type': instance.connectionType,
+      'connection_id': ?instance.connectionId,
+      'connection_type': ?instance.connectionType,
       'created_at': instance.createdAt.toIso8601String(),
-      'detail': instance.detail,
-      'error_code': instance.errorCode,
-      'error_message': instance.errorMessage,
+      'detail': ?instance.detail,
+      'error_code': ?instance.errorCode,
+      'error_message': ?instance.errorMessage,
       'id': instance.id,
       'occurred_at': instance.occurredAt.toIso8601String(),
-      'reported_by_user_id': instance.reportedByUserId,
-      'status': instance.status,
+      'reported_by_user_id': ?instance.reportedByUserId,
+      'status': instance.status.toJson(),
     };

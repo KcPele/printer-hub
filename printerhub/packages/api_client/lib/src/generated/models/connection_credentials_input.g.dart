@@ -19,7 +19,7 @@ ConnectionCredentialsInput _$ConnectionCredentialsInputFromJson(
 Map<String, dynamic> _$ConnectionCredentialsInputToJson(
   ConnectionCredentialsInput instance,
 ) => <String, dynamic>{
-  'extra': instance.extra,
-  'password': instance.password,
-  'username': instance.username,
+  'extra': ?instance.extra,
+  'password': ?instance.password,
+  'username': ?instance.username,
 };

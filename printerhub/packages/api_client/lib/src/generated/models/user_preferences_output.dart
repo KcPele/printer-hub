@@ -15,7 +15,7 @@ class UserPreferencesOutput {
     required this.defaultOrganizationId,
     required this.defaultPrinterId,
     required this.mutedNotificationTypes,
-    this.appTheme = UserPreferencesOutputAppTheme.volt,
+    this.appTheme = UserPreferencesOutputAppTheme.mint,
     this.theme = UserPreferencesOutputTheme.system,
   });
 

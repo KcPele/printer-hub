@@ -15,6 +15,6 @@ MemberRead _$MemberReadFromJson(Map<String, dynamic> json) => MemberRead(
 Map<String, dynamic> _$MemberReadToJson(MemberRead instance) =>
     <String, dynamic>{
       'joined_at': instance.joinedAt.toIso8601String(),
-      'role': instance.role,
-      'user': instance.user,
+      'role': instance.role.toJson(),
+      'user': instance.user.toJson(),
     };

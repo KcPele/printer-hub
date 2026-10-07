@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 208" fill="none">
+  <!-- Colours here are placeholders that map to theme tokens. See
+       IllustrationPalette in lib/src/illustrations/app_illustration.dart. -->
+
+  <!-- Backdrop -->
+  <circle cx="120" cy="104" r="92" fill="#4856EB"/>
+  <ellipse cx="120" cy="196" rx="78" ry="7" fill="#1C1E2B" fill-opacity="0.14"/>
+
+  <!-- Sparks -->
+  <path d="M44 52v16M36 60h16" stroke="#1C1E2B" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="204" cy="56" r="5" fill="#1C1E2B"/>
+
+  <!-- Phone -->
+  <rect x="74" y="24" width="92" height="160" rx="18" fill="#FFFFFF" stroke="#1C1E2B" stroke-width="4"/>
+  <rect x="108" y="34" width="24" height="6" rx="3" fill="#1C1E2B"/>
+
+  <!-- The person signing in -->
+  <circle cx="120" cy="78" r="18" fill="#1C1E2B"/>
+  <path d="M90 128c0-17 13-27 30-27s30 10 30 27z" fill="#1C1E2B"/>
+
+  <!-- Fields -->
+  <rect x="90" y="140" width="60" height="10" rx="5" fill="#EFF2FA"/>
+  <rect x="90" y="158" width="60" height="10" rx="5" fill="#EFF2FA"/>
+
+  <!-- Lock -->
+  <circle cx="178" cy="150" r="26" fill="#1C1E2B"/>
+  <path d="M169 148v-7a9 9 0 0 1 18 0v7" stroke="#FDFDFF" stroke-width="4" stroke-linecap="round"/>
+  <rect x="165" y="147" width="26" height="19" rx="5" fill="#FDFDFF"/>
+  <circle cx="178" cy="156" r="3" fill="#1C1E2B"/>
+</svg>

@@ -29,11 +29,11 @@ PrinterCapabilitiesOutput _$PrinterCapabilitiesOutputFromJson(
 Map<String, dynamic> _$PrinterCapabilitiesOutputToJson(
   PrinterCapabilitiesOutput instance,
 ) => <String, dynamic>{
-  'connectivity': instance.connectivity,
-  'copy': instance.copy,
-  'print': instance.print,
-  'protocols': instance.protocols,
-  'scan': instance.scan,
+  'connectivity': instance.connectivity.toJson(),
+  'copy': instance.copy.toJson(),
+  'print': instance.print.toJson(),
+  'protocols': instance.protocols.toJson(),
+  'scan': instance.scan.toJson(),
   'schema_version': instance.schemaVersion,
-  'status': instance.status,
+  'status': instance.status.toJson(),
 };

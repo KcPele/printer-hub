@@ -23,9 +23,9 @@ UserRead _$UserReadFromJson(Map<String, dynamic> json) => UserRead(
 Map<String, dynamic> _$UserReadToJson(UserRead instance) => <String, dynamic>{
   'created_at': instance.createdAt.toIso8601String(),
   'email': instance.email,
-  'email_verified_at': instance.emailVerifiedAt?.toIso8601String(),
+  'email_verified_at': ?instance.emailVerifiedAt?.toIso8601String(),
   'id': instance.id,
   'is_superuser': instance.isSuperuser,
   'name': instance.name,
-  'preferences': instance.preferences,
+  'preferences': instance.preferences.toJson(),
 };

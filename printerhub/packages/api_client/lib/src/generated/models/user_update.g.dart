@@ -17,6 +17,6 @@ UserUpdate _$UserUpdateFromJson(Map<String, dynamic> json) => UserUpdate(
 
 Map<String, dynamic> _$UserUpdateToJson(UserUpdate instance) =>
     <String, dynamic>{
-      'name': instance.name,
-      'preferences': instance.preferences,
+      'name': ?instance.name,
+      'preferences': ?instance.preferences?.toJson(),
     };

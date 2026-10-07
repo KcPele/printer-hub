@@ -18,10 +18,10 @@ ConnectivityInput _$ConnectivityInputFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ConnectivityInputToJson(ConnectivityInput instance) =>
     <String, dynamic>{
-      'ble_beacon': instance.bleBeacon,
-      'ethernet': instance.ethernet,
-      'nfc': instance.nfc,
-      'usb': instance.usb,
-      'wifi': instance.wifi,
-      'wifi_direct': instance.wifiDirect,
+      'ble_beacon': ?instance.bleBeacon,
+      'ethernet': ?instance.ethernet,
+      'nfc': ?instance.nfc,
+      'usb': ?instance.usb,
+      'wifi': ?instance.wifi,
+      'wifi_direct': ?instance.wifiDirect,
     };

@@ -17,4 +17,7 @@ OrganizationUpdate _$OrganizationUpdateFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$OrganizationUpdateToJson(OrganizationUpdate instance) =>
-    <String, dynamic>{'name': instance.name, 'settings': instance.settings};
+    <String, dynamic>{
+      'name': ?instance.name,
+      'settings': ?instance.settings?.toJson(),
+    };

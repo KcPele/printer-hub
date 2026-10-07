@@ -23,13 +23,13 @@ JobEventCreate _$JobEventCreateFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$JobEventCreateToJson(JobEventCreate instance) =>
     <String, dynamic>{
-      'connection_id': instance.connectionId,
-      'detail': instance.detail,
-      'error_code': instance.errorCode,
-      'error_message': instance.errorMessage,
-      'occurred_at': instance.occurredAt?.toIso8601String(),
-      'output_document_id': instance.outputDocumentId,
-      'page_count': instance.pageCount,
-      'printer_job_ref': instance.printerJobRef,
-      'status': instance.status,
+      'connection_id': ?instance.connectionId,
+      'detail': ?instance.detail,
+      'error_code': ?instance.errorCode,
+      'error_message': ?instance.errorMessage,
+      'occurred_at': ?instance.occurredAt?.toIso8601String(),
+      'output_document_id': ?instance.outputDocumentId,
+      'page_count': ?instance.pageCount,
+      'printer_job_ref': ?instance.printerJobRef,
+      'status': instance.status.toJson(),
     };

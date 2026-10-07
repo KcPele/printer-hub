@@ -18,4 +18,7 @@ PrinterStatusReport _$PrinterStatusReportFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$PrinterStatusReportToJson(
   PrinterStatusReport instance,
-) => <String, dynamic>{'detail': instance.detail, 'status': instance.status};
+) => <String, dynamic>{
+  'detail': ?instance.detail?.toJson(),
+  'status': instance.status.toJson(),
+};

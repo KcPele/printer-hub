@@ -15,7 +15,7 @@ class UserPreferencesInput {
     this.defaultOrganizationId,
     this.defaultPrinterId,
     this.mutedNotificationTypes,
-    this.appTheme = UserPreferencesInputAppTheme.volt,
+    this.appTheme = UserPreferencesInputAppTheme.mint,
     this.theme = UserPreferencesInputTheme.system,
   });
 

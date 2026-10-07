@@ -9,12 +9,13 @@ class PreferencesRepository {
 
   static const String _themeKey = 'app_theme';
   static const String _onboardingKey = 'onboarding_completed';
+  static const String _organizationKey = 'active_organization_id';
 
   /// Opens the device's preferences and loads them into memory.
   static Future<PreferencesRepository> open() async {
     final store = await SharedPreferencesWithCache.create(
       cacheOptions: const SharedPreferencesWithCacheOptions(
-        allowList: {_themeKey, _onboardingKey},
+        allowList: {_themeKey, _onboardingKey, _organizationKey},
       ),
     );
     return PreferencesRepository(store: store);
@@ -33,4 +34,14 @@ class PreferencesRepository {
 
   /// Remembers that the welcome screens have been seen.
   Future<void> completeOnboarding() => _store.setBool(_onboardingKey, true);
+
+  /// The workspace last used on this device, or null.
+  String? get activeOrganizationId => _store.getString(_organizationKey);
+
+  /// Remembers the workspace in use. Null forgets it.
+  Future<void> saveActiveOrganizationId(String? id) {
+    return id == null
+        ? _store.remove(_organizationKey)
+        : _store.setString(_organizationKey, id);
+  }
 }

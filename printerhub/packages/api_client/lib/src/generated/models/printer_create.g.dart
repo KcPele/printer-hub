@@ -25,11 +25,11 @@ PrinterCreate _$PrinterCreateFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$PrinterCreateToJson(PrinterCreate instance) =>
     <String, dynamic>{
-      'capabilities': instance.capabilities,
-      'connections': instance.connections,
+      'capabilities': ?instance.capabilities?.toJson(),
+      'connections': ?instance.connections?.map((e) => e.toJson()).toList(),
       'friendly_name': instance.friendlyName,
-      'location': instance.location,
-      'manufacturer': instance.manufacturer,
-      'model': instance.model,
-      'serial_number': instance.serialNumber,
+      'location': ?instance.location,
+      'manufacturer': ?instance.manufacturer,
+      'model': ?instance.model,
+      'serial_number': ?instance.serialNumber,
     };

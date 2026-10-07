@@ -50,5 +50,20 @@ void main() {
       expect(first.onboardingCompleted, isTrue);
       expect(second.onboardingCompleted, isTrue);
     });
+
+    test('remembers the workspace in use, and forgets it', () async {
+      final repository = await PreferencesRepository.open();
+      expect(repository.activeOrganizationId, isNull);
+
+      await repository.saveActiveOrganizationId('org-1');
+      expect(repository.activeOrganizationId, 'org-1');
+      expect(
+        (await PreferencesRepository.open()).activeOrganizationId,
+        'org-1',
+      );
+
+      await repository.saveActiveOrganizationId(null);
+      expect(repository.activeOrganizationId, isNull);
+    });
   });
 }

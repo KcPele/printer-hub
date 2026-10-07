@@ -15,7 +15,7 @@ UserPreferencesInput _$UserPreferencesInputFromJson(
       ?.map((e) => e as String)
       .toList(),
   appTheme: json['app_theme'] == null
-      ? UserPreferencesInputAppTheme.volt
+      ? UserPreferencesInputAppTheme.mint
       : UserPreferencesInputAppTheme.fromJson(json['app_theme'] as String),
   theme: json['theme'] == null
       ? UserPreferencesInputTheme.system
@@ -25,9 +25,9 @@ UserPreferencesInput _$UserPreferencesInputFromJson(
 Map<String, dynamic> _$UserPreferencesInputToJson(
   UserPreferencesInput instance,
 ) => <String, dynamic>{
-  'app_theme': instance.appTheme,
-  'default_organization_id': instance.defaultOrganizationId,
-  'default_printer_id': instance.defaultPrinterId,
-  'muted_notification_types': instance.mutedNotificationTypes,
-  'theme': instance.theme,
+  'app_theme': instance.appTheme.toJson(),
+  'default_organization_id': ?instance.defaultOrganizationId,
+  'default_printer_id': ?instance.defaultPrinterId,
+  'muted_notification_types': ?instance.mutedNotificationTypes,
+  'theme': instance.theme.toJson(),
 };

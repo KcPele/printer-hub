@@ -16,6 +16,6 @@ PageDocumentRead _$PageDocumentReadFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$PageDocumentReadToJson(PageDocumentRead instance) =>
     <String, dynamic>{
-      'items': instance.items,
-      'next_cursor': instance.nextCursor,
+      'items': instance.items.map((e) => e.toJson()).toList(),
+      'next_cursor': ?instance.nextCursor,
     };

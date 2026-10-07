@@ -25,7 +25,7 @@ ConnectionUpdate _$ConnectionUpdateFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ConnectionUpdateToJson(ConnectionUpdate instance) =>
     <String, dynamic>{
-      'configuration': instance.configuration,
-      'credentials': instance.credentials,
-      'purposes': instance.purposes,
+      'configuration': ?instance.configuration?.toJson(),
+      'credentials': ?instance.credentials?.toJson(),
+      'purposes': ?instance.purposes?.map((e) => e.toJson()).toList(),
     };

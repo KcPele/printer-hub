@@ -28,7 +28,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [app_ui, preferences_repository]
+        package:
+          - app_ui
+          - auth_repository
+          - local_store
+          - organizations_repository
+          - preferences_repository
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
     with:
       working_directory: printerhub/packages/${{ matrix.package }}

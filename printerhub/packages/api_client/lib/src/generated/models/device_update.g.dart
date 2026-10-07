@@ -18,9 +18,9 @@ DeviceUpdate _$DeviceUpdateFromJson(Map<String, dynamic> json) => DeviceUpdate(
 
 Map<String, dynamic> _$DeviceUpdateToJson(DeviceUpdate instance) =>
     <String, dynamic>{
-      'app_version': instance.appVersion,
-      'name': instance.name,
-      'os_version': instance.osVersion,
-      'push_provider': instance.pushProvider,
-      'push_token': instance.pushToken,
+      'app_version': ?instance.appVersion,
+      'name': ?instance.name,
+      'os_version': ?instance.osVersion,
+      'push_provider': ?instance.pushProvider?.toJson(),
+      'push_token': ?instance.pushToken,
     };

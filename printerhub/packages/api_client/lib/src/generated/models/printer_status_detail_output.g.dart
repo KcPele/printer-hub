@@ -28,8 +28,8 @@ PrinterStatusDetailOutput _$PrinterStatusDetailOutputFromJson(
 Map<String, dynamic> _$PrinterStatusDetailOutputToJson(
   PrinterStatusDetailOutput instance,
 ) => <String, dynamic>{
-  'alerts': instance.alerts,
-  'consumables': instance.consumables,
-  'scanner_state': instance.scannerState,
-  'trays': instance.trays,
+  'alerts': instance.alerts.map((e) => e.toJson()).toList(),
+  'consumables': instance.consumables.map((e) => e.toJson()).toList(),
+  'scanner_state': instance.scannerState.toJson(),
+  'trays': instance.trays.map((e) => e.toJson()).toList(),
 };

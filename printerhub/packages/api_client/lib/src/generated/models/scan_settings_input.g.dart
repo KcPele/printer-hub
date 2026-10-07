@@ -25,11 +25,11 @@ ScanSettingsInput _$ScanSettingsInputFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ScanSettingsInputToJson(ScanSettingsInput instance) =>
     <String, dynamic>{
-      'color_mode': instance.colorMode,
+      'color_mode': instance.colorMode.toJson(),
       'duplex': instance.duplex,
-      'format': instance.format,
-      'media_size': instance.mediaSize,
+      'format': instance.format.toJson(),
+      'media_size': ?instance.mediaSize,
       'resolution_dpi': instance.resolutionDpi,
       'searchable_pdf': instance.searchablePdf,
-      'source': instance.source,
+      'source': instance.source.toJson(),
     };

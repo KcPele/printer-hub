@@ -12,7 +12,16 @@ enum AppIllustrations {
   phonePrint('phone_print'),
 
   /// A document behind a shield: it stays on the device.
-  private('private');
+  private('private'),
+
+  /// A phone showing a person, with a lock: signing in.
+  signIn('sign_in'),
+
+  /// An account card with a plus: creating an account.
+  createAccount('create_account'),
+
+  /// An envelope with a code coming out of it.
+  mail('mail');
 
   new(this.file);
 

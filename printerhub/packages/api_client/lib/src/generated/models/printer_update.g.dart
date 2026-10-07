@@ -18,10 +18,10 @@ PrinterUpdate _$PrinterUpdateFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$PrinterUpdateToJson(PrinterUpdate instance) =>
     <String, dynamic>{
-      'auto_fallback_enabled': instance.autoFallbackEnabled,
-      'friendly_name': instance.friendlyName,
-      'location': instance.location,
-      'manufacturer': instance.manufacturer,
-      'model': instance.model,
-      'serial_number': instance.serialNumber,
+      'auto_fallback_enabled': ?instance.autoFallbackEnabled,
+      'friendly_name': ?instance.friendlyName,
+      'location': ?instance.location,
+      'manufacturer': ?instance.manufacturer,
+      'model': ?instance.model,
+      'serial_number': ?instance.serialNumber,
     };

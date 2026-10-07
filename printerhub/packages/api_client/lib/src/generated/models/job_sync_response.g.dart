@@ -14,4 +14,6 @@ JobSyncResponse _$JobSyncResponseFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$JobSyncResponseToJson(JobSyncResponse instance) =>
-    <String, dynamic>{'results': instance.results};
+    <String, dynamic>{
+      'results': instance.results.map((e) => e.toJson()).toList(),
+    };

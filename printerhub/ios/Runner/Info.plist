@@ -73,5 +73,22 @@
 			</array>
 		</dict>
 	</dict>
+	<!-- Printers on the local network speak plain HTTP (IPP on port 631,
+	     eSCL). This allows it for local addresses only; everything else
+	     still requires HTTPS. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>PrinterHub looks for printers on your network and talks to them directly to print and scan.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_ipp._tcp</string>
+		<string>_ipps._tcp</string>
+		<string>_uscan._tcp</string>
+		<string>_uscans._tcp</string>
+	</array>
 </dict>
 </plist>

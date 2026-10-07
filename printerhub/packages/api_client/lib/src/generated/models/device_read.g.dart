@@ -24,15 +24,15 @@ DeviceRead _$DeviceReadFromJson(Map<String, dynamic> json) => DeviceRead(
 
 Map<String, dynamic> _$DeviceReadToJson(DeviceRead instance) =>
     <String, dynamic>{
-      'app_version': instance.appVersion,
+      'app_version': ?instance.appVersion,
       'created_at': instance.createdAt.toIso8601String(),
       'id': instance.id,
       'installation_id': instance.installationId,
       'last_seen_at': instance.lastSeenAt.toIso8601String(),
-      'model': instance.model,
-      'name': instance.name,
-      'os_version': instance.osVersion,
-      'platform': instance.platform,
+      'model': ?instance.model,
+      'name': ?instance.name,
+      'os_version': ?instance.osVersion,
+      'platform': instance.platform.toJson(),
       'push_enabled': instance.pushEnabled,
-      'push_provider': instance.pushProvider,
+      'push_provider': ?instance.pushProvider?.toJson(),
     };

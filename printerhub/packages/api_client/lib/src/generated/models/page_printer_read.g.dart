@@ -16,6 +16,6 @@ PagePrinterRead _$PagePrinterReadFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$PagePrinterReadToJson(PagePrinterRead instance) =>
     <String, dynamic>{
-      'items': instance.items,
-      'next_cursor': instance.nextCursor,
+      'items': instance.items.map((e) => e.toJson()).toList(),
+      'next_cursor': ?instance.nextCursor,
     };

@@ -12,4 +12,4 @@ PairingResult _$PairingResultFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$PairingResultToJson(PairingResult instance) =>
-    <String, dynamic>{'printer': instance.printer};
+    <String, dynamic>{'printer': instance.printer.toJson()};

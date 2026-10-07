@@ -1,6 +1,10 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/session/session.dart';
 
 /// Home, as a person with no printers sees it: what the app is for and how
 /// to begin.
@@ -11,6 +15,9 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final textTheme = context.textTheme;
+    final needsVerification = context.select<SessionCubit, bool>(
+      (cubit) => cubit.state.user?.emailVerified == false,
+    );
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.appName)),
@@ -22,6 +29,17 @@ class HomePage extends StatelessWidget {
           AppSpacing.xxl,
         ),
         children: [
+          if (needsVerification) ...[
+            AppNotice(
+              status: AppStatus.warning,
+              message: l10n.verifyBanner,
+              action: TextButton(
+                onPressed: () => context.push(AppRoutes.verifyEmail),
+                child: Text(l10n.verifyTitle),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+          ],
           AppCard(
             child: Column(
               children: [

@@ -31,15 +31,15 @@ JobCreateCopyJobCreate _$JobCreateCopyJobCreateFromJson(
 Map<String, dynamic> _$JobCreateCopyJobCreateToJson(
   JobCreateCopyJobCreate instance,
 ) => <String, dynamic>{
-  'connection_id': instance.connectionId,
-  'document_id': instance.documentId,
-  'execution_mode': instance.executionMode,
-  'id': instance.id,
-  'page_count': instance.pageCount,
+  'connection_id': ?instance.connectionId,
+  'document_id': ?instance.documentId,
+  'execution_mode': instance.executionMode.toJson(),
+  'id': ?instance.id,
+  'page_count': ?instance.pageCount,
   'printer_id': instance.printerId,
-  'settings': instance.settings,
-  'submitted_at': instance.submittedAt?.toIso8601String(),
-  'title': instance.title,
+  'settings': ?instance.settings?.toJson(),
+  'submitted_at': ?instance.submittedAt?.toIso8601String(),
+  'title': ?instance.title,
   'type': instance.type,
 };
 
@@ -65,15 +65,15 @@ JobCreatePrintJobCreate _$JobCreatePrintJobCreateFromJson(
 Map<String, dynamic> _$JobCreatePrintJobCreateToJson(
   JobCreatePrintJobCreate instance,
 ) => <String, dynamic>{
-  'connection_id': instance.connectionId,
-  'document_id': instance.documentId,
-  'execution_mode': instance.executionMode,
-  'id': instance.id,
-  'page_count': instance.pageCount,
+  'connection_id': ?instance.connectionId,
+  'document_id': ?instance.documentId,
+  'execution_mode': instance.executionMode.toJson(),
+  'id': ?instance.id,
+  'page_count': ?instance.pageCount,
   'printer_id': instance.printerId,
-  'settings': instance.settings,
-  'submitted_at': instance.submittedAt?.toIso8601String(),
-  'title': instance.title,
+  'settings': ?instance.settings?.toJson(),
+  'submitted_at': ?instance.submittedAt?.toIso8601String(),
+  'title': ?instance.title,
   'type': instance.type,
 };
 
@@ -99,14 +99,14 @@ JobCreateScanJobCreate _$JobCreateScanJobCreateFromJson(
 Map<String, dynamic> _$JobCreateScanJobCreateToJson(
   JobCreateScanJobCreate instance,
 ) => <String, dynamic>{
-  'connection_id': instance.connectionId,
-  'document_id': instance.documentId,
-  'execution_mode': instance.executionMode,
-  'id': instance.id,
-  'page_count': instance.pageCount,
+  'connection_id': ?instance.connectionId,
+  'document_id': ?instance.documentId,
+  'execution_mode': instance.executionMode.toJson(),
+  'id': ?instance.id,
+  'page_count': ?instance.pageCount,
   'printer_id': instance.printerId,
-  'settings': instance.settings,
-  'submitted_at': instance.submittedAt?.toIso8601String(),
-  'title': instance.title,
+  'settings': ?instance.settings?.toJson(),
+  'submitted_at': ?instance.submittedAt?.toIso8601String(),
+  'title': ?instance.title,
   'type': instance.type,
 };

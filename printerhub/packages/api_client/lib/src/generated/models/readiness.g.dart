@@ -13,7 +13,7 @@ Readiness _$ReadinessFromJson(Map<String, dynamic> json) => Readiness(
 );
 
 Map<String, dynamic> _$ReadinessToJson(Readiness instance) => <String, dynamic>{
-  'database': instance.database,
-  'redis': instance.redis,
-  'status': instance.status,
+  'database': instance.database.toJson(),
+  'redis': instance.redis.toJson(),
+  'status': instance.status.toJson(),
 };

@@ -15,4 +15,4 @@ InvitationCreate _$InvitationCreateFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$InvitationCreateToJson(InvitationCreate instance) =>
-    <String, dynamic>{'email': instance.email, 'role': instance.role};
+    <String, dynamic>{'email': instance.email, 'role': instance.role.toJson()};

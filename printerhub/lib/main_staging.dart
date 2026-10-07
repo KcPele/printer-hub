@@ -3,7 +3,12 @@ import 'package:printerhub/bootstrap.dart';
 
 Future<void> main() async {
   await bootstrap(
-    (dependencies) =>
-        App(preferencesRepository: dependencies.preferencesRepository),
+    AppConfig.production(),
+    (dependencies) => App(
+      preferencesRepository: dependencies.preferencesRepository,
+      authRepository: dependencies.authRepository,
+      organizationsRepository: dependencies.organizationsRepository,
+      keptOrganizations: dependencies.keptOrganizations,
+    ),
   );
 }

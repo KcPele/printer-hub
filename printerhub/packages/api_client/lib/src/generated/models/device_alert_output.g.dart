@@ -18,6 +18,6 @@ DeviceAlertOutput _$DeviceAlertOutputFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$DeviceAlertOutputToJson(DeviceAlertOutput instance) =>
     <String, dynamic>{
       'code': instance.code,
-      'message': instance.message,
-      'severity': instance.severity,
+      'message': ?instance.message,
+      'severity': instance.severity.toJson(),
     };

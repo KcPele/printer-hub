@@ -22,12 +22,12 @@ DeviceRegister _$DeviceRegisterFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$DeviceRegisterToJson(DeviceRegister instance) =>
     <String, dynamic>{
-      'app_version': instance.appVersion,
+      'app_version': ?instance.appVersion,
       'installation_id': instance.installationId,
-      'model': instance.model,
-      'name': instance.name,
-      'os_version': instance.osVersion,
-      'platform': instance.platform,
-      'push_provider': instance.pushProvider,
-      'push_token': instance.pushToken,
+      'model': ?instance.model,
+      'name': ?instance.name,
+      'os_version': ?instance.osVersion,
+      'platform': instance.platform.toJson(),
+      'push_provider': ?instance.pushProvider?.toJson(),
+      'push_token': ?instance.pushToken,
     };

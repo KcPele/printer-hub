@@ -26,8 +26,8 @@ Map<String, dynamic> _$NotificationReadToJson(NotificationRead instance) =>
       'created_at': instance.createdAt.toIso8601String(),
       'data': instance.data,
       'id': instance.id,
-      'organization_id': instance.organizationId,
-      'read_at': instance.readAt?.toIso8601String(),
+      'organization_id': ?instance.organizationId,
+      'read_at': ?instance.readAt?.toIso8601String(),
       'title': instance.title,
       'type': instance.type,
     };

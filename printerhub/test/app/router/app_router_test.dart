@@ -1,13 +1,15 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:auth_repository/auth_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printerhub/app/app.dart';
+import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/home/home.dart';
 import 'package:printerhub/l10n/l10n.dart';
-import 'package:printerhub/settings/settings.dart';
+import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
 import 'package:printerhub/welcome/welcome.dart';
 
@@ -15,55 +17,153 @@ import '../../helpers/helpers.dart';
 
 void main() {
   group('createAppRouter', () {
-    Future<GoRouter> pump(
-      WidgetTester tester, {
-      required bool welcomed,
-      required String location,
+    late TestBackend backend;
+
+    setUp(() => backend = TestBackend());
+    tearDown(() => backend.close());
+
+    /// Opens the app's routes at [location], as a link or a restart would.
+    Future<void> open(
+      WidgetTester tester,
+      String location, {
+      bool welcomed = true,
+      bool useKept = true,
     }) async {
       final preferences = emptyPreferences(onboardingCompleted: welcomed);
+      final session = SessionCubit(
+        authRepository: backend.auth,
+        organizationsRepository: backend.organizations,
+        preferencesRepository: preferences,
+        keptOrganizations: useKept ? await backend.organizations.kept() : null,
+      );
+      addTearDown(session.close);
       final router = createAppRouter(
         preferencesRepository: preferences,
+        sessionCubit: session,
         initialLocation: location,
       );
       addTearDown(router.dispose);
 
       await tester.pumpWidget(
-        RepositoryProvider<PreferencesRepository>.value(
-          value: preferences,
-          child: BlocProvider(
-            create: (_) => ThemeCubit(preferencesRepository: preferences),
+        MultiRepositoryProvider(
+          providers: [
+            RepositoryProvider<PreferencesRepository>.value(value: preferences),
+            RepositoryProvider<AuthRepository>.value(value: backend.auth),
+            RepositoryProvider<OrganizationsRepository>.value(
+              value: backend.organizations,
+            ),
+          ],
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider(
+                create: (_) => ThemeCubit(preferencesRepository: preferences),
+              ),
+              BlocProvider.value(value: session),
+            ],
             child: MaterialApp.router(
               routerConfig: router,
-              theme: AppTheme.volt.data(),
+              theme: AppTheme.mint.data(),
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
             ),
           ),
         ),
       );
-      await tester.pumpAndSettle();
-      return router;
+      // Some screens show a spinner that never settles.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
     }
 
     testWidgets('sends a new install to the welcome screens', (tester) async {
-      await pump(tester, welcomed: false, location: AppRoutes.settings);
+      await open(tester, AppRoutes.settings, welcomed: false);
 
       expect(find.byType(WelcomePage), findsOneWidget);
-      expect(find.byType(SettingsPage), findsNothing);
     });
 
-    testWidgets('does not show the welcome screens twice', (tester) async {
-      await pump(tester, welcomed: true, location: AppRoutes.welcome);
+    testWidgets('sends a signed-out person to sign in', (tester) async {
+      await open(tester, AppRoutes.home);
+      expect(find.byType(SignInPage), findsOneWidget);
+
+      await open(tester, AppRoutes.welcome);
+      expect(find.byType(SignInPage), findsOneWidget);
+    });
+
+    testWidgets('opens each account screen for a signed-out person', (
+      tester,
+    ) async {
+      await open(tester, AppRoutes.register);
+      expect(find.byType(RegisterPage), findsOneWidget);
+
+      await open(tester, AppRoutes.forgotPassword);
+      expect(find.byType(ForgotPasswordPage), findsOneWidget);
+
+      await open(tester, AppRoutes.resetPassword);
+      expect(
+        tester.widget<ResetPasswordPage>(find.byType(ResetPasswordPage)).email,
+        isEmpty,
+      );
+    });
+
+    testWidgets('holds a signed-in person while workspaces load', (
+      tester,
+    ) async {
+      await tester.runAsync(backend.signedInBefore);
+
+      await open(tester, AppRoutes.home, useKept: false);
+
+      expect(find.byType(LoadingPage), findsOneWidget);
+    });
+
+    testWidgets('asks a person without a workspace to name one', (
+      tester,
+    ) async {
+      await tester.runAsync(() => backend.signedInBefore(withWorkspace: false));
+      final preferences = emptyPreferences(onboardingCompleted: true);
+      final session = SessionCubit(
+        authRepository: backend.auth,
+        organizationsRepository: backend.organizations,
+        preferencesRepository: preferences,
+      );
+      addTearDown(session.close);
+      await tester.runAsync(session.loadWorkspaces);
+      expect(session.state.stage, SessionStage.needsWorkspace);
+      expect(
+        redirectFor(
+          welcomed: true,
+          stage: session.state.stage,
+          location: AppRoutes.home,
+        ),
+        AppRoutes.newWorkspace,
+      );
+    });
+
+    testWidgets('does not show a ready person the entry screens', (
+      tester,
+    ) async {
+      await tester.runAsync(backend.signedInBefore);
+
+      await open(tester, AppRoutes.welcome);
 
       expect(find.byType(HomePage), findsOneWidget);
-      expect(find.byType(WelcomePage), findsNothing);
     });
 
     testWidgets('opens a screen inside an area directly', (tester) async {
-      await pump(tester, welcomed: true, location: AppRoutes.theme);
+      await tester.runAsync(backend.signedInBefore);
+
+      await open(tester, AppRoutes.theme);
 
       expect(find.byType(ThemePage), findsOneWidget);
       expect(find.byType(NavigationBar), findsOneWidget);
+    });
+
+    testWidgets('opens email verification for a signed-in person', (
+      tester,
+    ) async {
+      await tester.runAsync(backend.signedInBefore);
+
+      await open(tester, AppRoutes.verifyEmail);
+
+      expect(find.byType(VerifyEmailPage), findsOneWidget);
     });
   });
 }

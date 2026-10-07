@@ -36,7 +36,11 @@ void main() {
           jsonEncode(JobRead.fromJson(json).toJson()),
         ) as Map<String, dynamic>;
 
-        expect(encoded['settings'], json['settings']);
+        // Fields that are null are left out when encoding.
+        final settings = Map<String, dynamic>.of(
+          json['settings'] as Map<String, dynamic>,
+        )..removeWhere((key, value) => value == null);
+        expect(encoded['settings'], settings);
         expect(encoded['execution_mode'], json['execution_mode']);
         expect(encoded['submitted_at'], '2026-10-07T10:00:00.000Z');
       }

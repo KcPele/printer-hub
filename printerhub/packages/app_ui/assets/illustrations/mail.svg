@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 208" fill="none">
+  <!-- Colours here are placeholders that map to theme tokens. See
+       IllustrationPalette in lib/src/illustrations/app_illustration.dart. -->
+
+  <!-- Backdrop -->
+  <circle cx="120" cy="104" r="92" fill="#4856EB"/>
+  <ellipse cx="120" cy="196" rx="78" ry="7" fill="#1C1E2B" fill-opacity="0.14"/>
+
+  <!-- Sparks -->
+  <path d="M42 56v16M34 64h16" stroke="#1C1E2B" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="206" cy="62" r="5" fill="#1C1E2B"/>
+
+  <!-- The code, coming out of the envelope -->
+  <rect x="70" y="36" width="100" height="84" rx="10" fill="#FDFDFF" stroke="#1C1E2B" stroke-width="4"/>
+  <circle cx="92" cy="66" r="6" fill="#1C1E2B"/>
+  <circle cx="111" cy="66" r="6" fill="#1C1E2B"/>
+  <circle cx="130" cy="66" r="6" fill="#1C1E2B"/>
+  <circle cx="149" cy="66" r="6" fill="#1C1E2B"/>
+  <path d="M88 88h64" stroke="#DCE1F0" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Envelope -->
+  <path d="M48 96l72 46 72-46v72a10 10 0 0 1-10 10H58a10 10 0 0 1-10-10z" fill="#FFFFFF" stroke="#1C1E2B" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M50 176l52-44M190 176l-52-44" stroke="#1C1E2B" stroke-width="4" stroke-linecap="round"/>
+</svg>

@@ -27,9 +27,9 @@ ConnectionCreate _$ConnectionCreateFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ConnectionCreateToJson(ConnectionCreate instance) =>
     <String, dynamic>{
-      'configuration': instance.configuration,
-      'credentials': instance.credentials,
-      'priority': instance.priority,
-      'purposes': instance.purposes,
-      'type': instance.type,
+      'configuration': ?instance.configuration?.toJson(),
+      'credentials': ?instance.credentials?.toJson(),
+      'priority': ?instance.priority,
+      'purposes': instance.purposes.map((e) => e.toJson()).toList(),
+      'type': instance.type.toJson(),
     };

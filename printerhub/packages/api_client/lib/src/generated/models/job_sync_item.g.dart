@@ -16,7 +16,7 @@ JobSyncItem _$JobSyncItemFromJson(Map<String, dynamic> json) => JobSyncItem(
 
 Map<String, dynamic> _$JobSyncItemToJson(JobSyncItem instance) =>
     <String, dynamic>{
-      'events': instance.events,
+      'events': ?instance.events?.map((e) => e.toJson()).toList(),
       'idempotency_key': instance.idempotencyKey,
-      'job': instance.job,
+      'job': instance.job.toJson(),
     };
