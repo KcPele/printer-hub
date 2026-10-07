@@ -1,12 +1,13 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
+from app.core.schemas import ApiModel
 from app.modules.connections.models import ConnectionHealth, ConnectionPurpose, ConnectionType
 
 
-class ConnectionConfiguration(BaseModel):
+class ConnectionConfiguration(ApiModel):
     """Where and how to reach the printer. Never holds secrets."""
 
     model_config = ConfigDict(extra="forbid")
@@ -23,7 +24,7 @@ class ConnectionConfiguration(BaseModel):
     options: dict[str, str] = Field(default_factory=dict, max_length=32)
 
 
-class ConnectionCredentials(BaseModel):
+class ConnectionCredentials(ApiModel):
     """Secrets for a connection. Encrypted at rest; returned only by the credentials endpoint."""
 
     model_config = ConfigDict(extra="forbid")
@@ -33,7 +34,7 @@ class ConnectionCredentials(BaseModel):
     extra: dict[str, str] = Field(default_factory=dict, max_length=16)
 
 
-class ConnectionCreate(BaseModel):
+class ConnectionCreate(ApiModel):
     type: ConnectionType
     purposes: list[ConnectionPurpose] = Field(min_length=1, max_length=3)
     configuration: ConnectionConfiguration = Field(default_factory=ConnectionConfiguration)
@@ -42,7 +43,7 @@ class ConnectionCreate(BaseModel):
     priority: int | None = Field(default=None, ge=1, le=1000)
 
 
-class ConnectionUpdate(BaseModel):
+class ConnectionUpdate(ApiModel):
     """Fields left out are unchanged. Send `credentials: null` to remove stored credentials."""
 
     purposes: list[ConnectionPurpose] | None = Field(default=None, min_length=1, max_length=3)
@@ -50,7 +51,7 @@ class ConnectionUpdate(BaseModel):
     credentials: ConnectionCredentials | None = None
 
 
-class ConnectionRead(BaseModel):
+class ConnectionRead(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -69,13 +70,13 @@ class ConnectionRead(BaseModel):
     updated_at: datetime
 
 
-class ConnectionPriorityUpdate(BaseModel):
+class ConnectionPriorityUpdate(ApiModel):
     connection_ids: list[uuid.UUID] = Field(
         min_length=1, description="Every connection of the printer, most preferred first"
     )
 
 
-class ConnectionHealthReport(BaseModel):
+class ConnectionHealthReport(ApiModel):
     """What a client observed when it used or tested the connection."""
 
     health: ConnectionHealth

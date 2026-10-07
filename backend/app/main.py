@@ -14,7 +14,8 @@ from fastapi.routing import APIRoute
 from app.api import api_router
 from app.core.config import get_settings
 from app.core.db import get_engine
-from app.core.errors import register_exception_handlers
+from app.core.errors import PROBLEM_CONTENT_TYPE, register_exception_handlers
+from app.core.idempotency import IDEMPOTENCY_HEADER, REQUIRED_KEY_DESCRIPTION
 from app.core.logging import REQUEST_ID_HEADER, RequestContextMiddleware, configure_logging
 from app.core.redis import get_redis
 
@@ -56,6 +57,35 @@ async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
     await get_redis().aclose()
 
 
+def _polish_contract(schema: dict[str, Any]) -> None:
+    """Make the published OpenAPI document say what the API actually does.
+
+    Generated clients take their types from this document, so two places
+    where FastAPI's output is looser than the behavior are tightened:
+
+    - Error responses are `application/problem+json` bodies shaped like
+      `Problem`. FastAPI also lists `application/json`, which leaves a
+      generated client unable to tell what an error body is.
+    - `Idempotency-Key` is required where a missing one is rejected. It is
+      read as optional so that the rejection can carry a specific error code.
+    """
+    problem = {"schema": {"$ref": "#/components/schemas/Problem"}}
+    for path_item in schema.get("paths", {}).values():
+        for operation in path_item.values():
+            if not isinstance(operation, dict):
+                continue
+            for response in operation.get("responses", {}).values():
+                if PROBLEM_CONTENT_TYPE in response.get("content", {}):
+                    response["content"] = {PROBLEM_CONTENT_TYPE: problem}
+            for parameter in operation.get("parameters", []):
+                if (
+                    parameter.get("name") == IDEMPOTENCY_HEADER
+                    and parameter.get("description") == REQUIRED_KEY_DESCRIPTION
+                ):
+                    parameter["required"] = True
+                    parameter["schema"] = {"type": "string", "minLength": 1, "maxLength": 255}
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging()
@@ -87,6 +117,15 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(app)
     app.include_router(api_router)
+
+    generate_openapi = app.openapi
+
+    def openapi() -> dict[str, Any]:
+        if app.openapi_schema is None:
+            _polish_contract(generate_openapi())
+        return cast("dict[str, Any]", app.openapi_schema)
+
+    app.openapi = openapi  # type: ignore[method-assign]
     return app
 
 

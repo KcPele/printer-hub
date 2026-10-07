@@ -2,12 +2,13 @@ import uuid
 from datetime import datetime
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+from pydantic import ConfigDict, Field, computed_field, model_validator
 
+from app.core.schemas import ApiModel
 from app.modules.devices.models import DevicePlatform, PushProviderName
 
 
-class _PushFields(BaseModel):
+class _PushFields(ApiModel):
     push_provider: PushProviderName | None = None
     push_token: str | None = Field(default=None, min_length=1, max_length=512)
 
@@ -35,7 +36,7 @@ class DeviceUpdate(_PushFields):
     app_version: str | None = Field(default=None, max_length=64)
 
 
-class DeviceRead(BaseModel):
+class DeviceRead(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID

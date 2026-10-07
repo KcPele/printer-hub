@@ -2,34 +2,35 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import ConfigDict, EmailStr, Field
 
+from app.core.schemas import ApiModel
 from app.modules.users.schemas import UserRead
 
 Password = Field(min_length=8, max_length=128)
 
 
-class RegisterRequest(BaseModel):
+class RegisterRequest(ApiModel):
     email: EmailStr
     password: str = Password
     name: str = Field(min_length=1, max_length=200)
 
 
-class LoginRequest(BaseModel):
+class LoginRequest(ApiModel):
     email: EmailStr
     password: str = Field(min_length=1, max_length=128)
 
 
-class RefreshRequest(BaseModel):
+class RefreshRequest(ApiModel):
     refresh_token: str = Field(min_length=1, max_length=512)
 
 
-class ChangePasswordRequest(BaseModel):
+class ChangePasswordRequest(ApiModel):
     current_password: str = Field(min_length=1, max_length=128)
     new_password: str = Password
 
 
-class TokenResponse(BaseModel):
+class TokenResponse(ApiModel):
     access_token: str
     refresh_token: str
     token_type: Literal["bearer"] = "bearer"  # noqa: S105
@@ -37,12 +38,12 @@ class TokenResponse(BaseModel):
     session_id: uuid.UUID
 
 
-class AuthResponse(BaseModel):
+class AuthResponse(ApiModel):
     user: UserRead
     tokens: TokenResponse
 
 
-class SessionRead(BaseModel):
+class SessionRead(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -58,15 +59,15 @@ class SessionRead(BaseModel):
 Code = Field(min_length=6, max_length=6, pattern=r"^\d{6}$", examples=["042817"])
 
 
-class EmailVerifyRequest(BaseModel):
+class EmailVerifyRequest(ApiModel):
     code: str = Code
 
 
-class PasswordForgotRequest(BaseModel):
+class PasswordForgotRequest(ApiModel):
     email: EmailStr
 
 
-class PasswordResetRequest(BaseModel):
+class PasswordResetRequest(ApiModel):
     email: EmailStr
     code: str = Code
     new_password: str = Password

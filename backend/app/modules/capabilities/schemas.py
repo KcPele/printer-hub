@@ -13,7 +13,9 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from app.core.schemas import ApiModel
 
 CAPABILITY_SCHEMA_VERSION = 1
 
@@ -35,7 +37,7 @@ class ScanColorMode(enum.StrEnum):
     BLACK_AND_WHITE = "black_and_white"
 
 
-class _Section(BaseModel):
+class _Section(ApiModel):
     model_config = ConfigDict(extra="forbid")
 
 
@@ -120,7 +122,7 @@ class PrinterCapabilities(_Section):
     model_config = ConfigDict(extra="forbid", populate_by_name=True, serialize_by_alias=True)
 
 
-class CapabilityProfileWrite(BaseModel):
+class CapabilityProfileWrite(ApiModel):
     manufacturer: str = Field(min_length=1, max_length=100)
     display_name: str = Field(min_length=1, max_length=200)
     # Case-insensitive glob patterns matched against the reported model name.

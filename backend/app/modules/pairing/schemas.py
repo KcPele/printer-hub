@@ -1,12 +1,13 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from app.core.schemas import ApiModel
 from app.modules.printers.schemas import PrinterRead
 
 
-class PairingPayload(BaseModel):
+class PairingPayload(ApiModel):
     """Content to encode in the QR code. Holds no credentials (FR-SEC-013)."""
 
     v: int = 1
@@ -15,15 +16,15 @@ class PairingPayload(BaseModel):
     organization_id: uuid.UUID
 
 
-class PairingTokenCreated(BaseModel):
+class PairingTokenCreated(ApiModel):
     payload: PairingPayload
     deep_link: str
     expires_at: datetime
 
 
-class PairingRedeem(BaseModel):
+class PairingRedeem(ApiModel):
     token: str = Field(min_length=1, max_length=512)
 
 
-class PairingResult(BaseModel):
+class PairingResult(ApiModel):
     printer: PrinterRead

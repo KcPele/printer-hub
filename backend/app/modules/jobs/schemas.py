@@ -8,8 +8,9 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
+from app.core.schemas import ApiModel
 from app.modules.capabilities.schemas import DuplexMode
 from app.modules.jobs.models import ExecutionMode, JobStatus, JobType
 
@@ -18,7 +19,7 @@ Scaling = Literal["actual", "fit", "shrink", "custom"]
 _PAGE_RANGES = r"^\d+(-\d+)?(,\d+(-\d+)?)*$"
 
 
-class _Settings(BaseModel):
+class _Settings(ApiModel):
     model_config = ConfigDict(extra="forbid")
 
 
@@ -75,7 +76,7 @@ class CopySettings(_Settings):
 # --- Create ------------------------------------------------------------------
 
 
-class _JobCreateBase(BaseModel):
+class _JobCreateBase(ApiModel):
     id: uuid.UUID | None = Field(
         default=None,
         description="Client-generated ID, so a job created offline keeps its identity",
@@ -114,7 +115,7 @@ JobCreate = Annotated[PrintJobCreate | ScanJobCreate | CopyJobCreate, Field(disc
 # --- Read --------------------------------------------------------------------
 
 
-class _JobReadBase(BaseModel):
+class _JobReadBase(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -165,7 +166,7 @@ JobRead = Annotated[PrintJobRead | ScanJobRead | CopyJobRead, Field(discriminato
 # --- Events ------------------------------------------------------------------
 
 
-class JobEventCreate(BaseModel):
+class JobEventCreate(ApiModel):
     """A state change observed by the client executing the job."""
 
     status: JobStatus
@@ -186,7 +187,7 @@ class JobEventCreate(BaseModel):
     detail: dict[str, Any] = Field(default_factory=dict, max_length=16)
 
 
-class JobEventRead(BaseModel):
+class JobEventRead(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -204,29 +205,29 @@ class JobEventRead(BaseModel):
 # --- Batch sync --------------------------------------------------------------
 
 
-class JobSyncItem(BaseModel):
+class JobSyncItem(ApiModel):
     idempotency_key: str = Field(min_length=1, max_length=255)
     job: JobCreate
     events: list[JobEventCreate] = Field(default_factory=list, max_length=50)
 
 
-class JobSyncRequest(BaseModel):
+class JobSyncRequest(ApiModel):
     """Jobs created while offline, with the state changes recorded on the device."""
 
     items: list[JobSyncItem] = Field(min_length=1, max_length=100)
 
 
-class JobSyncError(BaseModel):
+class JobSyncError(ApiModel):
     code: str
     detail: str | None
 
 
-class JobSyncResult(BaseModel):
+class JobSyncResult(ApiModel):
     idempotency_key: str
     outcome: Literal["created", "replayed", "failed"]
     job: JobRead | None = None
     error: JobSyncError | None = None
 
 
-class JobSyncResponse(BaseModel):
+class JobSyncResponse(ApiModel):
     results: list[JobSyncResult]

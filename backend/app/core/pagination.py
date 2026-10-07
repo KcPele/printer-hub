@@ -6,18 +6,18 @@ import uuid
 from typing import Any
 
 from fastapi import Query
-from pydantic import BaseModel
 from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute
 
 from app.core.errors import ValidationFailedError
+from app.core.schemas import ApiModel
 
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 200
 
 
-class Page[T](BaseModel):
+class Page[T](ApiModel):
     items: list[T]
     next_cursor: str | None = None
 

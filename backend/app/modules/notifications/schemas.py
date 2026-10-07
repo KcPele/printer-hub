@@ -1,10 +1,12 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import ConfigDict
+
+from app.core.schemas import ApiModel
 
 
-class NotificationRead(BaseModel):
+class NotificationRead(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -17,5 +19,5 @@ class NotificationRead(BaseModel):
     created_at: datetime
 
 
-class UnreadCount(BaseModel):
+class UnreadCount(ApiModel):
     unread: int

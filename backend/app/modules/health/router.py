@@ -4,11 +4,11 @@ from typing import Literal
 
 import structlog
 from fastapi import APIRouter, Response, status
-from pydantic import BaseModel
 from sqlalchemy import text
 
 from app.core.deps import SessionDep
 from app.core.redis import get_redis
+from app.core.schemas import ApiModel
 
 log = structlog.get_logger(__name__)
 router = APIRouter(prefix="/health", tags=["health"])
@@ -16,11 +16,11 @@ router = APIRouter(prefix="/health", tags=["health"])
 ComponentStatus = Literal["ok", "unavailable"]
 
 
-class Liveness(BaseModel):
+class Liveness(ApiModel):
     status: Literal["ok"] = "ok"
 
 
-class Readiness(BaseModel):
+class Readiness(ApiModel):
     status: ComponentStatus
     database: ComponentStatus
     redis: ComponentStatus

@@ -49,7 +49,10 @@ def _created(document: Document) -> DocumentCreated:
     "",
     status_code=status.HTTP_201_CREATED,
     responses={
-        status.HTTP_200_OK: {"description": "Replay of an earlier request with this key"},
+        status.HTTP_200_OK: {
+            "model": DocumentCreated,
+            "description": "Replay of an earlier request with this key",
+        },
         **problem_responses(409),
     },
 )

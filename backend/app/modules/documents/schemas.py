@@ -2,8 +2,9 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, ConfigDict, Field
 
+from app.core.schemas import ApiModel
 from app.modules.documents.models import DocumentSource, StorageMode, UploadStatus
 
 # FR-PRN-001: directly printable formats plus those a client can convert.
@@ -31,7 +32,7 @@ def _normalize_tags(tags: list[str]) -> list[str]:
 Tags = Annotated[list[str], Field(max_length=20), AfterValidator(_normalize_tags)]
 
 
-class DocumentCreate(BaseModel):
+class DocumentCreate(ApiModel):
     id: uuid.UUID | None = Field(
         default=None, description="Client-generated ID, for documents created offline"
     )
@@ -49,7 +50,7 @@ class DocumentCreate(BaseModel):
     ocr_text: str | None = Field(default=None, max_length=1_000_000)
 
 
-class DocumentUpdate(BaseModel):
+class DocumentUpdate(ApiModel):
     """Fields left out are unchanged."""
 
     file_name: str | None = Field(default=None, min_length=1, max_length=255)
@@ -58,7 +59,7 @@ class DocumentUpdate(BaseModel):
     ocr_text: str | None = Field(default=None, max_length=1_000_000)
 
 
-class DocumentRead(BaseModel):
+class DocumentRead(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -80,7 +81,7 @@ class DocumentRead(BaseModel):
     updated_at: datetime
 
 
-class UploadInstructions(BaseModel):
+class UploadInstructions(ApiModel):
     """Send the file bytes with this request, then call `complete-upload`."""
 
     url: str
@@ -95,6 +96,6 @@ class DocumentCreated(DocumentRead):
     )
 
 
-class DownloadLink(BaseModel):
+class DownloadLink(ApiModel):
     url: str
     expires_at: datetime

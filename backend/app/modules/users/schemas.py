@@ -2,10 +2,12 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from app.core.schemas import ApiModel
 
 
-class UserPreferences(BaseModel):
+class UserPreferences(ApiModel):
     theme: Literal["system", "light", "dark"] = "system"
     default_organization_id: uuid.UUID | None = None
     default_printer_id: uuid.UUID | None = None
@@ -13,7 +15,7 @@ class UserPreferences(BaseModel):
     muted_notification_types: list[str] = Field(default_factory=list, max_length=50)
 
 
-class UserRead(BaseModel):
+class UserRead(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -27,12 +29,12 @@ class UserRead(BaseModel):
     created_at: datetime
 
 
-class UserUpdate(BaseModel):
+class UserUpdate(ApiModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     preferences: UserPreferences | None = None
 
 
-class UserSummary(BaseModel):
+class UserSummary(ApiModel):
     """The public face of a user inside an organization."""
 
     model_config = ConfigDict(from_attributes=True)

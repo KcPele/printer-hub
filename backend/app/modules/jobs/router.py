@@ -33,6 +33,7 @@ Submitter = Annotated[OrgContext, Depends(require(Permission.JOBS_CREATE))]
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_200_OK: {
+            "model": JobRead,
             "description": "Replay: the job an earlier request with this key created",
         },
         **problem_responses(400, 409),
@@ -137,7 +138,10 @@ async def cancel_job(job_id: uuid.UUID, ctx: Member, session: SessionDep) -> Job
     "/{job_id}/retry",
     status_code=status.HTTP_201_CREATED,
     responses={
-        status.HTTP_200_OK: {"description": "Replay of an earlier retry with this key"},
+        status.HTTP_200_OK: {
+            "model": JobRead,
+            "description": "Replay of an earlier retry with this key",
+        },
         **problem_responses(400, 409),
     },
 )

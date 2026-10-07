@@ -2,12 +2,13 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import ConfigDict
 
+from app.core.schemas import ApiModel
 from app.modules.audit.models import AuditOutcome
 
 
-class AuditLogRead(BaseModel):
+class AuditLogRead(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID

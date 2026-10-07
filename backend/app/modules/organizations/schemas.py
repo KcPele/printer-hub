@@ -2,13 +2,14 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import ConfigDict, EmailStr, Field
 
 from app.core.permissions import Role
+from app.core.schemas import ApiModel
 from app.modules.users.schemas import UserSummary
 
 
-class OrganizationSettings(BaseModel):
+class OrganizationSettings(ApiModel):
     """Organization policy. Job and document creation enforce these (FRD §19, §41)."""
 
     max_copies_per_job: int | None = Field(default=None, ge=1, le=9999)
@@ -19,16 +20,16 @@ class OrganizationSettings(BaseModel):
     document_retention_days: int | None = Field(default=None, ge=0, le=3650)
 
 
-class OrganizationCreate(BaseModel):
+class OrganizationCreate(ApiModel):
     name: str = Field(min_length=1, max_length=200)
 
 
-class OrganizationUpdate(BaseModel):
+class OrganizationUpdate(ApiModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     settings: OrganizationSettings | None = None
 
 
-class OrganizationRead(BaseModel):
+class OrganizationRead(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -39,22 +40,22 @@ class OrganizationRead(BaseModel):
     role: Role = Field(description="The caller's role in this organization")
 
 
-class MemberRead(BaseModel):
+class MemberRead(ApiModel):
     user: UserSummary
     role: Role
     joined_at: datetime
 
 
-class MemberUpdate(BaseModel):
+class MemberUpdate(ApiModel):
     role: Role
 
 
-class InvitationCreate(BaseModel):
+class InvitationCreate(ApiModel):
     email: EmailStr
     role: Role = Role.USER
 
 
-class InvitationRead(BaseModel):
+class InvitationRead(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -69,7 +70,7 @@ class InvitationCreated(InvitationRead):
     token: str = Field(description="Shown once. Share it with the invited person.")
 
 
-class MyInvitationRead(BaseModel):
+class MyInvitationRead(ApiModel):
     """An invitation as seen by the person invited."""
 
     id: uuid.UUID
@@ -80,5 +81,5 @@ class MyInvitationRead(BaseModel):
     created_at: datetime
 
 
-class InvitationAccept(BaseModel):
+class InvitationAccept(ApiModel):
     token: str = Field(min_length=1, max_length=512)

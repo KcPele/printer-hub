@@ -1,26 +1,28 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
+
+from app.core.schemas import ApiModel
 
 
-class FeatureFlagWrite(BaseModel):
+class FeatureFlagWrite(ApiModel):
     description: str = Field(default="", max_length=500)
     enabled: bool = False
 
 
-class FeatureFlagOverrideWrite(BaseModel):
+class FeatureFlagOverrideWrite(ApiModel):
     enabled: bool
 
 
-class FeatureFlagOverrideRead(BaseModel):
+class FeatureFlagOverrideRead(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     organization_id: uuid.UUID
     enabled: bool
 
 
-class FeatureFlagRead(BaseModel):
+class FeatureFlagRead(ApiModel):
     key: str
     description: str
     enabled: bool
@@ -28,7 +30,7 @@ class FeatureFlagRead(BaseModel):
     updated_at: datetime
 
 
-class ResolvedFlags(BaseModel):
+class ResolvedFlags(ApiModel):
     flags: dict[str, bool] = Field(
         description="Every known flag with its value for this organization",
         examples=[{"direct_ipp": True, "scan_to_email": False}],

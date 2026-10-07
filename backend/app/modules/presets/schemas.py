@@ -2,14 +2,15 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
+from app.core.schemas import ApiModel
 from app.modules.jobs.models import JobType
 from app.modules.jobs.schemas import CopySettings, PrintSettings, ScanSettings
 from app.modules.presets.models import PresetScope
 
 
-class _PresetCreateBase(BaseModel):
+class _PresetCreateBase(ApiModel):
     name: str = Field(min_length=1, max_length=100)
     scope: PresetScope = PresetScope.PERSONAL
     printer_id: uuid.UUID | None = Field(
@@ -38,7 +39,7 @@ PresetCreate = Annotated[
 ]
 
 
-class PresetUpdate(BaseModel):
+class PresetUpdate(ApiModel):
     """Fields left out are unchanged. `settings` replaces the stored settings as a whole."""
 
     name: str | None = Field(default=None, min_length=1, max_length=100)
@@ -48,7 +49,7 @@ class PresetUpdate(BaseModel):
     is_default: bool | None = None
 
 
-class _PresetReadBase(BaseModel):
+class _PresetReadBase(ApiModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID

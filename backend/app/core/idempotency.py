@@ -25,6 +25,8 @@ from app.core.errors import BadRequestError, ConflictError, ValidationFailedErro
 
 IDEMPOTENCY_HEADER = "Idempotency-Key"
 REPLAYED_HEADER = "Idempotent-Replayed"
+# Also marks the header as required in the published contract; see `app.main`.
+REQUIRED_KEY_DESCRIPTION = "Unique per logical request. Reuse it when retrying."
 
 
 class IdempotencyRecord(Base, IdMixin, CreatedAtMixin):
@@ -136,7 +138,7 @@ def require_idempotency_key(
             alias=IDEMPOTENCY_HEADER,
             min_length=1,
             max_length=255,
-            description="Unique per logical request. Reuse it when retrying.",
+            description=REQUIRED_KEY_DESCRIPTION,
         ),
     ] = None,
 ) -> str:

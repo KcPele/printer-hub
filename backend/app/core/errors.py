@@ -11,21 +11,22 @@ import structlog
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from app.core.schemas import ApiModel
 
 log = structlog.get_logger(__name__)
 
 PROBLEM_CONTENT_TYPE = "application/problem+json"
 
 
-class FieldError(BaseModel):
+class FieldError(ApiModel):
     field: str
     message: str
     code: str
 
 
-class Problem(BaseModel):
+class Problem(ApiModel):
     """Error response body (RFC 9457)."""
 
     type: str = "about:blank"

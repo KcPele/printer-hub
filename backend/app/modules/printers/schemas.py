@@ -2,14 +2,15 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
+from app.core.schemas import ApiModel
 from app.modules.capabilities.schemas import PrinterCapabilities
 from app.modules.connections.schemas import ConnectionCreate, ConnectionRead
 from app.modules.printers.models import PrinterStatus
 
 
-class Consumable(BaseModel):
+class Consumable(ApiModel):
     """Toner, ink, drum, and similar supplies (FR-MON-002)."""
 
     model_config = ConfigDict(extra="forbid")
@@ -21,7 +22,7 @@ class Consumable(BaseModel):
     state: Literal["ok", "low", "empty", "unknown"] = "unknown"
 
 
-class TrayStatus(BaseModel):
+class TrayStatus(ApiModel):
     model_config = ConfigDict(extra="forbid")
 
     id: str = Field(max_length=64)
@@ -31,7 +32,7 @@ class TrayStatus(BaseModel):
     state: Literal["ok", "low", "empty", "open", "unknown"] = "unknown"
 
 
-class DeviceAlert(BaseModel):
+class DeviceAlert(ApiModel):
     """FR-MON-004."""
 
     model_config = ConfigDict(extra="forbid")
@@ -41,7 +42,7 @@ class DeviceAlert(BaseModel):
     message: str | None = Field(default=None, max_length=300)
 
 
-class PrinterStatusDetail(BaseModel):
+class PrinterStatusDetail(ApiModel):
     model_config = ConfigDict(extra="forbid")
 
     consumables: list[Consumable] = Field(default_factory=list, max_length=32)
@@ -50,7 +51,7 @@ class PrinterStatusDetail(BaseModel):
     scanner_state: Literal["idle", "busy", "error", "unavailable", "unknown"] = "unknown"
 
 
-class PrinterCreate(BaseModel):
+class PrinterCreate(ApiModel):
     friendly_name: str = Field(min_length=1, max_length=200)
     manufacturer: str | None = Field(default=None, max_length=100)
     model: str | None = Field(default=None, max_length=200)
@@ -61,7 +62,7 @@ class PrinterCreate(BaseModel):
     connections: list[ConnectionCreate] = Field(default_factory=list, max_length=16)
 
 
-class PrinterUpdate(BaseModel):
+class PrinterUpdate(ApiModel):
     """Fields left out are unchanged."""
 
     friendly_name: str | None = Field(default=None, min_length=1, max_length=200)
@@ -72,7 +73,7 @@ class PrinterUpdate(BaseModel):
     auto_fallback_enabled: bool | None = None
 
 
-class PrinterStatusReport(BaseModel):
+class PrinterStatusReport(ApiModel):
     """Printer state as observed by a client on the local network."""
 
     status: PrinterStatus
@@ -81,7 +82,7 @@ class PrinterStatusReport(BaseModel):
     )
 
 
-class PrinterRead(BaseModel):
+class PrinterRead(ApiModel):
     id: uuid.UUID
     organization_id: uuid.UUID
     friendly_name: str
