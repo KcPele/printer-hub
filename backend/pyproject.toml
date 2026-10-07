@@ -80,7 +80,6 @@ files = ["app", "simulator", "scripts", "tests"]
 [[tool.mypy.overrides]]
 module = ["boto3.*", "botocore.*", "arq.*"]
 ignore_missing_imports = true
-follow_untyped_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -37,6 +37,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from app.adapters.storage import get_object_storage
+from app.adapters.storage.memory import MemoryStorage
 from app.core.config import get_settings
 from app.core.db import get_engine, get_session, session_scope
 from app.core.redis import get_redis
@@ -131,3 +133,12 @@ async def client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
 @pytest.fixture(autouse=True)
 async def _clean_redis() -> None:
     await get_redis().flushdb()
+
+
+@pytest.fixture(autouse=True)
+def storage() -> MemoryStorage:
+    """The in-memory object store, emptied before each test."""
+    store = get_object_storage()
+    assert isinstance(store, MemoryStorage)
+    store.objects.clear()
+    return store

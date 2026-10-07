@@ -10,9 +10,11 @@ from app.modules.auth.models import UserSession
 from app.modules.capabilities.models import CapabilityProfile
 from app.modules.connections.models import Connection
 from app.modules.devices.models import Device
+from app.modules.documents.models import Document
 from app.modules.jobs.models import Job, JobEvent
 from app.modules.organizations.models import Invitation, Membership, Organization
 from app.modules.pairing.models import PairingToken
+from app.modules.presets.models import Preset
 from app.modules.printers.models import Printer
 from app.modules.users.models import User
 
@@ -22,6 +24,7 @@ __all__ = [
     "CapabilityProfile",
     "Connection",
     "Device",
+    "Document",
     "IdempotencyRecord",
     "Invitation",
     "Job",
@@ -29,6 +32,7 @@ __all__ = [
     "Membership",
     "Organization",
     "PairingToken",
+    "Preset",
     "Printer",
     "User",
     "UserSession",

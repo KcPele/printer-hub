@@ -27,6 +27,7 @@ from app.core.pagination import PageParams, paginate
 from app.core.permissions import Permission
 from app.modules.capabilities.schemas import PrinterCapabilities
 from app.modules.connections import service as connections
+from app.modules.documents import service as documents
 from app.modules.jobs import state
 from app.modules.jobs.models import Job, JobEvent, JobStatus, JobType
 from app.modules.jobs.schemas import (
@@ -212,6 +213,9 @@ async def submit(
     )
     _ensure_supported(printer, payload.type)
     _enforce_policy(ctx, payload)
+    if payload.document_id is not None:
+        # Register a document before the job that prints it.
+        await documents.get(session, ctx, payload.document_id)
 
     job = Job(
         organization_id=ctx.organization.id,
@@ -283,6 +287,7 @@ async def record_event(
     if report.page_count is not None:
         job.page_count = report.page_count
     if report.output_document_id is not None:
+        await documents.get(session, ctx, report.output_document_id)
         job.output_document_id = report.output_document_id
     if report.status is JobStatus.FAILED:
         job.error_code = report.error_code

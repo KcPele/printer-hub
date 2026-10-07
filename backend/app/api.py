@@ -8,11 +8,13 @@ from app.modules.auth.router import router as auth_router
 from app.modules.capabilities.router import admin_router as capabilities_admin_router
 from app.modules.capabilities.router import router as capabilities_router
 from app.modules.devices.router import router as devices_router
+from app.modules.documents.router import router as documents_router
 from app.modules.health.router import router as health_router
 from app.modules.jobs.router import router as jobs_router
 from app.modules.organizations.router import invitations_router
 from app.modules.organizations.router import router as organizations_router
 from app.modules.pairing.router import router as pairing_router
+from app.modules.presets.router import router as presets_router
 from app.modules.printers.router import connections_router
 from app.modules.printers.router import router as printers_router
 from app.modules.users.router import router as users_router
@@ -35,5 +37,7 @@ for router in (
     capabilities_router,
     capabilities_admin_router,
     jobs_router,
+    presets_router,
+    documents_router,
 ):
     api_router.include_router(router)

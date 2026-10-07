@@ -60,8 +60,14 @@ class Job(Base, IdMixin, TimestampMixin):
     title: Mapped[str | None] = mapped_column(String(255))
     # Shape depends on `type`; see `jobs.schemas`.
     settings: Mapped[dict[str, Any]]
-    document_id: Mapped[uuid.UUID | None]
-    output_document_id: Mapped[uuid.UUID | None]
+    # The document printed or copied.
+    document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("documents.id", ondelete="SET NULL")
+    )
+    # The document a scan produced.
+    output_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("documents.id", ondelete="SET NULL")
+    )
     connection_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("connections.id", ondelete="SET NULL")
     )
