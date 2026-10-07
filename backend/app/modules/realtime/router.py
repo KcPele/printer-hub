@@ -14,7 +14,7 @@ AUTH_ENDPOINT = "/api/v1/realtime/auth"
 
 @router.get("/config")
 async def get_config(user: CurrentUser) -> RealtimeConfig:
-    """Connection details for the live-update WebSocket server."""
+    """Whether live WebSocket updates are available, and how to connect if so."""
     return service.client_config(user, auth_endpoint=AUTH_ENDPOINT)
 
 

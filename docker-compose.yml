@@ -2,6 +2,7 @@ name: printerhub
 
 # Infrastructure starts by default: `docker compose up -d`.
 # The API, worker, and simulator run in containers with: `docker compose --profile app up -d`.
+# Soketi (optional live WebSocket updates) starts with: `docker compose --profile realtime up -d`.
 # Host ports are offset so they do not collide with locally installed Postgres and Redis.
 
 x-backend-env: &backend-env
@@ -10,8 +11,6 @@ x-backend-env: &backend-env
   PRINTERHUB_REDIS_URL: redis://redis:6379/0
   PRINTERHUB_S3_ENDPOINT_URL: http://minio:9000
   PRINTERHUB_S3_PUBLIC_ENDPOINT_URL: http://localhost:9000
-  PRINTERHUB_SOKETI_URL: http://soketi:6001
-  PRINTERHUB_SOKETI_PUBLIC_URL: http://localhost:6001
 
 services:
   postgres:
@@ -62,6 +61,7 @@ services:
       retries: 10
 
   soketi:
+    profiles: ["realtime"]
     image: quay.io/soketi/soketi:1.6-16-debian
     environment:
       SOKETI_DEFAULT_APP_ID: printerhub

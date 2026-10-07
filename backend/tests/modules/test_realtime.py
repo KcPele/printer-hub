@@ -1,6 +1,7 @@
 import uuid
 
 import httpx
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.realtime.pusher import sign_channel_auth
@@ -37,16 +38,19 @@ async def test_config_describes_the_connection(
 
     assert response.status_code == 200
     assert response.json() == {
-        "provider": "pusher",
-        "app_key": "printerhub-key",
-        "host": "localhost",
-        "port": 6001,
-        "use_tls": False,
-        "auth_endpoint": "/api/v1/realtime/auth",
-        "channels": {
-            "user": f"private-user-{user.id}",
-            "organization": "private-org-{organization_id}",
-            "organization_jobs": "private-org-{organization_id}-jobs",
+        "enabled": True,
+        "connection": {
+            "provider": "pusher",
+            "app_key": "printerhub-key",
+            "host": "localhost",
+            "port": 6001,
+            "use_tls": False,
+            "auth_endpoint": "/api/v1/realtime/auth",
+            "channels": {
+                "user": f"private-user-{user.id}",
+                "organization": "private-org-{organization_id}",
+                "organization_jobs": "private-org-{organization_id}-jobs",
+            },
         },
     }
     assert "secret" not in response.text
@@ -135,3 +139,18 @@ async def test_authorization_requires_sign_in(client: httpx.AsyncClient) -> None
     )
 
     assert response.status_code == 401
+
+
+async def test_disabled_deployment_reports_so(
+    client: httpx.AsyncClient, session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(get_settings(), "realtime_backend", "none")
+    user = await create_user(session)
+    headers = await auth_headers(session, user)
+
+    config = await client.get(f"{API}/realtime/config", headers=headers)
+    auth = await _authorize(client, headers, f"private-user-{user.id}")
+
+    assert config.json() == {"enabled": False, "connection": None}
+    assert auth.status_code == 404
+    assert auth.json()["code"] == "realtime.disabled"

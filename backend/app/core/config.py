@@ -57,7 +57,10 @@ class Settings(BaseSettings):
     s3_presign_ttl_seconds: int = 15 * 60
     max_document_size_bytes: int = 200 * 1024 * 1024
 
-    realtime_backend: Literal["pusher", "memory"] = "pusher"
+    # Live WebSocket updates are optional. "none" needs no extra service: open
+    # apps refresh from the data payload of FCM pushes. "soketi" adds instant
+    # updates through a Soketi (Pusher protocol) server.
+    realtime_backend: Literal["none", "soketi", "memory"] = "none"
     soketi_url: str = "http://localhost:6001"
     # Address clients use to reach Soketi, when it differs from `soketi_url`.
     soketi_public_url: str | None = None
@@ -65,12 +68,9 @@ class Settings(BaseSettings):
     soketi_app_key: str = "printerhub-key"
     soketi_app_secret: SecretStr = SecretStr(_DEV_SOKETI_SECRET)
 
-    push_backend: Literal["log", "live"] = "log"
-    apns_key_id: str | None = None
-    apns_team_id: str | None = None
-    apns_topic: str | None = None
-    apns_private_key: SecretStr | None = None
-    apns_use_sandbox: bool = True
+    # "log" writes pushes to the log; "fcm" sends through Firebase Cloud
+    # Messaging, which reaches Android directly and iOS through APNs.
+    push_backend: Literal["log", "fcm"] = "log"
     fcm_service_account_json: SecretStr | None = None
 
     @property
@@ -88,10 +88,12 @@ class Settings(BaseSettings):
                 "PRINTERHUB_CREDENTIALS_ENCRYPTION_KEY must be set outside local and test"
             )
         if (
-            self.realtime_backend == "pusher"
+            self.realtime_backend == "soketi"
             and self.soketi_app_secret.get_secret_value() == _DEV_SOKETI_SECRET
         ):
             raise ValueError("PRINTERHUB_SOKETI_APP_SECRET must be set outside local and test")
+        if self.push_backend == "fcm" and self.fcm_service_account_json is None:
+            raise ValueError("PRINTERHUB_FCM_SERVICE_ACCOUNT_JSON is required when push is fcm")
         return self
 
 

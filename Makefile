@@ -12,7 +12,7 @@ setup: ## Install dependencies and create backend/.env
 	@test -f $(BACKEND)/.env || cp $(BACKEND)/.env.example $(BACKEND)/.env
 
 .PHONY: infra
-infra: ## Start Postgres, Redis, MinIO, and Soketi
+infra: ## Start Postgres, Redis, and MinIO
 	docker compose up -d --wait
 
 .PHONY: infra-down

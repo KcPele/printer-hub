@@ -19,19 +19,19 @@ The backend never talks to a printer. Clients execute print and scan operations 
 | Dev infrastructure | Docker Compose on alternate host ports | Reproducible; does not collide with Homebrew Postgres and Redis |
 | Version control | Git, Conventional Commits, one commit per milestone | Local only, no remote |
 | Architecture | Modular monolith | One deployable; module boundaries keep a later split possible |
-| Live updates | Soketi (Pusher protocol over WebSocket) | Mature React Native and web clients with reconnect; the API holds no long-lived connections |
-| OS push | APNs and FCM | Soketi reaches only a connected app; waking a closed app needs the platform push services |
+| Notifications | Firebase Cloud Messaging only | One service and one credential: FCM reaches Android directly and iOS through APNs. Fewer services to run |
+| Live WebSocket updates | Soketi, optional and off by default | Only needed for instant updates on screens that watch other people's activity. Built behind an adapter; enabling it is configuration |
 
 ## 3. Stack
 
 - Python 3.14, FastAPI, Pydantic v2, pydantic-settings
 - SQLAlchemy 2 (async) with asyncpg, Alembic migrations
-- PostgreSQL 17, Redis 7, MinIO (S3-compatible), and Soketi in Docker Compose
+- PostgreSQL 17, Redis 7, and MinIO (S3-compatible) in Docker Compose; Soketi under an optional profile
 - arq for background work, wrapped behind `app/core/tasks.py`
 - structlog for JSON logs
 - argon2-cffi for password hashing, PyJWT for tokens, cryptography (Fernet) for credential encryption
 - boto3 for S3 presigning and object calls
-- httpx for outbound HTTP (APNs, FCM, Soketi)
+- httpx for outbound HTTP (FCM, Soketi)
 - uv, ruff, mypy (strict), pytest, pytest-asyncio, pre-commit
 
 ## 4. Repository layout
@@ -57,8 +57,8 @@ printer-hub/
     │   │                       # pagination, idempotency, permissions, events,
     │   │                       # redis, crypto, ratelimit, tasks
     │   ├── adapters/
-    │   │   ├── push/           # base, log, apns, fcm
-    │   │   ├── realtime/       # base, pusher (Soketi), memory
+    │   │   ├── push/           # base, log, fcm, memory
+    │   │   ├── realtime/       # base, null, pusher (Soketi), memory
     │   │   └── storage/        # base, s3, memory
     │   └── modules/
     │       └── <module>/       # router, schemas, models, service
@@ -118,14 +118,25 @@ Modules: `auth`, `users`, `organizations`, `devices`, `printers`, `connections`,
 - One database session per request. The session dependency commits on success and rolls back on error.
 - Services queue live events and background tasks on the session. They are published only after the commit succeeds, so a rolled-back request emits nothing.
 
-### 6.4.1 Live updates
+### 6.4.1 How state changes reach clients
 
-Live events reach connected clients through Soketi, a self-hosted server that speaks the Pusher protocol.
+There are three paths, in order of importance.
 
-- The backend publishes with the Pusher HTTP API through a `RealtimePublisher` adapter. Tests use an in-memory publisher.
-- Clients connect to Soketi directly with a Pusher client library and subscribe to private channels.
-- Soketi asks the backend to authorize each subscription: `POST /api/v1/realtime/auth` checks the caller's access token and membership, then signs the subscription.
-- `GET /api/v1/realtime/config` gives clients the Soketi address, app key, and channel names, so nothing is hard-coded in a client build.
+1. **The executing device already knows.** The phone that runs a job reports each state change, so it needs no update from the backend.
+2. **FCM push.** Anything a user must learn about (job completed, job failed, scan ready, invitation) is a notification delivered by FCM. Each push carries a data payload with the event type and IDs. An open app handles the payload and refreshes the affected screen; a closed app shows the system notification.
+3. **Refresh on focus and on a timer.** Screens that show shared state (printer status, an organization-wide job list) refetch when opened and at an interval.
+
+This covers the mobile MVP with one notification service and no WebSocket server.
+
+### 6.4.2 Optional live WebSocket updates
+
+A deployment can add instant updates by turning on Soketi, a self-hosted server that speaks the Pusher protocol. It is off by default (`PRINTERHUB_REALTIME_BACKEND=none`), and the code path is identical either way: services call `events.emit`, and a null publisher drops the events when the feature is off.
+
+When it is on:
+
+- The backend publishes with the Pusher HTTP API through a `RealtimePublisher` adapter.
+- Clients read `GET /api/v1/realtime/config`. It reports `enabled` and, when true, the Soketi address, app key, and channel names.
+- Clients subscribe to private channels. `POST /api/v1/realtime/auth` checks the caller's access token and membership, then signs the subscription.
 
 | Channel | Carries | Who may subscribe |
 |---|---|---|
@@ -133,9 +144,9 @@ Live events reach connected clients through Soketi, a self-hosted server that sp
 | `private-org-{org_id}-jobs` | Every job event in the organization | Members with `jobs.read_all` |
 | `private-user-{user_id}` | The user's own job events and notifications | That user |
 
-Events are small: a type, IDs, and the new status. Clients fetch full records through the REST API. This keeps payloads under the Pusher message size limit and keeps authorization in one place.
+Events are thin: a type, IDs, and the new status. Clients fetch full records through the REST API.
 
-Soketi is the foreground channel. It does not replace APNs and FCM (§11).
+Because live events may be dropped, nothing a user must learn about is sent as a live event alone.
 
 ### 6.5 Idempotency
 
@@ -214,10 +225,12 @@ Rules:
 
 ## 11. Notifications and push
 
-- A notification is an in-app row, a live event on the user's Soketi channel, and an OS push to each of the user's registered devices.
-- The two delivery paths cover different states: Soketi reaches an app that is open; APNs and FCM reach one that is closed or in the background.
-- `PushProvider` has three implementations: `LogPushProvider` (development), `ApnsPushProvider`, `FcmPushProvider`. Configuration selects them.
-- Push is sent from the arq worker. Tokens the provider reports as invalid are cleared from the device row.
+- A notification is an in-app row and an FCM push to each of the user's registered devices.
+- FCM is the only push service. It delivers to Android directly and to iOS through APNs, so every device registers an FCM token.
+- Each push has a visible part (title and body) and a data payload (`type`, plus IDs such as `job_id`). An open app uses the payload to refresh.
+- `PushProvider` has three implementations: `LogPushProvider` (development), `FcmPushProvider`, and `MemoryPushProvider` (tests). Direct APNs can be added as a fourth without touching callers.
+- Push is sent from the arq worker. Tokens FCM reports as unregistered are cleared from the device row.
+- A user can mute notification types in their preferences; a muted type still creates the in-app row.
 - Triggers in the MVP: job completed, job failed, scan ready, organization invitation.
 
 ## 12. Printer simulator
@@ -236,7 +249,7 @@ It shares no code with `app/`.
 - Live events use an in-memory publisher. The Pusher signing code is tested against known signatures and `httpx.MockTransport`.
 - The schema is built by running Alembic migrations, so migrations are tested.
 - Each test runs inside a transaction that is rolled back.
-- Storage, push, and live events use in-memory fakes. APNs and FCM providers are tested against `httpx.MockTransport`.
+- Storage, push, and live events use in-memory fakes. The FCM provider is tested against `httpx.MockTransport`. APNs and FCM providers are tested against `httpx.MockTransport`.
 - Services and HTTP behavior are tested through the API with `httpx.AsyncClient`.
 - CI runs ruff, mypy, pytest, and the OpenAPI staleness check.
 
@@ -260,7 +273,7 @@ Each is left with a clear extension point and none blocks the mobile MVP.
 | M1 | Auth, users, sessions, devices | 1, 2, 4 |
 | M2 | Organizations, memberships, invitations, RBAC, audit | 2, 3, 16 |
 | M3 | Printers, connections, capability schema and registry, pairing | 5, 6, 7, 19 |
-| M4 | Jobs, idempotency, live events through Soketi, batch sync | 8, 9, 13, 14 |
+| M4 | Jobs, idempotency, live events, batch sync | 8, 9, 13, 14 |
 | M5 | Presets, documents, object storage | 10, 11, 12 |
-| M6 | Notifications, push providers, worker, feature flags | 15, 18 |
+| M6 | Notifications, FCM push, worker, feature flags | 15, 18 |
 | M7 | Simulator, OpenAPI export, Docker image, CI, docs | 17, 20 |

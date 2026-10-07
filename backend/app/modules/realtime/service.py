@@ -9,10 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.adapters.realtime.pusher import sign_channel_auth
 from app.core import events
 from app.core.config import get_settings
-from app.core.errors import PermissionDeniedError
+from app.core.errors import NotFoundError, PermissionDeniedError
 from app.core.permissions import Permission, role_has
 from app.modules.organizations import service as organizations
-from app.modules.realtime.schemas import RealtimeChannels, RealtimeConfig
+from app.modules.realtime.schemas import RealtimeChannels, RealtimeConfig, RealtimeConnection
 from app.modules.users.models import User
 
 _UUID = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
@@ -21,24 +21,33 @@ _ORG_CHANNEL = re.compile(rf"^private-org-(?P<org_id>{_UUID})(?P<jobs>-jobs)?$")
 _SOCKET_ID = re.compile(r"^\d+\.\d+$")
 
 
+def is_enabled() -> bool:
+    return get_settings().realtime_backend != "none"
+
+
 def client_config(user: User, *, auth_endpoint: str) -> RealtimeConfig:
+    if not is_enabled():
+        return RealtimeConfig(enabled=False)
     settings = get_settings()
     url = urlsplit(settings.soketi_public_url or settings.soketi_url)
     use_tls = url.scheme in ("https", "wss")
     placeholder = uuid.UUID(int=0)
     return RealtimeConfig(
-        app_key=settings.soketi_app_key,
-        host=url.hostname or "localhost",
-        port=url.port or (443 if use_tls else 80),
-        use_tls=use_tls,
-        auth_endpoint=auth_endpoint,
-        channels=RealtimeChannels(
-            user=events.user_channel(user.id),
-            organization=events.org_channel(placeholder).replace(
-                str(placeholder), "{organization_id}"
-            ),
-            organization_jobs=events.org_jobs_channel(placeholder).replace(
-                str(placeholder), "{organization_id}"
+        enabled=True,
+        connection=RealtimeConnection(
+            app_key=settings.soketi_app_key,
+            host=url.hostname or "localhost",
+            port=url.port or (443 if use_tls else 80),
+            use_tls=use_tls,
+            auth_endpoint=auth_endpoint,
+            channels=RealtimeChannels(
+                user=events.user_channel(user.id),
+                organization=events.org_channel(placeholder).replace(
+                    str(placeholder), "{organization_id}"
+                ),
+                organization_jobs=events.org_jobs_channel(placeholder).replace(
+                    str(placeholder), "{organization_id}"
+                ),
             ),
         ),
     )
@@ -63,6 +72,8 @@ async def authorize_channel(
     session: AsyncSession, *, user: User, socket_id: str, channel: str
 ) -> str:
     """Return the signed `auth` value for a subscription the caller is allowed to make."""
+    if not is_enabled():
+        raise NotFoundError("realtime.disabled", "Live updates are not enabled.")
     if not _SOCKET_ID.match(socket_id) or not await _may_subscribe(session, user, channel):
         raise PermissionDeniedError(
             "realtime.channel_forbidden", "You cannot subscribe to this channel."

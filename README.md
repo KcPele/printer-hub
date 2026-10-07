@@ -18,7 +18,7 @@ Requirements: [uv](https://docs.astral.sh/uv/), Docker.
 
 ```bash
 make setup      # install dependencies, create backend/.env
-make infra      # start Postgres, Redis, MinIO, Soketi
+make infra      # start Postgres, Redis, MinIO
 make migrate    # create the schema
 make seed       # load capability profiles and feature flags
 make dev        # API on http://localhost:8000
@@ -42,7 +42,6 @@ docker compose --profile app up -d --build
 | Redis | `localhost:6380` | none |
 | MinIO API | `localhost:9000` | `printerhub` / `printerhub-dev-secret` |
 | MinIO console | <http://localhost:9001> | same |
-| Soketi (WebSocket) | `localhost:6001` | app `printerhub`, key `printerhub-key`, secret `printerhub-dev-secret` |
 | API | <http://localhost:8000> | |
 | Printer simulator | <http://localhost:8631> | |
 
@@ -54,12 +53,22 @@ Every setting is an environment variable with the `PRINTERHUB_` prefix. `backend
 
 Outside `local` and `test`, the service refuses to start until `PRINTERHUB_SECRET_KEY` and `PRINTERHUB_CREDENTIALS_ENCRYPTION_KEY` are set.
 
-## Live updates and push
+## Notifications and live updates
 
-Two channels reach clients, and they cover different situations:
+**Firebase Cloud Messaging (FCM)** is the one notification service. It reaches Android directly and iOS through APNs, so both platforms register an FCM token. Every push carries a small data payload (event type and IDs), which an open app uses to refresh itself.
 
-- **Soketi** (Pusher protocol over WebSocket) carries live job and printer updates to an app that is open. Clients read connection details from `GET /api/v1/realtime/config` and subscribe to private channels, which the backend authorizes.
-- **APNs and FCM** deliver notifications to an app that is closed or in the background. They stay in `log` mode until credentials are configured.
+Pushes are written to the log until FCM is configured:
+
+1. Create a Firebase project and add the iOS and Android apps.
+2. Upload the APNs authentication key in the Firebase console (Project settings → Cloud Messaging).
+3. Generate a service-account key and set it in `backend/.env`:
+
+   ```
+   PRINTERHUB_PUSH_BACKEND=fcm
+   PRINTERHUB_FCM_SERVICE_ACCOUNT_JSON='{...}'
+   ```
+
+**Soketi is optional.** It adds instant WebSocket updates for screens that watch other people's activity, such as a web dashboard. Without it those screens refresh on a timer. To turn it on, deploy Soketi, set `PRINTERHUB_REALTIME_BACKEND=soketi` and the `PRINTERHUB_SOKETI_*` values. Locally: `docker compose --profile realtime up -d`.
 
 ## Quality gates
 

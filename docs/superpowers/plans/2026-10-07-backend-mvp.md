@@ -20,7 +20,8 @@
 - Every organization-owned query filters by `organization_id` taken from `OrgContext`.
 - Secrets never appear in logs or API responses.
 - `ruff check`, `ruff format --check`, `mypy`, and `pytest` pass before every commit.
-- Host ports: Postgres `5433`, Redis `6380`, MinIO `9000`/`9001`, Soketi `6001`, API `8000`, simulator `8631`.
+- Host ports: Postgres `5433`, Redis `6380`, MinIO `9000`/`9001`, API `8000`, simulator `8631`. Soketi `6001` only under the optional `realtime` profile.
+- FCM is the only push service. Live WebSocket events are optional and may be dropped, so user-facing changes always go out as notifications.
 - Commits follow Conventional Commits.
 
 ## Shared interfaces
@@ -209,7 +210,7 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 
 **Files:**
 - Create: `backend/app/core/{events,idempotency}.py`
-- Create: `backend/app/adapters/realtime/{base,pusher,memory}.py`
+- Create: `backend/app/adapters/realtime/{base,null,pusher,memory}.py`
 - Create: `backend/app/modules/jobs/{models,schemas,service,router,state}.py`
 - Create: `backend/app/modules/realtime/{schemas,service,router}.py`
 - Modify: `docker-compose.yml` (add `soketi`), `backend/app/core/config.py`, `backend/.env.example`
@@ -235,7 +236,7 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - The Pusher publisher signs requests so that a reference implementation of the signature verifies, and signs channel authorizations as `key:hmac_sha256(secret, "socket_id:channel")`.
 
 - [ ] Write the tests, watch them fail, implement, run `make check`.
-- [ ] Publish one event to the local Soketi container and confirm a 200.
+- [ ] Publish one event to a local Soketi container (`docker compose --profile realtime up -d`) and confirm it is accepted.
 - [ ] Commit `feat(jobs): add job model, idempotency, batch sync, and live events`.
 
 ### Task M5: Presets, documents, object storage
@@ -269,12 +270,12 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 
 **Files:**
 - Create: `backend/app/core/tasks.py`, `backend/app/worker.py`
-- Create: `backend/app/adapters/push/{base,log,apns,fcm}.py`
+- Create: `backend/app/adapters/push/{base,log,fcm,memory}.py`
 - Create: `backend/app/modules/{notifications,feature_flags}/{models,schemas,service,router}.py`
 - Create: `backend/app/modules/notifications/tasks.py`, `backend/app/modules/documents/tasks.py`
 - Modify: `backend/app/modules/jobs/service.py`, `backend/app/modules/organizations/service.py` (emit notifications)
 - Create: `backend/migrations/versions/*_notifications_feature_flags.py`
-- Test: `backend/tests/modules/test_{notifications,feature_flags}.py`, `backend/tests/adapters/test_push_{apns,fcm}.py`, `backend/tests/test_worker_tasks.py`
+- Test: `backend/tests/modules/test_{notifications,feature_flags}.py`, `backend/tests/adapters/test_push_fcm.py`, `backend/tests/test_worker_tasks.py`
 
 **Endpoints:**
 - `GET /notifications`, `POST /notifications/{id}/read`, `POST /notifications/read-all`
@@ -285,7 +286,7 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - A job reaching `completed` or `failed` creates one notification for the job owner and enqueues a push task.
 - A user's notification preferences suppress push for a disabled event type.
 - The push task sends to every device with a token and clears a token the provider rejects.
-- APNs provider sends the correct path, headers, and JWT; maps `410` and `BadDeviceToken` to an invalid token.
+- A push carries a data payload with the notification type and related IDs.
 - FCM provider exchanges a service-account JWT for an access token, caches it, and maps `UNREGISTERED` to an invalid token.
 - Flag resolution: organization override beats the global default; an unknown flag is absent.
 - The retention task deletes expired documents and their objects.

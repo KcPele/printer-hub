@@ -15,7 +15,8 @@ class DevicePlatform(enum.StrEnum):
 
 
 class PushProviderName(enum.StrEnum):
-    APNS = "apns"
+    # Firebase Cloud Messaging serves Android directly and iOS through APNs,
+    # so every platform registers an FCM token.
     FCM = "fcm"
 
 

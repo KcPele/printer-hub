@@ -15,8 +15,8 @@ IPHONE = {
     "model": "iPhone 17",
     "os_version": "26.0",
     "app_version": "1.0.0",
-    "push_provider": "apns",
-    "push_token": "apns-token-abc",
+    "push_provider": "fcm",
+    "push_token": "fcm-token-abc",
 }
 
 
@@ -82,7 +82,7 @@ async def test_push_token_moves_to_the_latest_account_on_a_shared_phone(
         )
     }
     assert devices[alice.id].push_token is None
-    assert devices[bob.id].push_token == "apns-token-abc"
+    assert devices[bob.id].push_token == "fcm-token-abc"
 
 
 async def test_update_can_clear_push(client: httpx.AsyncClient, session: AsyncSession) -> None:
