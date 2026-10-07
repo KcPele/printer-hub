@@ -71,5 +71,15 @@ openapi: ## Regenerate the API contract and the TypeScript client types from it
 client-check: ## Typecheck and test the TypeScript API client
 	pnpm api:check
 
+.PHONY: app-check
+app-check: ## Analyze and test the Flutter app (100% coverage required)
+	cd printerhub && dart format --set-exit-if-changed lib test
+	cd printerhub && flutter analyze
+	cd printerhub && dart pub global run very_good_cli:very_good test --coverage --min-coverage 100
+
+.PHONY: app-dev
+app-dev: ## Run the Flutter app's development flavor on a connected device or simulator
+	cd printerhub && flutter run --flavor development --target lib/main_development.dart
+
 .PHONY: check
-check: lint typecheck test client-check ## Everything CI runs
+check: lint typecheck test client-check ## Everything backend CI runs (the app has app-check)

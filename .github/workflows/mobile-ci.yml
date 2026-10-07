@@ -1,0 +1,23 @@
+name: mobile-ci
+
+on:
+  push:
+    branches: [main]
+    paths: &watched
+      - "printerhub/**"
+      - ".github/workflows/mobile-ci.yml"
+  pull_request:
+    paths: *watched
+
+concurrency:
+  group: mobile-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # Formats, analyzes, lints blocs, and runs the tests with 100% coverage required.
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: printerhub
+      flutter_version: "3.47.x"
+      run_bloc_lint: true

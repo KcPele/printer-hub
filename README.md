@@ -9,8 +9,9 @@ The backend holds identity, organizations, printer profiles, job state, document
 | Path | Contents |
 |---|---|
 | `backend/` | FastAPI service, background worker, printer simulator |
-| `packages/api-client/` | Typed TypeScript client for the apps, generated from the API contract |
-| `docs/` | Deployment guide, design spec, implementation plan |
+| `printerhub/` | The Flutter app for iOS and Android |
+| `packages/api-client/` | Typed TypeScript client for the later web app, generated from the API contract |
+| `docs/` | Deployment guide, backend design and plan, mobile app implementation document |
 | `PrinterHub_FRD_v2.0_Mobile_First.md` | Functional requirements |
 
 ## Quick start
@@ -34,6 +35,18 @@ To run the API and the simulator in containers instead:
 ```bash
 docker compose --profile app up -d --build
 ```
+
+## The mobile app
+
+Requirements: Flutter 3.47 or newer.
+
+```bash
+make simulator   # a fake printer on :8631
+make app-dev     # run the development flavor on a connected device or simulator
+make app-check   # format, analyze, and test (100% coverage required)
+```
+
+[docs/mobile-app-implementation.md](docs/mobile-app-implementation.md) covers the architecture, the three themes, and the milestones.
 
 ## Local services
 

@@ -25,8 +25,9 @@ GoogleService-Info.plist
 
 # Editors and OS
 .DS_Store
-.idea/
-.vscode/
+# Root only: the Flutter app keeps its run configurations and has its own rules.
+/.idea/
+/.vscode/
 *.swp
 
 # Node (mobile, web, packages)
