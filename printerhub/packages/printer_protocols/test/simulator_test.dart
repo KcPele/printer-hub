@@ -32,9 +32,21 @@ Future<bool> _running() async {
   }
 }
 
-void main() async {
-  final up = await _running();
-  final skip = up ? null : 'The simulator is not running (make simulator).';
+void main() {
+  // Asked once, by whichever test runs first. Declaring tests must not wait
+  // on anything, so each test checks and skips itself.
+  final running = _running();
+
+  /// A test that needs the simulator, skipped when it is not running.
+  void simulatorTest(String description, Future<void> Function() body) {
+    test(description, () async {
+      if (!await running) {
+        markTestSkipped('The simulator is not running (make simulator).');
+        return;
+      }
+      await body();
+    });
+  }
 
   final http = IoPrinterHttp();
   final ipp = IppClient(
@@ -64,16 +76,16 @@ void main() async {
   }
 
   setUp(() async {
-    if (up) await reset();
+    if (await running) await reset();
   });
   tearDownAll(() async {
-    if (up) await reset();
+    if (await running) await reset();
     http.close();
     control.close(force: true);
   });
 
   group('IPP', () {
-    test('describes the printer', () async {
+    simulatorTest('describes the printer', () async {
       final printer = await ipp.getPrinterAttributes();
 
       expect(printer.makeAndModel, contains('VersaLink C7130'));
@@ -94,7 +106,7 @@ void main() async {
       expect(printer.uuid, isNotEmpty);
     });
 
-    test('answers with only the attributes asked for', () async {
+    simulatorTest('answers with only the attributes asked for', () async {
       final printer = await ipp.getPrinterAttributes(
         requested: ['printer-state', 'marker-levels'],
       );
@@ -105,7 +117,7 @@ void main() async {
       ]);
     });
 
-    test('prints a document and follows it to completion', () async {
+    simulatorTest('prints a document and follows it to completion', () async {
       await simulate({'job_duration_seconds': 0.6});
       final document = utf8.encode('%PDF-1.7 simulated');
 
@@ -127,7 +139,7 @@ void main() async {
       expect(current.state, IppJobState.completed);
     });
 
-    test('cancels a job', () async {
+    simulatorTest('cancels a job', () async {
       await simulate({'job_duration_seconds': 30});
       final job = await ipp.printJob(
         document: Stream.value(utf8.encode('%PDF')),
@@ -139,7 +151,7 @@ void main() async {
       expect((await ipp.getJobAttributes(job.id)).state, IppJobState.canceled);
     });
 
-    test('refuses a document format it cannot print', () async {
+    simulatorTest('refuses a document format it cannot print', () async {
       await expectLater(
         ipp.validateJob(const IppJobOptions(documentFormat: 'text/x-unknown')),
         throwsA(
@@ -152,7 +164,7 @@ void main() async {
       );
     });
 
-    test('reports a paper jam', () async {
+    simulatorTest('reports a paper jam', () async {
       await simulate({
         'faults': {'paper_jam': true},
       });
@@ -162,7 +174,7 @@ void main() async {
       expect(printer.stateReasons, contains('media-jam-error'));
     });
 
-    test('reports low toner', () async {
+    simulatorTest('reports low toner', () async {
       await simulate({
         'toner': {'cyan': 4},
       });
@@ -174,7 +186,7 @@ void main() async {
       expect(cyan.levelPercent, 4);
     });
 
-    test('answers unavailable while offline', () async {
+    simulatorTest('answers unavailable while offline', () async {
       await simulate({
         'faults': {'offline': true},
       });
@@ -190,10 +202,10 @@ void main() async {
         ),
       );
     });
-  }, skip: skip);
+  });
 
   group('eSCL', () {
-    test('describes the scanner', () async {
+    simulatorTest('describes the scanner', () async {
       final capabilities = await escl.capabilities();
 
       expect(capabilities.makeAndModel, contains('VersaLink C7130'));
@@ -205,7 +217,7 @@ void main() async {
       expect((await escl.status()).state, EsclScannerState.idle);
     });
 
-    test('scans one page from the glass', () async {
+    simulatorTest('scans one page from the glass', () async {
       final job = await escl.startScan(const EsclScanSettings());
 
       final page = await escl.nextDocument(job);
@@ -216,7 +228,7 @@ void main() async {
       expect(await escl.nextDocument(job), isNull);
     });
 
-    test('scans every sheet in the feeder', () async {
+    simulatorTest('scans every sheet in the feeder', () async {
       await simulate({'adf_pages': 3});
       final job = await escl.startScan(
         const EsclScanSettings(fromFeeder: true),
@@ -233,7 +245,7 @@ void main() async {
       expect(pages, 3);
     });
 
-    test('refuses a feeder scan with nothing in the feeder', () async {
+    simulatorTest('refuses a feeder scan with nothing in the feeder', () async {
       await simulate({
         'faults': {'adf_empty': true},
       });
@@ -247,7 +259,7 @@ void main() async {
       );
     });
 
-    test('cancels a scan', () async {
+    simulatorTest('cancels a scan', () async {
       await simulate({'adf_pages': 5});
       final job = await escl.startScan(
         const EsclScanSettings(fromFeeder: true),
@@ -258,7 +270,7 @@ void main() async {
       expect((await escl.status()).state, EsclScannerState.idle);
     });
 
-    test('says so when the firmware has eSCL switched off', () async {
+    simulatorTest('says so when the firmware has eSCL switched off', () async {
       await simulate({
         'faults': {'escl_disabled': true},
       });
@@ -274,5 +286,5 @@ void main() async {
         ),
       );
     });
-  }, skip: skip);
+  });
 }

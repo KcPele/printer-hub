@@ -1,0 +1,17 @@
+name: connection_engine
+description: Finds out what a device on the network is and what it can do.
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+dev_dependencies:
+  mocktail: ^1.0.5
+  test: ^1.32.0
+  very_good_analysis: ^11.0.0
+dependencies:
+  equatable: ^3.0.0
+  meta: ^1.19.0
+  printer_protocols:
+    path: ../printer_protocols

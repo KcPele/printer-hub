@@ -34,6 +34,7 @@ jobs:
           - local_store
           - organizations_repository
           - preferences_repository
+          - printers_repository
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
     with:
       working_directory: printerhub/packages/${{ matrix.package }}
@@ -44,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [api_client, printer_protocols]
+        package: [api_client, connection_engine, printer_protocols]
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/dart_package.yml@v1
     with:
       working_directory: printerhub/packages/${{ matrix.package }}

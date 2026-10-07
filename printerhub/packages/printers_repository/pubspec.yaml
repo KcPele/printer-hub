@@ -1,0 +1,27 @@
+name: printers_repository
+description: The printers of a workspace, and what the devices themselves report.
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+  flutter: ^3.47.0
+
+dependencies:
+  api_client:
+    path: ../api_client
+  connection_engine:
+    path: ../connection_engine
+  flutter:
+    sdk: flutter
+  local_store:
+    path: ../local_store
+  printer_protocols:
+    path: ../printer_protocols
+
+dev_dependencies:
+  dio: ^5.11.1
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.5
+  very_good_analysis: ^11.0.0

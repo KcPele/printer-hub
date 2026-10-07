@@ -89,10 +89,15 @@ app-check: ## Analyze and test the Flutter app and its packages (100% coverage r
 .PHONY: app-simulator-test
 app-simulator-test: ## Run the app's printer protocols against the simulator (needs `make simulator`)
 	cd printerhub/packages/printer_protocols && dart test --tags simulator
+	cd printerhub/packages/connection_engine && dart test --tags simulator
 
 .PHONY: app-smoke
 app-smoke: ## Run the Dart API client against a local backend (needs `make dev`)
 	cd printerhub/packages/api_client && dart run tool/smoke.dart
+
+.PHONY: app-live-test
+app-live-test: ## Add the simulated printer through a real local backend (needs `make dev` and `make simulator`)
+	cd printerhub/packages/printers_repository && flutter test --tags live
 
 .PHONY: app-goldens
 app-goldens: ## Regenerate the golden images after an intended visual change
