@@ -40,6 +40,8 @@ from app.modules.jobs.schemas import (
     PrintJobCreate,
     ScanJobCreate,
 )
+from app.modules.notifications import service as notifications
+from app.modules.notifications.models import NotificationType
 from app.modules.organizations.context import OrgContext
 from app.modules.printers import service as printers
 from app.modules.printers.models import Printer
@@ -252,13 +254,15 @@ async def record_event(
     report: JobEventCreate,
     *,
     skip_stale: bool = False,
+    notify: bool = True,
 ) -> Job:
     """Apply a state change reported by the executing client.
 
     Reporting the terminal status a job already has is accepted and changes
     nothing, so a client can safely resend a completion it is unsure arrived.
     With `skip_stale`, any report the job has already moved past is ignored
-    instead of rejected; batch sync uses this to replay history.
+    instead of rejected; batch sync uses this to replay history, and passes
+    `notify=False` so old outcomes do not arrive as fresh notifications.
     """
     _ensure_may_change(ctx, job)
     if job.status in state.TERMINAL and report.status == job.status:
@@ -308,7 +312,54 @@ async def record_event(
         )
     )
     await session.flush()
+    if notify and report.status in state.TERMINAL:
+        await _notify_outcome(session, job, printer, actor_user_id=ctx.user.id)
     return job
+
+
+_OUTCOME_VERB = {JobType.PRINT: "printed", JobType.SCAN: "scanned", JobType.COPY: "copied"}
+
+
+async def _notify_outcome(
+    session: AsyncSession, job: Job, printer: Printer, *, actor_user_id: uuid.UUID
+) -> None:
+    """Tell the job's owner how it ended (FR-MOB-020)."""
+    if job.user_id is None:
+        return
+    subject = job.title or "Your document"
+    noun = job.type.value.capitalize()
+    if job.status is JobStatus.COMPLETED and job.type is JobType.SCAN:
+        kind = NotificationType.SCAN_READY
+        title, body = "Scan ready", f"Your scan from {printer.friendly_name} is ready."
+    elif job.status is JobStatus.COMPLETED:
+        kind = NotificationType.JOB_COMPLETED
+        title = f"{noun} complete"
+        body = f"{subject} was {_OUTCOME_VERB[job.type]} on {printer.friendly_name}."
+    elif job.status is JobStatus.FAILED:
+        kind = NotificationType.JOB_FAILED
+        title = f"{noun} failed"
+        body = f"{subject} could not be {_OUTCOME_VERB[job.type]} on {printer.friendly_name}."
+    elif actor_user_id != job.user_id:
+        kind = NotificationType.JOB_CANCELLED
+        title, body = f"{noun} cancelled", f"{subject} was cancelled by an administrator."
+    else:
+        # The owner cancelled their own job: they already know.
+        return
+    await notifications.notify(
+        session,
+        user_id=job.user_id,
+        type=kind,
+        title=title,
+        body=body,
+        organization_id=job.organization_id,
+        data={
+            "job_id": str(job.id),
+            "organization_id": str(job.organization_id),
+            "printer_id": str(job.printer_id),
+            "job_type": job.type.value,
+            "status": job.status.value,
+        },
+    )
 
 
 async def cancel(session: AsyncSession, ctx: OrgContext, job: Job) -> Job:
@@ -385,7 +436,9 @@ async def sync_batch(
                     item.events,
                     key=lambda event: event.occurred_at or datetime.max.replace(tzinfo=UTC),
                 ):
-                    job = await record_event(session, ctx, job, report, skip_stale=True)
+                    job = await record_event(
+                        session, ctx, job, report, skip_stale=True, notify=False
+                    )
             results.append(
                 JobSyncResult(
                     idempotency_key=item.idempotency_key,

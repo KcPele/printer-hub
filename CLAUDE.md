@@ -1,5 +1,7 @@
 # PrinterHub
 
+# dont ever say in your commit message, co-authored by claude
+
 Backend-first, mobile-first printer and scanner platform. This repo is a monorepo: `backend/` exists today; `mobile/`, `web/`, and `packages/` join later.
 
 **The backend never talks to a printer.** Clients run print and scan jobs on the local network and report state. Anything that needs to reach a printer belongs in a client or in `backend/simulator/`.
@@ -57,7 +59,7 @@ Adding a module: create the four files, import the models in `app/models.py`, mo
 - Tests exercise behavior through the HTTP API with the `client` fixture. Reach for a direct service or unit test when the logic is pure (state machines, codecs, permission maps).
 - Each test runs in a rolled-back transaction on one connection, so requests inside a test are sequential.
 - Arrange data with `tests/factories.py`. After an API call changes a row you hold, `await session.refresh(obj)`.
-- Object storage and push use the in-memory fakes. Assert on sent pushes with the `push` fixture. Tests marked `integration` hit MinIO.
+- Object storage, push, and the task queue use in-memory fakes, exposed as the `storage`, `push`, and `task_queue` fixtures. A request that should notify someone is asserted on `task_queue`; delivery is asserted by calling the worker function and reading `push`. Tests marked `integration` hit MinIO.
 - Use `@example.com` addresses; the email validator rejects reserved TLDs such as `.test`.
 
 ### Adapters

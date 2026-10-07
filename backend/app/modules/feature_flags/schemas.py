@@ -1,0 +1,35 @@
+import uuid
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class FeatureFlagWrite(BaseModel):
+    description: str = Field(default="", max_length=500)
+    enabled: bool = False
+
+
+class FeatureFlagOverrideWrite(BaseModel):
+    enabled: bool
+
+
+class FeatureFlagOverrideRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    organization_id: uuid.UUID
+    enabled: bool
+
+
+class FeatureFlagRead(BaseModel):
+    key: str
+    description: str
+    enabled: bool
+    overrides: list[FeatureFlagOverrideRead]
+    updated_at: datetime
+
+
+class ResolvedFlags(BaseModel):
+    flags: dict[str, bool] = Field(
+        description="Every known flag with its value for this organization",
+        examples=[{"direct_ipp": True, "scan_to_email": False}],
+    )

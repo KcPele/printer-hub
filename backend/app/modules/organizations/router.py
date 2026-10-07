@@ -17,6 +17,7 @@ from app.modules.organizations.schemas import (
     InvitationRead,
     MemberRead,
     MemberUpdate,
+    MyInvitationRead,
     OrganizationCreate,
     OrganizationRead,
     OrganizationUpdate,
@@ -181,11 +182,39 @@ async def revoke_invitation(
     )
 
 
+@invitations_router.get("")
+async def list_my_invitations(user: CurrentUser, session: SessionDep) -> list[MyInvitationRead]:
+    """Pending invitations sent to the caller's email address."""
+    rows = await service.list_invitations_for_user(session, user)
+    return [
+        MyInvitationRead(
+            id=invitation.id,
+            organization_id=organization.id,
+            organization_name=organization.name,
+            role=invitation.role,
+            expires_at=invitation.expires_at,
+            created_at=invitation.created_at,
+        )
+        for invitation, organization in rows
+    ]
+
+
+@invitations_router.post("/{invitation_id}/accept", responses=problem_responses(409))
+async def accept_my_invitation(
+    invitation_id: uuid.UUID, user: CurrentUser, session: SessionDep
+) -> OrganizationRead:
+    """Accept one of the caller's pending invitations from inside the app."""
+    organization, membership = await service.accept_invitation_by_id(
+        session, invitation_id=invitation_id, user=user
+    )
+    return _organization_read(organization, membership)
+
+
 @invitations_router.post("/accept", responses=problem_responses(409))
 async def accept_invitation(
     payload: InvitationAccept, user: CurrentUser, session: SessionDep
 ) -> OrganizationRead:
-    """Join an organization. The caller's email must match the invited address."""
+    """Join with the token from an invitation link. The caller's email must match."""
     organization, membership = await service.accept_invitation(
         session, token=payload.token, user=user
     )

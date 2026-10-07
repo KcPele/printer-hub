@@ -19,7 +19,8 @@ os.environ["PRINTERHUB_REDIS_URL"] = os.environ.get(
     "PRINTERHUB_TEST_REDIS_URL", "redis://localhost:6380/15"
 )
 os.environ["PRINTERHUB_STORAGE_BACKEND"] = "memory"
-os.environ["PRINTERHUB_PUSH_BACKEND"] = "log"
+os.environ["PRINTERHUB_PUSH_BACKEND"] = "memory"
+os.environ["PRINTERHUB_TASKS_BACKEND"] = "memory"
 os.environ["PRINTERHUB_LOG_LEVEL"] = "WARNING"
 os.environ["PRINTERHUB_CORS_ORIGINS"] = "[]"
 
@@ -37,11 +38,14 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from app.adapters.push import get_push_provider
+from app.adapters.push.memory import MemoryPushProvider
 from app.adapters.storage import get_object_storage
 from app.adapters.storage.memory import MemoryStorage
 from app.core.config import get_settings
 from app.core.db import get_engine, get_session, session_scope
 from app.core.redis import get_redis
+from app.core.tasks import MemoryTaskQueue, get_task_queue
 from app.main import create_app
 
 
@@ -142,3 +146,21 @@ def storage() -> MemoryStorage:
     assert isinstance(store, MemoryStorage)
     store.objects.clear()
     return store
+
+
+@pytest.fixture(autouse=True)
+def push() -> MemoryPushProvider:
+    """The in-memory push provider, emptied before each test."""
+    provider = get_push_provider()
+    assert isinstance(provider, MemoryPushProvider)
+    provider.reset()
+    return provider
+
+
+@pytest.fixture(autouse=True)
+def task_queue() -> MemoryTaskQueue:
+    """The in-memory task queue, emptied before each test."""
+    queue = get_task_queue()
+    assert isinstance(queue, MemoryTaskQueue)
+    queue.enqueued.clear()
+    return queue

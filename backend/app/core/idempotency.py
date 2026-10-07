@@ -14,7 +14,7 @@ from typing import Annotated
 
 from fastapi import Depends, Header
 from pydantic import BaseModel
-from sqlalchemy import ForeignKey, String, UniqueConstraint, select
+from sqlalchemy import ForeignKey, String, UniqueConstraint, delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
@@ -121,6 +121,12 @@ async def complete(
     assert record is not None  # noqa: S101 - `claim` inserted it in this transaction
     record.resource_id = resource_id
     await session.flush()
+
+
+async def purge_expired(session: AsyncSession) -> None:
+    await session.execute(
+        delete(IdempotencyRecord).where(IdempotencyRecord.expires_at <= datetime.now(UTC))
+    )
 
 
 def require_idempotency_key(

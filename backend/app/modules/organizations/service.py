@@ -18,6 +18,8 @@ from app.core.errors import (
 from app.core.permissions import Role
 from app.core.security import generate_token, hash_token
 from app.modules.audit import service as audit
+from app.modules.notifications import service as notifications
+from app.modules.notifications.models import NotificationType
 from app.modules.organizations.models import Invitation, Membership, Organization
 from app.modules.organizations.schemas import (
     InvitationCreate,
@@ -288,6 +290,17 @@ async def invite(
         detail={"email": email, "role": payload.role.value},
     )
     await session.flush()
+    if existing_user is not None:
+        organization = await session.get(Organization, organization_id)
+        assert organization is not None  # noqa: S101 - the caller is a member of it
+        await notifications.notify(
+            session,
+            user_id=existing_user.id,
+            type=NotificationType.ORGANIZATION_INVITATION,
+            title="Organization invitation",
+            body=f"{actor.name} invited you to join {organization.name}.",
+            data={"invitation_id": str(invitation.id), "organization_id": str(organization_id)},
+        )
     return invitation, token
 
 
@@ -331,12 +344,26 @@ async def revoke_invitation(
     await session.flush()
 
 
-async def accept_invitation(
-    session: AsyncSession, *, token: str, user: User
-) -> tuple[Organization, Membership]:
-    invitation = await session.scalar(
-        select(Invitation).where(Invitation.token_hash == hash_token(token)).with_for_update()
+async def list_invitations_for_user(
+    session: AsyncSession, user: User
+) -> list[tuple[Invitation, Organization]]:
+    """Pending invitations addressed to the user's email."""
+    rows = await session.execute(
+        select(Invitation, Organization)
+        .join(Organization, Organization.id == Invitation.organization_id)
+        .where(
+            Invitation.email == user.email,
+            Invitation.accepted_at.is_(None),
+            Invitation.expires_at > datetime.now(UTC),
+        )
+        .order_by(Invitation.id.desc())
     )
+    return [(invitation, organization) for invitation, organization in rows]
+
+
+async def _accept(
+    session: AsyncSession, invitation: Invitation | None, user: User
+) -> tuple[Organization, Membership]:
     if (
         invitation is None
         or invitation.accepted_at is not None
@@ -374,3 +401,34 @@ async def accept_invitation(
     organization = await session.get(Organization, invitation.organization_id)
     assert organization is not None  # noqa: S101 - guaranteed by the invitation foreign key
     return organization, membership
+
+
+async def accept_invitation(
+    session: AsyncSession, *, token: str, user: User
+) -> tuple[Organization, Membership]:
+    """Join with the token from an invitation link."""
+    invitation = await session.scalar(
+        select(Invitation).where(Invitation.token_hash == hash_token(token)).with_for_update()
+    )
+    return await _accept(session, invitation, user)
+
+
+async def accept_invitation_by_id(
+    session: AsyncSession, *, invitation_id: uuid.UUID, user: User
+) -> tuple[Organization, Membership]:
+    """Join from the in-app invitation list.
+
+    No token is needed: signing in already proved the user owns the invited
+    email address. An invitation for someone else looks the same as a missing one.
+    """
+    invitation = await session.scalar(
+        select(Invitation)
+        .where(Invitation.id == invitation_id, Invitation.email == user.email)
+        .with_for_update()
+    )
+    return await _accept(session, invitation, user)
+
+
+async def purge_stale_invitations(session: AsyncSession, *, older_than_days: int = 30) -> None:
+    cutoff = datetime.now(UTC) - timedelta(days=older_than_days)
+    await session.execute(delete(Invitation).where(Invitation.expires_at < cutoff))

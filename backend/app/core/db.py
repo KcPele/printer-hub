@@ -41,6 +41,7 @@ class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
     type_annotation_map = {
         dict[str, Any]: JSONB,
+        dict[str, str]: JSONB,
         list[str]: JSONB,
         datetime: sa.DateTime(timezone=True),
     }

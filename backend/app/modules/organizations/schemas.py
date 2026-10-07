@@ -69,5 +69,16 @@ class InvitationCreated(InvitationRead):
     token: str = Field(description="Shown once. Share it with the invited person.")
 
 
+class MyInvitationRead(BaseModel):
+    """An invitation as seen by the person invited."""
+
+    id: uuid.UUID
+    organization_id: uuid.UUID
+    organization_name: str
+    role: Role
+    expires_at: datetime
+    created_at: datetime
+
+
 class InvitationAccept(BaseModel):
     token: str = Field(min_length=1, max_length=512)

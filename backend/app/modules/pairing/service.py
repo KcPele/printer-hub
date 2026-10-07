@@ -3,7 +3,7 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -78,3 +78,9 @@ async def redeem(session: AsyncSession, *, token: str, user: User) -> Printer:
     pairing.redeemed_at = datetime.now(UTC)
     await session.flush()
     return printer
+
+
+async def purge_expired(session: AsyncSession) -> None:
+    await session.execute(
+        delete(PairingToken).where(PairingToken.expires_at < datetime.now(UTC) - timedelta(days=1))
+    )

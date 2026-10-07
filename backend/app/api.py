@@ -9,8 +9,11 @@ from app.modules.capabilities.router import admin_router as capabilities_admin_r
 from app.modules.capabilities.router import router as capabilities_router
 from app.modules.devices.router import router as devices_router
 from app.modules.documents.router import router as documents_router
+from app.modules.feature_flags.router import admin_router as feature_flags_admin_router
+from app.modules.feature_flags.router import router as feature_flags_router
 from app.modules.health.router import router as health_router
 from app.modules.jobs.router import router as jobs_router
+from app.modules.notifications.router import router as notifications_router
 from app.modules.organizations.router import invitations_router
 from app.modules.organizations.router import router as organizations_router
 from app.modules.pairing.router import router as pairing_router
@@ -39,5 +42,8 @@ for router in (
     jobs_router,
     presets_router,
     documents_router,
+    notifications_router,
+    feature_flags_router,
+    feature_flags_admin_router,
 ):
     api_router.include_router(router)

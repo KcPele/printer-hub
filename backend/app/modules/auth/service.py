@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 
 from anyio import to_thread
-from sqlalchemy import or_, select, update
+from sqlalchemy import delete, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -245,3 +245,13 @@ async def change_password(
         .values(revoked_at=datetime.now(UTC))
     )
     await session.flush()
+
+
+async def purge_dead_sessions(session: AsyncSession, *, older_than_days: int = 30) -> None:
+    """Delete sessions that expired or were revoked more than `older_than_days` ago."""
+    cutoff = datetime.now(UTC) - timedelta(days=older_than_days)
+    await session.execute(
+        delete(UserSession).where(
+            or_(UserSession.expires_at < cutoff, UserSession.revoked_at < cutoff)
+        )
+    )

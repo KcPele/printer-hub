@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://printerhub:printerhub@localhost:5433/printerhub"
     database_pool_size: int = 10
     redis_url: str = "redis://localhost:6380/0"
+    # "arq" queues background work in Redis for the worker process.
+    tasks_backend: Literal["arq", "memory"] = "arq"
 
     secret_key: SecretStr = SecretStr(_DEV_SECRET_KEY)
     credentials_encryption_key: SecretStr = SecretStr(_DEV_ENCRYPTION_KEY)
@@ -58,7 +60,7 @@ class Settings(BaseSettings):
 
     # "log" writes pushes to the log; "fcm" sends through Firebase Cloud
     # Messaging, which reaches Android directly and iOS through APNs.
-    push_backend: Literal["log", "fcm"] = "log"
+    push_backend: Literal["log", "fcm", "memory"] = "log"
     fcm_service_account_json: SecretStr | None = None
 
     @property
