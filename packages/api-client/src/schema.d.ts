@@ -3845,7 +3845,7 @@ export interface components {
         "UserPreferences-Input": {
             /**
              * App Theme
-             * @default volt
+             * @default mint
              * @enum {string}
              */
             app_theme?: "volt" | "indigo" | "mint";
@@ -3866,7 +3866,7 @@ export interface components {
         "UserPreferences-Output": {
             /**
              * App Theme
-             * @default volt
+             * @default mint
              * @enum {string}
              */
             app_theme: "volt" | "indigo" | "mint";

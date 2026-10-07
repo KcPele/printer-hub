@@ -10,7 +10,7 @@ from app.core.schemas import ApiModel
 class UserPreferences(ApiModel):
     theme: Literal["system", "light", "dark"] = "system"
     # The app's look, chosen in Settings. Separate from `theme`, which is brightness.
-    app_theme: Literal["volt", "indigo", "mint"] = "volt"
+    app_theme: Literal["volt", "indigo", "mint"] = "mint"
     default_organization_id: uuid.UUID | None = None
     default_printer_id: uuid.UUID | None = None
     # Notification types the user does not want pushed to their devices.

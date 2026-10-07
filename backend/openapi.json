@@ -7193,7 +7193,7 @@
       "UserPreferences-Input": {
         "properties": {
           "app_theme": {
-            "default": "volt",
+            "default": "mint",
             "enum": [
               "volt",
               "indigo",
@@ -7251,7 +7251,7 @@
       "UserPreferences-Output": {
         "properties": {
           "app_theme": {
-            "default": "volt",
+            "default": "mint",
             "enum": [
               "volt",
               "indigo",
