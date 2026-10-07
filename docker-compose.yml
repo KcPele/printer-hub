@@ -1,0 +1,105 @@
+name: printerhub
+
+# Infrastructure starts by default: `docker compose up -d`.
+# The API, worker, and simulator run in containers with: `docker compose --profile app up -d`.
+# Host ports are offset so they do not collide with locally installed Postgres and Redis.
+
+x-backend-env: &backend-env
+  PRINTERHUB_ENVIRONMENT: local
+  PRINTERHUB_DATABASE_URL: postgresql+asyncpg://printerhub:printerhub@postgres:5432/printerhub
+  PRINTERHUB_REDIS_URL: redis://redis:6379/0
+  PRINTERHUB_S3_ENDPOINT_URL: http://minio:9000
+  PRINTERHUB_S3_PUBLIC_ENDPOINT_URL: http://localhost:9000
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: printerhub
+      POSTGRES_PASSWORD: printerhub
+      POSTGRES_DB: printerhub
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U printerhub -d printerhub"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    # Docker Hub no longer carries minio/minio; Chainguard publishes current builds.
+    image: cgr.dev/chainguard/minio:latest
+    user: root
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: printerhub
+      MINIO_ROOT_PASSWORD: printerhub-dev-secret
+      # Development-only key. Enables SSE-S3 so bucket default encryption works locally.
+      MINIO_KMS_SECRET_KEY: "printerhub-dev:LPSYA34K0B1Ru+nw5d6wSCHb1GPAy3q8tjH7+kS9Ou4="
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    profiles: ["app"]
+    build: ./backend
+    command: ["alembic", "upgrade", "head"]
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    profiles: ["app"]
+    build: ./backend
+    environment: *backend-env
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  worker:
+    profiles: ["app"]
+    build: ./backend
+    command: ["arq", "app.worker.WorkerSettings"]
+    environment: *backend-env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  simulator:
+    profiles: ["app"]
+    build: ./backend
+    command: ["uvicorn", "simulator.main:app", "--host", "0.0.0.0", "--port", "8631"]
+    ports:
+      - "8631:8631"
+
+volumes:
+  postgres-data:
+  minio-data:
