@@ -9,6 +9,7 @@ help: ## List targets
 .PHONY: setup
 setup: ## Install dependencies and create backend/.env
 	cd $(BACKEND) && uv sync
+	pnpm install
 	@test -f $(BACKEND)/.env || cp $(BACKEND)/.env.example $(BACKEND)/.env
 
 .PHONY: infra
@@ -62,8 +63,13 @@ test: ## Run tests
 	$(UV) pytest
 
 .PHONY: openapi
-openapi: ## Regenerate backend/openapi.json
+openapi: ## Regenerate the API contract and the TypeScript client types from it
 	$(UV) python -m scripts.export_openapi
+	pnpm api:generate
+
+.PHONY: client-check
+client-check: ## Typecheck and test the TypeScript API client
+	pnpm api:check
 
 .PHONY: check
-check: lint typecheck test ## Everything CI runs
+check: lint typecheck test client-check ## Everything CI runs

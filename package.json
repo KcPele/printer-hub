@@ -1,0 +1,9 @@
+{
+  "name": "printerhub",
+  "private": true,
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "api:generate": "pnpm --filter @printerhub/api-client generate",
+    "api:check": "pnpm --filter @printerhub/api-client check"
+  }
+}

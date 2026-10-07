@@ -2,7 +2,7 @@
 
 # dont ever say in your commit message, co-authored by claude
 
-Backend-first, mobile-first printer and scanner platform. This repo is a monorepo: `backend/` exists today; `mobile/`, `web/`, and `packages/` join later.
+Backend-first, mobile-first printer and scanner platform. This repo is a monorepo: `backend/` and `packages/api-client/` exist today; `mobile/` and `web/` join later.
 
 **The backend never talks to a printer.** Clients run print and scan jobs on the local network and report state. Anything that needs to reach a printer belongs in a client or in `backend/simulator/`.
 
@@ -17,6 +17,7 @@ Backend-first, mobile-first printer and scanner platform. This repo is a monorep
 | Hosting, environment variables, push setup | `docs/deployment.md` |
 | Printer simulator endpoints and faults | `backend/simulator/README.md` |
 | API contract | `backend/openapi.json`, or `/api/docs` on a running server |
+| Calling the API from an app | `packages/api-client/README.md` |
 
 ## Working in `backend/`
 
@@ -29,7 +30,7 @@ A change is done when `make check` passes (ruff, mypy strict, pytest). Tests nee
 Each domain lives in `backend/app/modules/<name>/` with four files:
 
 - `models.py` — SQLAlchemy tables.
-- `schemas.py` — Pydantic request and response models.
+- `schemas.py` — Pydantic request and response models, subclassing `ApiModel` from `app/core/schemas.py`.
 - `service.py` — business rules, queries, audit writes, event emission. Plain async functions taking `session` first. No FastAPI imports.
 - `router.py` — HTTP mapping only: parse input, call the service, return a schema.
 
@@ -73,7 +74,9 @@ Adding a module: create the four files, import the models in `app/models.py`, mo
 ## Conventions
 
 - Conventional Commits (`feat(jobs): ...`, `fix(auth): ...`). One logical change per commit.
-- Regenerate the contract with `make openapi` whenever a route or schema changes; CI fails on a stale `openapi.json`.
+- Run `make openapi` whenever a route or schema changes. It rewrites `backend/openapi.json` and the client types in `packages/api-client/src/schema.d.ts`; commit both. CI fails when either is stale.
+- The contract is the source of the apps' types. When a generated type is looser than the API's behavior, fix the backend schema or `_polish_contract` in `app/main.py`, never the generated file.
+- Apps call the API only through `@printerhub/api-client`.
 - Local infrastructure uses offset host ports (Postgres 5433, Redis 6380) so it coexists with locally installed services.
 - `main` deploys to production on push. The container runs `scripts/start.sh`: migrations, seed, then the API. A migration on `main` runs against the live database on the next deploy.
 - `backend/simulator/` shares no code with `backend/app/`. Keep it that way: it stands in for hardware.

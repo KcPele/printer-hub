@@ -9,12 +9,13 @@ The backend holds identity, organizations, printer profiles, job state, document
 | Path | Contents |
 |---|---|
 | `backend/` | FastAPI service, background worker, printer simulator |
+| `packages/api-client/` | Typed TypeScript client for the apps, generated from the API contract |
 | `docs/` | Deployment guide, design spec, implementation plan |
 | `PrinterHub_FRD_v2.0_Mobile_First.md` | Functional requirements |
 
 ## Quick start
 
-Requirements: [uv](https://docs.astral.sh/uv/), Docker.
+Requirements: [uv](https://docs.astral.sh/uv/), Docker, Node 22.18 or newer with [pnpm](https://pnpm.io/).
 
 ```bash
 make setup      # install dependencies, create backend/.env
@@ -64,7 +65,7 @@ Pushes are written to the log until FCM is configured. [docs/deployment.md](docs
 ## Quality gates
 
 ```bash
-make check      # ruff, mypy (strict), pytest
+make check      # ruff, mypy (strict), pytest, then the API client's type checks and tests
 ```
 
 Tests run against the Docker Compose Postgres and Redis, in a separate `printerhub_test` database.
