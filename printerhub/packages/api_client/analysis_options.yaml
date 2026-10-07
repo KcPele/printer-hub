@@ -1,0 +1,8 @@
+include: package:very_good_analysis/analysis_options.yaml
+analyzer:
+  exclude:
+    # Written by swagger_parser and build_runner from backend/openapi.json.
+    - lib/src/generated/**
+linter:
+  rules:
+    public_member_api_docs: false

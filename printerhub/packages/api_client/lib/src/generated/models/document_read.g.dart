@@ -1,0 +1,50 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'document_read.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+DocumentRead _$DocumentReadFromJson(Map<String, dynamic> json) => DocumentRead(
+  checksumSha256: json['checksum_sha256'] as String?,
+  createdAt: DateTime.parse(json['created_at'] as String),
+  fileName: json['file_name'] as String,
+  hasOcrText: json['has_ocr_text'] as bool,
+  id: json['id'] as String,
+  mimeType: json['mime_type'] as String,
+  organizationId: json['organization_id'] as String,
+  ownerId: json['owner_id'] as String?,
+  pageCount: (json['page_count'] as num?)?.toInt(),
+  retentionExpiresAt: json['retention_expires_at'] == null
+      ? null
+      : DateTime.parse(json['retention_expires_at'] as String),
+  sizeBytes: (json['size_bytes'] as num).toInt(),
+  source: DocumentSource.fromJson(json['source'] as String),
+  sourcePrinterId: json['source_printer_id'] as String?,
+  storageMode: StorageMode.fromJson(json['storage_mode'] as String),
+  tags: (json['tags'] as List<dynamic>).map((e) => e as String).toList(),
+  updatedAt: DateTime.parse(json['updated_at'] as String),
+  uploadStatus: UploadStatus.fromJson(json['upload_status'] as String),
+);
+
+Map<String, dynamic> _$DocumentReadToJson(DocumentRead instance) =>
+    <String, dynamic>{
+      'checksum_sha256': instance.checksumSha256,
+      'created_at': instance.createdAt.toIso8601String(),
+      'file_name': instance.fileName,
+      'has_ocr_text': instance.hasOcrText,
+      'id': instance.id,
+      'mime_type': instance.mimeType,
+      'organization_id': instance.organizationId,
+      'owner_id': instance.ownerId,
+      'page_count': instance.pageCount,
+      'retention_expires_at': instance.retentionExpiresAt?.toIso8601String(),
+      'size_bytes': instance.sizeBytes,
+      'source': instance.source,
+      'source_printer_id': instance.sourcePrinterId,
+      'storage_mode': instance.storageMode,
+      'tags': instance.tags,
+      'updated_at': instance.updatedAt.toIso8601String(),
+      'upload_status': instance.uploadStatus,
+    };

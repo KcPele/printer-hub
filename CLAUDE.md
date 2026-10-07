@@ -18,6 +18,7 @@ Backend-first, mobile-first printer and scanner platform. This repo is a monorep
 | Printer simulator endpoints and faults | `backend/simulator/README.md` |
 | API contract | `backend/openapi.json`, or `/api/docs` on a running server |
 | Calling the API from the web app | `packages/api-client/README.md` |
+| Calling the API from the Flutter app | `printerhub/packages/api_client/README.md` |
 | Mobile app architecture, milestones, open decisions | `docs/mobile-app-implementation.md` |
 | Visual references for the three themes | `design/` (on the owner's machine only; ignored by git) |
 
@@ -118,7 +119,8 @@ Adding a module: create the four files, import the models in `app/models.py`, mo
 ## Conventions
 
 - Conventional Commits (`feat(jobs): ...`, `fix(auth): ...`). One logical change per commit.
-- Run `make openapi` whenever a route or schema changes. It rewrites `backend/openapi.json` and the client types in `packages/api-client/src/schema.d.ts`; commit both. CI fails when either is stale.
+- Run `make openapi` whenever a route or schema changes. It rewrites `backend/openapi.json`, the TypeScript types in `packages/api-client/src/schema.d.ts`, and the Dart client in `printerhub/packages/api_client/lib/src/generated/`; commit all three. CI fails when any is stale.
+- An endpoint function's name is its operation ID and becomes the client method (`list_jobs` is `api.jobs.listJobs`), so it is unique across the API. A union of models is declared with `type Name = Annotated[A | B, Field(discriminator=...)]` so the contract names it.
 - The contract is the source of the apps' types. When a generated type is looser than the API's behavior, fix the backend schema or `_polish_contract` in `app/main.py`, never the generated file.
 - Apps reach the API only through a client generated from `backend/openapi.json`: the Dart client for the Flutter app, `@printerhub/api-client` for the web app.
 - Local infrastructure uses offset host ports (Postgres 5433, Redis 6380) so it coexists with locally installed services.

@@ -1,0 +1,43 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'copy_settings_input.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+CopySettingsInput _$CopySettingsInputFromJson(Map<String, dynamic> json) =>
+    CopySettingsInput(
+      mediaSize: json['media_size'] as String?,
+      scalePercent: (json['scale_percent'] as num?)?.toInt(),
+      tray: json['tray'] as String?,
+      collate: json['collate'] as bool? ?? true,
+      colorMode: json['color_mode'] == null
+          ? CopySettingsInputColorMode.auto
+          : CopySettingsInputColorMode.fromJson(json['color_mode'] as String),
+      copies: (json['copies'] as num?)?.toInt() ?? 1,
+      method: json['method'] == null
+          ? CopySettingsInputMethod.scanThenPrint
+          : CopySettingsInputMethod.fromJson(json['method'] as String),
+      outputDuplex: json['output_duplex'] == null
+          ? DuplexMode.oneSided
+          : DuplexMode.fromJson(json['output_duplex'] as String),
+      scaling: json['scaling'] == null
+          ? CopySettingsInputScaling.actual
+          : CopySettingsInputScaling.fromJson(json['scaling'] as String),
+      sourceDuplex: json['source_duplex'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$CopySettingsInputToJson(CopySettingsInput instance) =>
+    <String, dynamic>{
+      'collate': instance.collate,
+      'color_mode': instance.colorMode,
+      'copies': instance.copies,
+      'media_size': instance.mediaSize,
+      'method': instance.method,
+      'output_duplex': instance.outputDuplex,
+      'scale_percent': instance.scalePercent,
+      'scaling': instance.scaling,
+      'source_duplex': instance.sourceDuplex,
+      'tray': instance.tray,
+    };

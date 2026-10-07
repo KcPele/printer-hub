@@ -63,9 +63,18 @@ test: ## Run tests
 	$(UV) pytest
 
 .PHONY: openapi
-openapi: ## Regenerate the API contract and the TypeScript client types from it
+openapi: ## Regenerate the API contract and the TypeScript and Dart clients from it
 	$(UV) python -m scripts.export_openapi
 	pnpm api:generate
+	$(MAKE) dart-client
+
+.PHONY: dart-client
+dart-client: ## Regenerate the Dart API client from backend/openapi.json
+	cd printerhub/packages/api_client && rm -rf lib/src/generated
+	cd printerhub/packages/api_client && dart run swagger_parser
+	cd printerhub/packages/api_client && dart run build_runner build --delete-conflicting-outputs
+	cd printerhub/packages/api_client && dart format lib/src/generated > /dev/null
+	cd printerhub/packages/api_client && python3 tool/make_fixtures.py
 
 .PHONY: client-check
 client-check: ## Typecheck and test the TypeScript API client
@@ -75,7 +84,7 @@ client-check: ## Typecheck and test the TypeScript API client
 app-check: ## Analyze and test the Flutter app and its packages (100% coverage required)
 	cd printerhub && dart format --set-exit-if-changed lib test packages
 	cd printerhub && flutter analyze
-	cd printerhub && dart pub global run very_good_cli:very_good test --recursive --coverage --min-coverage 100
+	cd printerhub && dart pub global run very_good_cli:very_good test --recursive --coverage --min-coverage 100 --exclude-coverage '**/*.g.dart'
 
 .PHONY: app-goldens
 app-goldens: ## Regenerate the golden images after an intended visual change

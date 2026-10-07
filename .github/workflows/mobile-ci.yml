@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths: &watched
       - "printerhub/**"
+      - "backend/openapi.json"
       - ".github/workflows/mobile-ci.yml"
   pull_request:
     paths: *watched
@@ -32,3 +33,33 @@ jobs:
     with:
       working_directory: printerhub/packages/${{ matrix.package }}
       flutter_version: "3.47.x"
+
+  api-client:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/dart_package.yml@v1
+    with:
+      working_directory: printerhub/packages/api_client
+      dart_sdk: "3.13.5"
+      coverage_excludes: "**/*.g.dart"
+
+  api-client-is-current:
+    # The Dart client is generated from the contract and checked in. This
+    # fails when backend/openapi.json changed and `make openapi` was not run.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.x"
+          channel: stable
+          cache: true
+      - name: Regenerate the client
+        working-directory: printerhub/packages/api_client
+        run: |
+          dart pub get
+          rm -rf lib/src/generated
+          dart run swagger_parser
+          dart run build_runner build --delete-conflicting-outputs
+          dart format lib/src/generated > /dev/null
+          python3 tool/make_fixtures.py
+      - name: Fail when the checked-in client is stale
+        run: git diff --exit-code -- printerhub/packages/api_client

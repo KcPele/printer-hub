@@ -1,0 +1,15 @@
+targets:
+  $default:
+    builders:
+      json_serializable:
+        generate_for:
+          - lib/src/generated/**
+        options:
+          # The API's fields are snake_case. swagger_parser names the JSON key
+          # on ordinary models but not on the variants of a union (JobRead,
+          # PresetRead), so those take their keys from this rule.
+          # test/src/contract_test.dart decodes each variant to prove it.
+          field_rename: snake
+      retrofit_generator:
+        generate_for:
+          - lib/src/generated/clients/**

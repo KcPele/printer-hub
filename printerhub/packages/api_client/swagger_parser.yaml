@@ -1,0 +1,13 @@
+swagger_parser:
+  schema_path: ../../../backend/openapi.json
+  output_directory: lib/src/generated
+  name: printerhub
+  json_serializer: json_serializable
+  root_client: true
+  root_client_name: PrinterHubApi
+  put_clients_in_folder: true
+  enums_to_json: true
+  unknown_enum_value: true
+  # Admin endpoints are for the back office, not the app.
+  exclude_tags:
+    - admin
