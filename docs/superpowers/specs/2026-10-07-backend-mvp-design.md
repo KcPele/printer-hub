@@ -102,6 +102,10 @@ Modules: `auth`, `users`, `organizations`, `devices`, `printers`, `connections`,
 - Reuse of a rotated refresh token revokes the session.
 - Each request checks that the session is not revoked, so session revocation (FR-AUTH-004) takes effect immediately.
 - Login and registration are rate limited in Redis per IP and per email.
+- Password reset and email verification use a 6-digit code sent by email and typed into the app. A code expires in 15 minutes, is single-use, dies after 5 wrong attempts, and is stored as a keyed hash. Codes were chosen over links because links with a custom app scheme are often not clickable in mail apps.
+- Email goes through an `EmailSender` adapter: SMTP in production, the log until configured.
+- An address is trusted as belonging to its account only once verified. Seeing and accepting invitations without a token requires a verified address; otherwise anyone could register with someone else's address and claim their invitations.
+- `POST /account/delete` deletes the account after a password check. Organizations where the user is the only member go with it; the last owner of a shared organization must hand over first.
 
 ### 6.3 Tenancy and authorization
 
@@ -144,7 +148,8 @@ This satisfies FRD §55.1 item 14 ("WebSocket/SSE or equivalent live status") wi
 
 | Table | Key columns |
 |---|---|
-| `users` | email (unique, lowercased), password_hash, name, preferences, is_active, is_superuser |
+| `users` | email (unique, lowercased), email_verified_at, password_hash, name, preferences, is_active, is_superuser |
+| `email_codes` | user_id, purpose, code_hash, expires_at, attempts, consumed_at |
 | `sessions` | user_id, device_id, refresh_token_hash, previous_refresh_token_hash, user_agent, ip, expires_at, revoked_at, last_used_at |
 | `organizations` | name, slug, settings |
 | `memberships` | organization_id, user_id, role — unique (organization_id, user_id) |
@@ -232,13 +237,12 @@ It shares no code with `app/`.
 
 ## 14. Out of scope for this build
 
-- Magic link, passkey, OAuth, MFA, password reset by email
+- Magic link, passkey, OAuth, MFA
 - Printer groups and per-user printer sharing
 - Scan routing rules, workflow templates, cloud storage integrations
 - Usage analytics, quotas beyond `max_copies_per_job`
 - Gateway and cloud relay coordination
 - Document conversion, server-side OCR, thumbnails
-- Email delivery
 
 Each is left with a clear extension point and none blocks the mobile MVP.
 

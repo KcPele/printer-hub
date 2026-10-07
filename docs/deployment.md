@@ -72,6 +72,23 @@ Pushes are written to the log until this is set.
 
 This key is not `google-services.json` or `GoogleService-Info.plist`. Those two configure the mobile apps and go into the app project. The backend rejects them with a message that says so.
 
+### Email
+
+Password reset and email verification send a 6-digit code by email. Until this is set, the emails are written to the log instead, codes included, and no user can reset a password or verify an address.
+
+| Variable | Value |
+|---|---|
+| `PRINTERHUB_EMAIL_BACKEND` | `smtp` |
+| `PRINTERHUB_EMAIL_FROM` | `PrinterHub <no-reply@YOUR-DOMAIN>` |
+| `PRINTERHUB_SMTP_HOST` | Your provider's SMTP host |
+| `PRINTERHUB_SMTP_PORT` | `587` (default) or `465` |
+| `PRINTERHUB_SMTP_USERNAME`, `PRINTERHUB_SMTP_PASSWORD` | Your SMTP credentials |
+| `PRINTERHUB_SMTP_SECURITY` | `starttls` for port 587 (default), `ssl` for port 465 |
+
+Any SMTP server works: a provider such as Resend, Mailgun, or Amazon SES, or a mail server you already run. The sender address must be one that server is allowed to send from, or the mail lands in spam.
+
+An account with an unverified address can do everything except see and accept invitations from inside the app. Accepting with an invitation link's token still works.
+
 ### Optional
 
 | Variable | Default | Purpose |

@@ -9,7 +9,10 @@ from app.modules.auth.deps import Auth
 from app.modules.auth.schemas import (
     AuthResponse,
     ChangePasswordRequest,
+    EmailVerifyRequest,
     LoginRequest,
+    PasswordForgotRequest,
+    PasswordResetRequest,
     RefreshRequest,
     RegisterRequest,
     SessionRead,
@@ -77,6 +80,54 @@ async def change_password(payload: ChangePasswordRequest, auth: Auth, session: S
         current_password=payload.current_password,
         new_password=payload.new_password,
     )
+
+
+@router.post(
+    "/password/forgot", status_code=status.HTTP_204_NO_CONTENT, responses=problem_responses(429)
+)
+async def forgot_password(
+    payload: PasswordForgotRequest, session: SessionDep, client: ClientInfoDep
+) -> None:
+    """Email a 6-digit reset code.
+
+    Always answers 204, whether or not the address has an account.
+    """
+    await service.request_password_reset(session, email=payload.email, client=client)
+
+
+@router.post(
+    "/password/reset", status_code=status.HTTP_204_NO_CONTENT, responses=problem_responses(429)
+)
+async def reset_password(
+    payload: PasswordResetRequest, session: SessionDep, client: ClientInfoDep
+) -> None:
+    """Choose a new password using the emailed code. Signs out every session.
+
+    A code works once, expires after a few minutes, and stops working after
+    a few wrong attempts.
+    """
+    await service.reset_password(
+        session,
+        email=payload.email,
+        code=payload.code,
+        new_password=payload.new_password,
+        client=client,
+    )
+
+
+@router.post("/email/verify")
+async def verify_email(payload: EmailVerifyRequest, auth: Auth, session: SessionDep) -> UserRead:
+    """Confirm the caller's email address with the code sent at sign-up."""
+    user = await service.verify_email(session, user=auth.user, code=payload.code)
+    return UserRead.model_validate(user)
+
+
+@router.post(
+    "/email/resend", status_code=status.HTTP_204_NO_CONTENT, responses=problem_responses(429)
+)
+async def resend_verification(auth: Auth, session: SessionDep) -> None:
+    """Email a new verification code. Any earlier code stops working."""
+    await service.resend_verification(session, auth.user)
 
 
 @router.get("/sessions")

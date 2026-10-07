@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import String, false, text, true
@@ -11,6 +12,8 @@ class User(Base, IdMixin, TimestampMixin):
 
     # Stored lowercased; see `users.service.normalize_email`.
     email: Mapped[str] = mapped_column(String(320), unique=True)
+    # Null until the user proves they receive mail at `email`.
+    email_verified_at: Mapped[datetime | None]
     password_hash: Mapped[str] = mapped_column(String(255))
     name: Mapped[str] = mapped_column(String(200))
     preferences: Mapped[dict[str, Any]] = mapped_column(

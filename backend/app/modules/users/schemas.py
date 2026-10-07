@@ -18,6 +18,9 @@ class UserRead(BaseModel):
 
     id: uuid.UUID
     email: str
+    email_verified_at: datetime | None = Field(
+        description="Null until the email address is verified with the emailed code"
+    )
     name: str
     preferences: UserPreferences
     is_superuser: bool

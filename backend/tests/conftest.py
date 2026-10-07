@@ -20,6 +20,7 @@ os.environ["PRINTERHUB_REDIS_URL"] = os.environ.get(
 )
 os.environ["PRINTERHUB_STORAGE_BACKEND"] = "memory"
 os.environ["PRINTERHUB_PUSH_BACKEND"] = "memory"
+os.environ["PRINTERHUB_EMAIL_BACKEND"] = "memory"
 os.environ["PRINTERHUB_TASKS_BACKEND"] = "memory"
 os.environ["PRINTERHUB_LOG_LEVEL"] = "WARNING"
 os.environ["PRINTERHUB_CORS_ORIGINS"] = "[]"
@@ -38,6 +39,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from app.adapters.email import get_email_sender
+from app.adapters.email.memory import MemoryEmailSender
 from app.adapters.push import get_push_provider
 from app.adapters.push.memory import MemoryPushProvider
 from app.adapters.storage import get_object_storage
@@ -164,3 +167,12 @@ def task_queue() -> MemoryTaskQueue:
     assert isinstance(queue, MemoryTaskQueue)
     queue.enqueued.clear()
     return queue
+
+
+@pytest.fixture(autouse=True)
+def mailbox() -> MemoryEmailSender:
+    """The in-memory email sender, emptied before each test."""
+    sender = get_email_sender()
+    assert isinstance(sender, MemoryEmailSender)
+    sender.reset()
+    return sender

@@ -83,3 +83,10 @@ def test_garbage_service_account_is_rejected() -> None:
 
 def test_blank_service_account_means_not_configured() -> None:
     assert _settings(fcm_service_account_json="").fcm_service_account_json is None
+
+
+def test_smtp_backend_requires_a_host() -> None:
+    with pytest.raises(ValidationError, match="PRINTERHUB_SMTP_HOST"):
+        _settings(email_backend="smtp")
+
+    assert _settings(email_backend="smtp", smtp_host="smtp.example.com").smtp_port == 587

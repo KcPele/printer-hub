@@ -47,6 +47,12 @@ class Settings(BaseSettings):
     pairing_token_ttl_seconds: int = 10 * 60
     idempotency_ttl_hours: int = 24
 
+    # One-time codes emailed for password reset and email verification.
+    email_code_ttl_minutes: int = 15
+    email_code_max_attempts: int = 5
+    email_code_rate_limit_attempts: int = 5
+    email_code_rate_limit_window_seconds: int = 60 * 60
+
     login_rate_limit_attempts: int = 10
     login_rate_limit_window_seconds: int = 5 * 60
     register_rate_limit_attempts: int = 20
@@ -63,6 +69,16 @@ class Settings(BaseSettings):
     s3_bucket: str = "printerhub-documents"
     s3_presign_ttl_seconds: int = 15 * 60
     max_document_size_bytes: int = 200 * 1024 * 1024
+
+    # "log" writes emails to the log; "smtp" sends them through any SMTP server.
+    email_backend: Literal["log", "smtp", "memory"] = "log"
+    email_from: str = "PrinterHub <no-reply@printerhub.local>"
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+    # "starttls" upgrades a plain connection (port 587); "ssl" connects encrypted (port 465).
+    smtp_security: Literal["starttls", "ssl", "none"] = "starttls"
 
     # "log" writes pushes to the log; "fcm" sends through Firebase Cloud
     # Messaging, which reaches Android directly and iOS through APNs.
@@ -121,6 +137,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "PRINTERHUB_CREDENTIALS_ENCRYPTION_KEY must be set outside local and test"
             )
+        return self
+
+    @model_validator(mode="after")
+    def _require_smtp_host(self) -> Self:
+        if self.email_backend == "smtp" and not self.smtp_host:
+            raise ValueError("PRINTERHUB_SMTP_HOST is required when PRINTERHUB_EMAIL_BACKEND=smtp")
         return self
 
     @model_validator(mode="after")

@@ -5,12 +5,13 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import or_, select
+from sqlalchemy import update as sql_update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.adapters.storage import get_object_storage
 from app.adapters.storage.base import PresignedUpload
-from app.core import idempotency
+from app.core import idempotency, tasks
 from app.core.config import get_settings
 from app.core.db import after_commit
 from app.core.errors import (
@@ -319,6 +320,51 @@ async def delete(session: AsyncSession, ctx: OrgContext, document: Document) -> 
     document.deleted_at = datetime.now(UTC)
     await session.flush()
     _delete_object_after_commit(session, document.storage_key)
+
+
+DELETE_OBJECTS_TASK = "delete_stored_objects"
+_KEYS_PER_TASK = 500
+
+
+def _queue_object_deletion(session: AsyncSession, keys: list[str]) -> None:
+    for start in range(0, len(keys), _KEYS_PER_TASK):
+        tasks.enqueue(session, DELETE_OBJECTS_TASK, keys=keys[start : start + _KEYS_PER_TASK])
+
+
+async def release_organization_storage(session: AsyncSession, organization_id: uuid.UUID) -> None:
+    """Queue deletion of every stored file of an organization that is about to be deleted.
+
+    The rows go with the organization by cascade; the files would otherwise
+    stay in the bucket with nothing pointing at them.
+    """
+    keys = await session.scalars(
+        select(Document.storage_key).where(
+            Document.organization_id == organization_id,
+            Document.storage_key.is_not(None),
+            Document.deleted_at.is_(None),
+        )
+    )
+    _queue_object_deletion(session, [key for key in keys if key is not None])
+
+
+async def delete_all_owned_by(session: AsyncSession, owner_id: uuid.UUID) -> int:
+    """Delete every document a user owns, in every organization. Returns how many."""
+    owned = (
+        await session.execute(
+            select(Document.id, Document.storage_key).where(
+                Document.owner_id == owner_id, Document.deleted_at.is_(None)
+            )
+        )
+    ).all()
+    if not owned:
+        return 0
+    await session.execute(
+        sql_update(Document)
+        .where(Document.id.in_([document_id for document_id, _ in owned]))
+        .values(deleted_at=datetime.now(UTC), ocr_text=None)
+    )
+    _queue_object_deletion(session, [key for _, key in owned if key is not None])
+    return len(owned)
 
 
 async def purge_expired(session: AsyncSession, *, batch_size: int = 200) -> int:

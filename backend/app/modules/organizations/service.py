@@ -18,6 +18,7 @@ from app.core.errors import (
 from app.core.permissions import Role
 from app.core.security import generate_token, hash_token
 from app.modules.audit import service as audit
+from app.modules.documents import service as documents
 from app.modules.notifications import service as notifications
 from app.modules.notifications.models import NotificationType
 from app.modules.organizations.models import Invitation, Membership, Organization
@@ -122,8 +123,39 @@ async def update(
 
 async def delete_organization(session: AsyncSession, organization: Organization) -> None:
     """Delete the organization and, by cascade, everything it owns."""
+    await documents.release_organization_storage(session, organization.id)
     await session.delete(organization)
     await session.flush()
+
+
+async def member_count(session: AsyncSession, organization_id: uuid.UUID) -> int:
+    count = await session.scalar(
+        select(func.count())
+        .select_from(Membership)
+        .where(Membership.organization_id == organization_id)
+    )
+    return count or 0
+
+
+async def has_another_owner(
+    session: AsyncSession, *, organization_id: uuid.UUID, user_id: uuid.UUID
+) -> bool:
+    other_owners = await session.scalar(
+        select(func.count())
+        .select_from(Membership)
+        .where(
+            Membership.organization_id == organization_id,
+            Membership.role == Role.OWNER,
+            Membership.user_id != user_id,
+        )
+    )
+    return bool(other_owners)
+
+
+async def delete_invitations_for_email(session: AsyncSession, email: str) -> None:
+    await session.execute(
+        delete(Invitation).where(Invitation.email == email, Invitation.accepted_at.is_(None))
+    )
 
 
 # --- Members -----------------------------------------------------------------
@@ -157,16 +189,9 @@ async def _get_member(
 async def _ensure_another_owner_remains(
     session: AsyncSession, *, organization_id: uuid.UUID, leaving_user_id: uuid.UUID
 ) -> None:
-    other_owners = await session.scalar(
-        select(func.count())
-        .select_from(Membership)
-        .where(
-            Membership.organization_id == organization_id,
-            Membership.role == Role.OWNER,
-            Membership.user_id != leaving_user_id,
-        )
-    )
-    if not other_owners:
+    if not await has_another_owner(
+        session, organization_id=organization_id, user_id=leaving_user_id
+    ):
         raise ConflictError("member.last_owner", "An organization must keep at least one owner.")
 
 
@@ -290,7 +315,8 @@ async def invite(
         detail={"email": email, "role": payload.role.value},
     )
     await session.flush()
-    if existing_user is not None:
+    # Only a verified address is known to belong to that account's holder.
+    if existing_user is not None and existing_user.email_verified_at is not None:
         organization = await session.get(Organization, organization_id)
         assert organization is not None  # noqa: S101 - the caller is a member of it
         await notifications.notify(
@@ -348,6 +374,7 @@ async def list_invitations_for_user(
     session: AsyncSession, user: User
 ) -> list[tuple[Invitation, Organization]]:
     """Pending invitations addressed to the user's email."""
+    _require_verified_email(user)
     rows = await session.execute(
         select(Invitation, Organization)
         .join(Organization, Organization.id == Invitation.organization_id)
@@ -359,6 +386,14 @@ async def list_invitations_for_user(
         .order_by(Invitation.id.desc())
     )
     return [(invitation, organization) for invitation, organization in rows]
+
+
+def _require_verified_email(user: User) -> None:
+    """Anyone can register with any address; only verification ties it to its owner."""
+    if user.email_verified_at is None:
+        raise PermissionDeniedError(
+            "auth.email_not_verified", "Verify your email address to see and accept invitations."
+        )
 
 
 async def _accept(
@@ -418,9 +453,11 @@ async def accept_invitation_by_id(
 ) -> tuple[Organization, Membership]:
     """Join from the in-app invitation list.
 
-    No token is needed: signing in already proved the user owns the invited
-    email address. An invitation for someone else looks the same as a missing one.
+    No token is needed, because a verified email address proves the user is
+    the person invited. An invitation for someone else looks the same as a
+    missing one.
     """
+    _require_verified_email(user)
     invitation = await session.scalar(
         select(Invitation)
         .where(Invitation.id == invitation_id, Invitation.email == user.email)

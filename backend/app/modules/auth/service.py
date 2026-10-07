@@ -10,6 +10,8 @@ from sqlalchemy import delete, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.adapters.email.base import EmailMessage
+from app.core import tasks
 from app.core.client import ClientInfo
 from app.core.config import get_settings
 from app.core.errors import ConflictError, UnauthorizedError, ValidationFailedError
@@ -23,6 +25,8 @@ from app.core.security import (
     verify_password,
 )
 from app.modules.audit import service as audit
+from app.modules.auth import email_codes, emails
+from app.modules.auth.email_codes import CodePurpose
 from app.modules.auth.models import UserSession
 from app.modules.users import service as users
 from app.modules.users.models import User
@@ -39,6 +43,36 @@ class IssuedTokens:
 @lru_cache
 def _decoy_hash() -> str:
     return hash_password("decoy-password-for-unknown-accounts")
+
+
+SEND_EMAIL_TASK = "send_email"
+
+
+def _queue_email(session: AsyncSession, message: EmailMessage) -> None:
+    tasks.enqueue(
+        session, SEND_EMAIL_TASK, to=message.to, subject=message.subject, text=message.text
+    )
+
+
+async def _send_verification_code(session: AsyncSession, user: User) -> None:
+    code = await email_codes.issue(session, user_id=user.id, purpose=CodePurpose.EMAIL_VERIFICATION)
+    _queue_email(session, emails.verification(user.email, user.name, code))
+
+
+def _invalid_code() -> ValidationFailedError:
+    return ValidationFailedError(
+        "auth.code_invalid", "That code is not valid or has expired. Request a new one."
+    )
+
+
+async def _limit_code_requests(bucket: str, identifier: str) -> None:
+    settings = get_settings()
+    await enforce_rate_limit(
+        bucket,
+        identifier,
+        limit=settings.email_code_rate_limit_attempts,
+        window_seconds=settings.email_code_rate_limit_window_seconds,
+    )
 
 
 def _invalid_credentials() -> UnauthorizedError:
@@ -84,6 +118,7 @@ async def register(
         raise ConflictError(
             "auth.email_taken", "An account with this email already exists."
         ) from exc
+    await _send_verification_code(session, user)
     return user, await _open_session(session, user, client)
 
 
@@ -255,3 +290,92 @@ async def purge_dead_sessions(session: AsyncSession, *, older_than_days: int = 3
             or_(UserSession.expires_at < cutoff, UserSession.revoked_at < cutoff)
         )
     )
+
+
+# --- Email verification ------------------------------------------------------
+
+
+async def resend_verification(session: AsyncSession, user: User) -> None:
+    """Email a fresh verification code. Does nothing for an already verified address."""
+    if user.email_verified_at is not None:
+        return
+    await _limit_code_requests("email_verification", str(user.id))
+    await _send_verification_code(session, user)
+
+
+async def verify_email(session: AsyncSession, *, user: User, code: str) -> User:
+    if user.email_verified_at is not None:
+        return user
+    redeemed = await email_codes.redeem(
+        session, user_id=user.id, purpose=CodePurpose.EMAIL_VERIFICATION, code=code
+    )
+    if not redeemed:
+        # Committed on purpose: the failed attempt must count against the code.
+        await session.commit()
+        raise _invalid_code()
+    user.email_verified_at = datetime.now(UTC)
+    audit.record(
+        session,
+        action="user.email_verified",
+        target_type="user",
+        target_id=user.id,
+        actor_user_id=user.id,
+    )
+    await session.flush()
+    return user
+
+
+# --- Password reset ----------------------------------------------------------
+
+
+async def request_password_reset(session: AsyncSession, *, email: str, client: ClientInfo) -> None:
+    """Email a reset code if the address belongs to an account.
+
+    Returns the same way whether or not it does, so the endpoint cannot be
+    used to find out which emails are registered.
+    """
+    normalized = users.normalize_email(email)
+    await _limit_code_requests("password_reset", f"{normalized}|{client.ip or 'unknown'}")
+    user = await users.get_by_email(session, normalized)
+    if user is None or not user.is_active:
+        return
+    code = await email_codes.issue(session, user_id=user.id, purpose=CodePurpose.PASSWORD_RESET)
+    _queue_email(session, emails.password_reset(user.email, user.name, code))
+
+
+async def reset_password(
+    session: AsyncSession, *, email: str, code: str, new_password: str, client: ClientInfo
+) -> None:
+    """Set a new password with an emailed code, and sign out every session."""
+    normalized = users.normalize_email(email)
+    await _limit_code_requests("password_reset_confirm", f"{normalized}|{client.ip or 'unknown'}")
+    user = await users.get_by_email(session, normalized)
+    redeemed = (
+        user is not None
+        and user.is_active
+        and await email_codes.redeem(
+            session, user_id=user.id, purpose=CodePurpose.PASSWORD_RESET, code=code
+        )
+    )
+    if user is None or not redeemed:
+        # Committed on purpose: the failed attempt must count against the code.
+        await session.commit()
+        raise _invalid_code()
+
+    user.password_hash = await to_thread.run_sync(hash_password, new_password)
+    if user.email_verified_at is None:
+        # Using a code from the inbox proves the address is theirs.
+        user.email_verified_at = datetime.now(UTC)
+    await session.execute(
+        update(UserSession)
+        .where(UserSession.user_id == user.id, UserSession.revoked_at.is_(None))
+        .values(revoked_at=datetime.now(UTC))
+    )
+    audit.record(
+        session,
+        action="user.password_reset",
+        target_type="user",
+        target_id=user.id,
+        actor_user_id=user.id,
+    )
+    await session.flush()

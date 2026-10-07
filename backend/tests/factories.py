@@ -35,6 +35,7 @@ async def create_user(session: AsyncSession, **overrides: Any) -> User:
         "email": unique_email(),
         "password_hash": _password_hash(),
         "name": "Test User",
+        "email_verified_at": datetime.now(UTC),
     }
     values.update(overrides)
     user = User(**values)

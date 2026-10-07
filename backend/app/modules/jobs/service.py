@@ -25,6 +25,7 @@ from app.core.errors import (
 )
 from app.core.pagination import PageParams, paginate
 from app.core.permissions import Permission
+from app.modules.audit import service as audit
 from app.modules.capabilities.schemas import PrinterCapabilities
 from app.modules.connections import service as connections
 from app.modules.documents import service as documents
@@ -172,12 +173,37 @@ async def _resolve_connection(
     return connection.type.value
 
 
+def _audit(job: Job, session: AsyncSession, action: str, actor_user_id: uuid.UUID) -> None:
+    """Record a job milestone in the audit log (FRD §27).
+
+    "Print submitted" is `job.submitted`; "scan received" is `job.completed`
+    on a job whose type is `scan`; "job cancelled" is `job.cancelled`.
+    """
+    detail = {"type": job.type.value, "printer_id": str(job.printer_id)}
+    if job.retry_of_job_id is not None:
+        detail["retry_of_job_id"] = str(job.retry_of_job_id)
+    if job.output_document_id is not None:
+        detail["output_document_id"] = str(job.output_document_id)
+    if job.error_code is not None:
+        detail["error_code"] = job.error_code
+    audit.record(
+        session,
+        action=action,
+        target_type="job",
+        target_id=job.id,
+        organization_id=job.organization_id,
+        actor_user_id=actor_user_id,
+        detail=detail,
+    )
+
+
 async def _insert(session: AsyncSession, job: Job, *, reported_by: uuid.UUID) -> Job:
     session.add(job)
     try:
         await session.flush()
     except IntegrityError as exc:
         raise ConflictError("job.id_conflict", "A job with this ID already exists.") from exc
+    _audit(job, session, "job.submitted", reported_by)
     session.add(
         JobEvent(
             job_id=job.id,
@@ -311,6 +337,8 @@ async def record_event(
             occurred_at=occurred_at,
         )
     )
+    if report.status in state.TERMINAL:
+        _audit(job, session, f"job.{report.status.value}", ctx.user.id)
     await session.flush()
     if notify and report.status in state.TERMINAL:
         await _notify_outcome(session, job, printer, actor_user_id=ctx.user.id)

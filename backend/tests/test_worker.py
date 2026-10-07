@@ -3,12 +3,15 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
+from arq import Retry
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app import worker
+from app.adapters.email.memory import MemoryEmailSender
 from app.adapters.push.base import PushOutcome
 from app.adapters.push.memory import MemoryPushProvider
+from app.adapters.storage.memory import MemoryStorage
 from app.core import idempotency
 from app.core.db import session_scope
 from app.core.idempotency import IdempotencyRecord
@@ -141,3 +144,44 @@ async def test_purge_expired_records(session: AsyncSession) -> None:
 
 async def test_purge_expired_documents_with_nothing_to_do() -> None:
     assert await worker.purge_expired_documents({}) == 0
+
+
+async def test_send_email_task_delivers(mailbox: MemoryEmailSender) -> None:
+    await worker.send_email({}, "ada@example.com", "Subject", "Body")
+
+    [message] = mailbox.sent
+    assert (message.to, message.subject, message.text) == ("ada@example.com", "Subject", "Body")
+
+
+async def test_send_email_task_retries_with_a_growing_delay(mailbox: MemoryEmailSender) -> None:
+    mailbox.failure = ConnectionError("mail server unreachable")
+
+    with pytest.raises(Retry) as first:
+        await worker.send_email({"job_try": 1}, "ada@example.com", "Subject", "Body")
+    with pytest.raises(Retry) as third:
+        await worker.send_email({"job_try": 3}, "ada@example.com", "Subject", "Body")
+
+    assert first.value.defer_score == 20_000
+    assert third.value.defer_score == 60_000
+
+
+async def test_send_email_task_gives_up_after_the_last_attempt(
+    mailbox: MemoryEmailSender,
+) -> None:
+    mailbox.failure = ConnectionError("mail server unreachable")
+
+    await worker.send_email(
+        {"job_try": worker.MAX_EMAIL_ATTEMPTS}, "ada@example.com", "Subject", "Body"
+    )
+
+    assert mailbox.sent == []
+
+
+async def test_delete_stored_objects_task(storage: MemoryStorage) -> None:
+    storage.put("a", 1)
+    storage.put("b", 1)
+    storage.put("keep", 1)
+
+    await worker.delete_stored_objects({}, ["a", "b", "already-gone"])
+
+    assert list(storage.objects) == ["keep"]

@@ -59,6 +59,8 @@ Every setting is an environment variable with the `PRINTERHUB_` prefix, defined 
 
 Pushes are written to the log until FCM is configured. [docs/deployment.md](docs/deployment.md#push-notifications) has the steps.
 
+**Email** carries the 6-digit codes for password reset and email verification. It goes through any SMTP server and is written to the log until one is configured.
+
 ## Quality gates
 
 ```bash

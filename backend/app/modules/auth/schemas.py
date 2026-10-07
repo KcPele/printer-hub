@@ -53,3 +53,20 @@ class SessionRead(BaseModel):
     last_used_at: datetime
     expires_at: datetime
     is_current: bool = False
+
+
+Code = Field(min_length=6, max_length=6, pattern=r"^\d{6}$", examples=["042817"])
+
+
+class EmailVerifyRequest(BaseModel):
+    code: str = Code
+
+
+class PasswordForgotRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+    code: str = Code
+    new_password: str = Password

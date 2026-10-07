@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from app.core.errors import problem_responses
+from app.modules.account.router import router as account_router
 from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
 from app.modules.capabilities.router import admin_router as capabilities_admin_router
@@ -30,6 +31,7 @@ for router in (
     health_router,
     auth_router,
     users_router,
+    account_router,
     devices_router,
     organizations_router,
     invitations_router,

@@ -6,6 +6,7 @@ Alembic and the test harness import this module. Add each new module's models he
 from app.core.db import Base
 from app.core.idempotency import IdempotencyRecord
 from app.modules.audit.models import AuditLog
+from app.modules.auth.email_codes import EmailCode
 from app.modules.auth.models import UserSession
 from app.modules.capabilities.models import CapabilityProfile
 from app.modules.connections.models import Connection
@@ -27,6 +28,7 @@ __all__ = [
     "Connection",
     "Device",
     "Document",
+    "EmailCode",
     "FeatureFlag",
     "FeatureFlagOverride",
     "IdempotencyRecord",

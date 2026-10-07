@@ -45,6 +45,7 @@ Adding a module: create the four files, import the models in `app/models.py`, mo
 - **One process.** The arq worker runs inside the API process (`embedded_worker`), so the deployment is a single container. A task function lives in `app/worker.py`, opens its own `session_scope`, and takes string arguments.
 - **FCM is the only channel to clients.** A user-facing notification is an in-app row plus an FCM push whose data payload carries the event type and IDs, so an open app can refresh from it. There is no WebSocket server; shared state such as printer status is refetched by clients.
 - **Routers return schemas.** Build the response with `Schema.model_validate(obj)` inside the endpoint. Relationships are loaded explicitly in the service; nothing lazy-loads.
+- **A failure that must leave a mark.** Raising rolls the request back. When a rejected request still has to change something (a wrong code counts as an attempt, a replayed refresh token revokes the session), call `await session.commit()` just before raising, with a comment saying why. These are the only places a service commits.
 - **Errors.** Raise an `AppError` subclass from `app/core/errors.py` with a dotted `code` such as `job.invalid_transition`. Codes are API contract: add new ones, keep existing ones stable.
 - **Audit.** A service that changes membership, permissions, printers, connections, or credentials calls `audit.record(...)` in the same transaction.
 - **Enums.** Declare a `StrEnum` and map it with `db.str_enum(...)`. It stores a VARCHAR, so a new member needs no migration.
@@ -62,12 +63,12 @@ Adding a module: create the four files, import the models in `app/models.py`, mo
 - Tests exercise behavior through the HTTP API with the `client` fixture. Reach for a direct service or unit test when the logic is pure (state machines, codecs, permission maps).
 - Each test runs in a rolled-back transaction on one connection, so requests inside a test are sequential.
 - Arrange data with `tests/factories.py`. After an API call changes a row you hold, `await session.refresh(obj)`.
-- Object storage, push, and the task queue use in-memory fakes, exposed as the `storage`, `push`, and `task_queue` fixtures. A request that should notify someone is asserted on `task_queue`; delivery is asserted by calling the worker function and reading `push`. Tests marked `integration` hit MinIO.
+- Object storage, push, email, and the task queue use in-memory fakes, exposed as the `storage`, `push`, `mailbox`, and `task_queue` fixtures. A request that should notify someone is asserted on `task_queue`; delivery is asserted by calling the worker function and reading `push`. Tests marked `integration` hit MinIO.
 - Use `@example.com` addresses; the email validator rejects reserved TLDs such as `.test`.
 
 ### Adapters
 
-`app/adapters/push` and `app/adapters/storage` each define a protocol in `base.py`, real implementations, and an in-memory fake. Services depend on the protocol. A new provider is a new file plus one branch in the factory function.
+`app/adapters/push`, `app/adapters/email`, and `app/adapters/storage` each define a protocol in `base.py`, real implementations, and an in-memory fake. Services depend on the protocol. A new provider is a new file plus one branch in the factory function.
 
 ## Conventions
 
