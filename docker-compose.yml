@@ -10,6 +10,8 @@ x-backend-env: &backend-env
   PRINTERHUB_REDIS_URL: redis://redis:6379/0
   PRINTERHUB_S3_ENDPOINT_URL: http://minio:9000
   PRINTERHUB_S3_PUBLIC_ENDPOINT_URL: http://localhost:9000
+  PRINTERHUB_SOKETI_URL: http://soketi:6001
+  PRINTERHUB_SOKETI_PUBLIC_URL: http://localhost:6001
 
 services:
   postgres:
@@ -55,6 +57,21 @@ services:
       - minio-data:/data
     healthcheck:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  soketi:
+    image: quay.io/soketi/soketi:1.6-16-debian
+    environment:
+      SOKETI_DEFAULT_APP_ID: printerhub
+      SOKETI_DEFAULT_APP_KEY: printerhub-key
+      SOKETI_DEFAULT_APP_SECRET: printerhub-dev-secret
+      SOKETI_DEFAULT_APP_ENABLE_CLIENT_MESSAGES: "false"
+    ports:
+      - "6001:6001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:6001/', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 5s
       timeout: 3s
       retries: 10

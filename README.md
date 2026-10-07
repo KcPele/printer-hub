@@ -18,7 +18,7 @@ Requirements: [uv](https://docs.astral.sh/uv/), Docker.
 
 ```bash
 make setup      # install dependencies, create backend/.env
-make infra      # start Postgres, Redis, MinIO
+make infra      # start Postgres, Redis, MinIO, Soketi
 make migrate    # create the schema
 make seed       # load capability profiles and feature flags
 make dev        # API on http://localhost:8000
@@ -42,6 +42,7 @@ docker compose --profile app up -d --build
 | Redis | `localhost:6380` | none |
 | MinIO API | `localhost:9000` | `printerhub` / `printerhub-dev-secret` |
 | MinIO console | <http://localhost:9001> | same |
+| Soketi (WebSocket) | `localhost:6001` | app `printerhub`, key `printerhub-key`, secret `printerhub-dev-secret` |
 | API | <http://localhost:8000> | |
 | Printer simulator | <http://localhost:8631> | |
 
@@ -52,6 +53,13 @@ Ports are offset from the defaults so they coexist with locally installed Postgr
 Every setting is an environment variable with the `PRINTERHUB_` prefix. `backend/.env.example` lists them. To point the backend at a hosted database or object store, set the matching variables in `backend/.env`; no code changes are needed.
 
 Outside `local` and `test`, the service refuses to start until `PRINTERHUB_SECRET_KEY` and `PRINTERHUB_CREDENTIALS_ENCRYPTION_KEY` are set.
+
+## Live updates and push
+
+Two channels reach clients, and they cover different situations:
+
+- **Soketi** (Pusher protocol over WebSocket) carries live job and printer updates to an app that is open. Clients read connection details from `GET /api/v1/realtime/config` and subscribe to private channels, which the backend authorizes.
+- **APNs and FCM** deliver notifications to an app that is closed or in the background. They stay in `log` mode until credentials are configured.
 
 ## Quality gates
 

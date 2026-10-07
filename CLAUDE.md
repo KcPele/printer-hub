@@ -35,9 +35,11 @@ Adding a module: create the four files, import the models in `app/models.py`, mo
 
 ### Rules that hold everywhere
 
-- **Tenancy.** Every organization-owned route takes `ctx: OrgContext = Depends(require(Permission.X))`. Every query in its service filters by `ctx.organization.id`. A resource in another organization is a 404, the same as a missing one.
+- **Tenancy.** Every organization-owned route takes `ctx: Annotated[OrgContext, Depends(require(Permission.X))]` from `app/modules/organizations/deps.py`. Every query in its service filters by `ctx.organization.id`. A resource in another organization is a 404, the same as a missing one.
 - **Unit of work.** The session dependency commits. Services call `await session.flush()` to get IDs and surface constraint errors; they leave `commit()` to the dependency.
-- **Side effects after commit.** Live events go through `events.emit(session, ...)` and background tasks through `tasks.enqueue(session, ...)`. Both wait for the commit, so a failed request emits nothing. Use `db.after_commit` for any new kind of side effect.
+- **Side effects after commit.** Live events go through `events.emit(session, channels, type, data)` and background tasks through `tasks.enqueue(session, ...)`. Both wait for the commit, so a failed request emits nothing. Use `db.after_commit` for any new kind of side effect.
+- **Live events are thin.** An event carries a type, IDs, and the new status; clients refetch through REST. Pick channels with the helpers in `app/core/events.py`: the channel decides who can see the event, so job events go to the jobs channel and the owner's user channel, never the organization-wide one.
+- **Two delivery paths.** Soketi (WebSocket) reaches an open app. APNs and FCM reach a closed one. A user-facing notification uses both.
 - **Routers return schemas.** Build the response with `Schema.model_validate(obj)` inside the endpoint. Relationships are loaded explicitly in the service; nothing lazy-loads.
 - **Errors.** Raise an `AppError` subclass from `app/core/errors.py` with a dotted `code` such as `job.invalid_transition`. Codes are API contract: add new ones, keep existing ones stable.
 - **Audit.** A service that changes membership, permissions, printers, connections, or credentials calls `audit.record(...)` in the same transaction.
@@ -56,15 +58,16 @@ Adding a module: create the four files, import the models in `app/models.py`, mo
 - Tests exercise behavior through the HTTP API with the `client` fixture. Reach for a direct service or unit test when the logic is pure (state machines, codecs, permission maps).
 - Each test runs in a rolled-back transaction on one connection, so requests inside a test are sequential.
 - Arrange data with `tests/factories.py`. After an API call changes a row you hold, `await session.refresh(obj)`.
-- Object storage and push use the in-memory fakes. Tests marked `integration` hit MinIO.
+- Object storage, push, and live events use the in-memory fakes. Assert on emitted events with the `realtime` fixture. Tests marked `integration` hit MinIO.
 - Use `@example.com` addresses; the email validator rejects reserved TLDs such as `.test`.
 
 ### Adapters
 
-`app/adapters/push` and `app/adapters/storage` each define a protocol in `base.py`, real implementations, and an in-memory fake. Services depend on the protocol. A new provider is a new file plus one branch in the factory function.
+`app/adapters/push`, `app/adapters/realtime`, and `app/adapters/storage` each define a protocol in `base.py`, real implementations, and an in-memory fake. Services depend on the protocol. A new provider is a new file plus one branch in the factory function.
 
 ## Conventions
 
 - Conventional Commits (`feat(jobs): ...`, `fix(auth): ...`). One logical change per commit.
 - Regenerate the contract with `make openapi` whenever a route or schema changes; CI fails on a stale `openapi.json`.
 - Local infrastructure uses offset host ports (Postgres 5433, Redis 6380) so it coexists with locally installed services.
+- Settings are `PRINTERHUB_*` environment variables defined in `backend/app/core/config.py`. Add new ones there and to `backend/.env.example`.

@@ -6,7 +6,7 @@
 
 **Architecture:** A FastAPI modular monolith. Each domain module owns `models`, `schemas`, `service`, and `router`. Shared infrastructure lives in `app/core`. External systems (push, object storage) sit behind adapters with in-memory fakes.
 
-**Tech Stack:** Python 3.14, FastAPI, Pydantic v2, SQLAlchemy 2 async, asyncpg, Alembic, PostgreSQL 17, Redis 7, MinIO, arq, structlog, uv, ruff, mypy, pytest.
+**Tech Stack:** Python 3.14, FastAPI, Pydantic v2, SQLAlchemy 2 async, asyncpg, Alembic, PostgreSQL 17, Redis 7, MinIO, Soketi, arq, structlog, uv, ruff, mypy, pytest.
 
 **Spec:** `docs/superpowers/specs/2026-10-07-backend-mvp-design.md`
 
@@ -20,7 +20,7 @@
 - Every organization-owned query filters by `organization_id` taken from `OrgContext`.
 - Secrets never appear in logs or API responses.
 - `ruff check`, `ruff format --check`, `mypy`, and `pytest` pass before every commit.
-- Host ports: Postgres `5433`, Redis `6380`, MinIO `9000`/`9001`, API `8000`, simulator `8631`.
+- Host ports: Postgres `5433`, Redis `6380`, MinIO `9000`/`9001`, Soketi `6001`, API `8000`, simulator `8631`.
 - Commits follow Conventional Commits.
 
 ## Shared interfaces
@@ -71,13 +71,25 @@ class Permission(StrEnum)
 def role_has(role: Role, permission: Permission) -> bool
 
 # app/core/deps.py
-SessionDep, CurrentUser, CurrentSession, SuperUser
-@dataclass class OrgContext                 # organization, membership, user, role
-def require(permission: Permission) -> Depends -> OrgContext
+SessionDep, ClientInfoDep
+
+# app/modules/auth/deps.py
+Auth, CurrentUser, SuperUser               # AuthContext has .user and .session
+
+# app/modules/organizations/deps.py
+@dataclass class OrgContext                 # organization, membership, user, session, role, settings
+def require(permission: Permission) -> dependency returning OrgContext
 
 # app/core/events.py
-def emit(session, organization_id: UUID, type: str, data: dict[str, Any]) -> None
-async def subscribe(organization_id: UUID) -> AsyncIterator[str]
+def org_channel(organization_id: UUID) -> str         # private-org-{id}
+def org_jobs_channel(organization_id: UUID) -> str    # private-org-{id}-jobs
+def user_channel(user_id: UUID) -> str                # private-user-{id}
+def emit(session, channels: Sequence[str], type: str, data: dict[str, Any]) -> None
+
+# app/adapters/realtime/base.py
+class RealtimePublisher(Protocol):
+    async def publish(self, channels: Sequence[str], event: str, data: dict[str, Any]) -> None
+    def authorize(self, socket_id: str, channel: str) -> str
 
 # app/core/tasks.py
 def enqueue(session, task_name: str, **kwargs: Any) -> None   # runs after commit
@@ -114,8 +126,8 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 
 **Files:**
 - Create: `backend/app/modules/{users,auth,devices}/{models,schemas,service,router}.py`
-- Create: `backend/app/core/deps.py`
-- Create: `backend/migrations/versions/0001_users_sessions_devices.py`
+- Create: `backend/app/modules/auth/deps.py`
+- Create: `backend/migrations/versions/*_users_sessions_devices.py`
 - Test: `backend/tests/modules/test_{auth,users,devices}.py`, `backend/tests/factories.py`
 
 **Endpoints:**
@@ -141,8 +153,8 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 **Files:**
 - Create: `backend/app/core/permissions.py`
 - Create: `backend/app/modules/{organizations,audit}/{models,schemas,service,router}.py`
-- Modify: `backend/app/core/deps.py` (add `OrgContext`, `require`)
-- Create: `backend/migrations/versions/0002_organizations_audit.py`
+- Create: `backend/app/modules/organizations/deps.py` (`OrgContext`, `require`)
+- Create: `backend/migrations/versions/*_organizations_audit.py`
 - Test: `backend/tests/modules/test_{organizations,rbac,audit}.py`, `backend/tests/core/test_permissions.py`
 
 **Endpoints:**
@@ -167,7 +179,7 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 **Files:**
 - Create: `backend/app/modules/{printers,connections,capabilities,pairing}/{models,schemas,service,router}.py`
 - Create: `backend/app/modules/capabilities/seed.py` (Xerox VersaLink C7100 series profile)
-- Create: `backend/migrations/versions/0003_printers_connections_capabilities.py`
+- Create: `backend/migrations/versions/*_printers_connections_capabilities.py`
 - Test: `backend/tests/modules/test_{printers,connections,capabilities,pairing}.py`
 
 **Endpoints (under `/organizations/{org_id}`):**
@@ -184,8 +196,8 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - Capability payloads are validated against `PrinterCapabilities`; an unknown `schema_version` returns 422.
 - Connection credentials are encrypted in the database and absent from every response.
 - Priority reorder rejects a list that does not match the printer's connections.
-- A health report updates `last_success_at` or `last_failure_at` and emits a live event.
-- A status report updates the printer and emits `printer.status_changed` only when the status changed.
+- A health report updates `last_success_at` or `last_failure_at`.
+- A status report updates the printer and its `last_seen_at`.
 - Profile match finds the C7130 for manufacturer `Xerox` and model `VersaLink C7130`.
 - A pairing token redeems once, fails after expiry, and returns no credentials.
 - Deleting a printer is a soft delete.
@@ -197,16 +209,17 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 
 **Files:**
 - Create: `backend/app/core/{events,idempotency}.py`
-- Create: `backend/app/modules/{jobs,events}/{models,schemas,service,router}.py` (`events` has a router only)
-- Create: `backend/app/modules/jobs/state.py` (state machine)
-- Create: `backend/migrations/versions/0004_jobs_idempotency.py`
-- Test: `backend/tests/modules/test_{jobs,jobs_batch,events}.py`, `backend/tests/core/test_idempotency.py`, `backend/tests/modules/test_job_state.py`
+- Create: `backend/app/adapters/realtime/{base,pusher,memory}.py`
+- Create: `backend/app/modules/jobs/{models,schemas,service,router,state}.py`
+- Create: `backend/app/modules/realtime/{schemas,service,router}.py`
+- Modify: `docker-compose.yml` (add `soketi`), `backend/app/core/config.py`, `backend/.env.example`
+- Modify: `backend/app/modules/printers/service.py`, `backend/app/modules/connections/service.py` (emit events)
+- Create: `backend/migrations/versions/*_jobs_idempotency.py`
+- Test: `backend/tests/modules/test_{jobs,jobs_batch,realtime,job_state}.py`, `backend/tests/core/test_idempotency.py`, `backend/tests/adapters/test_realtime_pusher.py`
 
-**Endpoints (under `/organizations/{org_id}`):**
-- `POST /jobs` (requires `Idempotency-Key`), `GET /jobs`, `GET /jobs/{id}`
-- `POST /jobs/{id}/events`, `POST /jobs/{id}/cancel`, `POST /jobs/{id}/retry`
-- `POST /jobs/batch`
-- `GET /events/stream` (SSE)
+**Endpoints:**
+- Under `/organizations/{org_id}`: `POST /jobs` (requires `Idempotency-Key`), `GET /jobs`, `GET /jobs/{id}`, `POST /jobs/{id}/events`, `POST /jobs/{id}/cancel`, `POST /jobs/{id}/retry`, `POST /jobs/batch`
+- `GET /realtime/config`, `POST /realtime/auth`
 
 **Test cases:**
 - State machine: forward transitions pass, backward transitions and any transition out of a terminal state raise `job.invalid_transition`.
@@ -216,10 +229,13 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - A second event on a different connection sets `fallback_occurred`.
 - Retry is allowed only from `failed` or `cancelled` and links `retry_of_job_id`.
 - Batch sync applies each item on its own and reports per-item results; replaying the batch changes nothing.
-- A job event publishes `job.updated` to the organization channel after commit, and nothing when the request fails.
-- The SSE endpoint streams a published event to a subscribed client.
+- A job event publishes `job.updated` to the organization jobs channel and the owner's user channel after commit, and nothing when the request fails.
+- A status report publishes `printer.status_changed` to the organization channel.
+- Channel authorization: a member may subscribe to their organization channel; a `user` role is refused the jobs channel; nobody may subscribe to another user's channel; an unknown channel is refused.
+- The Pusher publisher signs requests so that a reference implementation of the signature verifies, and signs channel authorizations as `key:hmac_sha256(secret, "socket_id:channel")`.
 
 - [ ] Write the tests, watch them fail, implement, run `make check`.
+- [ ] Publish one event to the local Soketi container and confirm a 200.
 - [ ] Commit `feat(jobs): add job model, idempotency, batch sync, and live events`.
 
 ### Task M5: Presets, documents, object storage
@@ -227,7 +243,7 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 **Files:**
 - Create: `backend/app/adapters/storage/{base,s3,memory}.py`
 - Create: `backend/app/modules/{presets,documents}/{models,schemas,service,router}.py`
-- Create: `backend/migrations/versions/0005_presets_documents.py`
+- Create: `backend/migrations/versions/*_presets_documents.py`
 - Test: `backend/tests/modules/test_{presets,documents}.py`, `backend/tests/adapters/test_storage.py`
 
 **Endpoints (under `/organizations/{org_id}`):**
@@ -257,7 +273,7 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - Create: `backend/app/modules/{notifications,feature_flags}/{models,schemas,service,router}.py`
 - Create: `backend/app/modules/notifications/tasks.py`, `backend/app/modules/documents/tasks.py`
 - Modify: `backend/app/modules/jobs/service.py`, `backend/app/modules/organizations/service.py` (emit notifications)
-- Create: `backend/migrations/versions/0006_notifications_feature_flags.py`
+- Create: `backend/migrations/versions/*_notifications_feature_flags.py`
 - Test: `backend/tests/modules/test_{notifications,feature_flags}.py`, `backend/tests/adapters/test_push_{apns,fcm}.py`, `backend/tests/test_worker_tasks.py`
 
 **Endpoints:**
@@ -307,7 +323,7 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 | §6.1 API conventions | M0 (errors, pagination, IDs), M7 (OpenAPI export) |
 | §6.2 Authentication and sessions | M1 |
 | §6.3 Tenancy and authorization | M2; policy enforcement in M4 and M5 |
-| §6.4 Unit of work and events | M0 (`after_commit`), M4 (`events`), M6 (`tasks`) |
+| §6.4 Unit of work and events | M0 (`after_commit`), M4 (`events`, Soketi publisher, channel auth), M6 (`tasks`) |
 | §6.5 Idempotency | M4 |
 | §6.6 Security | M0 (crypto, redaction), M3 (credentials, pairing), M5 (presigned URLs) |
 | §8 Capability schema | M3 |
