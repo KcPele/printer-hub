@@ -247,6 +247,37 @@ void main() {
         expect(find.byType(AppNotice), findsNothing);
       });
 
+      testWidgets('adds a printer found on the network and shows it', (
+        tester,
+      ) async {
+        backend.plugInPrinter();
+        await pump(tester);
+        await openArea(tester, 'Printers');
+        expect(find.text('No printers yet'), findsOneWidget);
+
+        await tester.tap(find.text('Add a printer'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField).first, '192.168.1.40');
+        await tester.tap(find.text('Find printer'));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Add printer'));
+        await tester.tap(find.text('Add printer'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PrintersPage), findsOneWidget);
+        expect(find.byType(PrinterCard), findsOneWidget);
+        expect(find.text('Ready'), findsOneWidget);
+
+        await tester.tap(find.byType(PrinterCard));
+        await tester.pumpAndSettle();
+        expect(find.byType(PrinterDetailPage), findsOneWidget);
+
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        await openArea(tester, 'Home');
+        expect(find.text('Your printers'), findsOneWidget);
+      });
+
       testWidgets('returns to sign-in after signing out', (tester) async {
         await pump(tester);
         await openArea(tester, 'Settings');

@@ -24,6 +24,10 @@ abstract final class AppRoutes {
   static const String verifyEmail = '/verify-email';
   static const String home = '/home';
   static const String printers = '/printers';
+  static const String addPrinter = '/printers/add';
+
+  /// The page of one printer.
+  static String printer(String id) => '/printers/$id';
   static const String activity = '/activity';
   static const String settings = '/settings';
   static const String theme = '/settings/theme';
@@ -136,6 +140,18 @@ GoRouter createAppRouter({
               GoRoute(
                 path: AppRoutes.printers,
                 builder: (context, state) => const PrintersPage(),
+                routes: [
+                  GoRoute(
+                    path: 'add',
+                    builder: (context, state) => const AddPrinterPage(),
+                  ),
+                  GoRoute(
+                    path: ':printerId',
+                    builder: (context, state) => PrinterDetailPage(
+                      printerId: state.pathParameters['printerId']!,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

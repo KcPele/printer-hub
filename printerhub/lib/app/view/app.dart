@@ -9,14 +9,17 @@ import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
+import 'package:printers_repository/printers_repository.dart';
 
 class App extends StatelessWidget {
   const new({
     required this.preferencesRepository,
     required this.authRepository,
     required this.organizationsRepository,
+    required this.printersRepository,
     this.keptOrganizations,
     super.key,
   });
@@ -24,6 +27,7 @@ class App extends StatelessWidget {
   final PreferencesRepository preferencesRepository;
   final AuthRepository authRepository;
   final OrganizationsRepository organizationsRepository;
+  final PrintersRepository printersRepository;
 
   /// The workspace list from the last launch, read before the first frame.
   final List<Organization>? keptOrganizations;
@@ -35,6 +39,7 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: preferencesRepository),
         RepositoryProvider.value(value: authRepository),
         RepositoryProvider.value(value: organizationsRepository),
+        RepositoryProvider.value(value: printersRepository),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -53,6 +58,23 @@ class App extends StatelessWidget {
                 keptOrganizations: keptOrganizations,
               );
               unawaited(cubit.refresh());
+              return cubit;
+            },
+          ),
+          BlocProvider(
+            // Created with the app, so the printers are loading while the
+            // first screen is drawn.
+            lazy: false,
+            create: (context) {
+              final session = context.read<SessionCubit>();
+              final cubit = PrintersCubit(
+                printersRepository: printersRepository,
+                organizationId: session.state.organization?.id,
+                organizationChanges: session.stream
+                    .map((state) => state.organization?.id)
+                    .distinct(),
+              );
+              unawaited(cubit.load());
               return cubit;
             },
           ),

@@ -150,6 +150,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  connection_engine:
+    dependency: "direct main"
+    description:
+      path: "packages/connection_engine"
+      relative: true
+    source: path
+    version: "0.1.0+1"
   convert:
     dependency: transitive
     description:
@@ -716,6 +723,20 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/preferences_repository"
+      relative: true
+    source: path
+    version: "0.1.0+1"
+  printer_protocols:
+    dependency: "direct main"
+    description:
+      path: "packages/printer_protocols"
+      relative: true
+    source: path
+    version: "0.1.0+1"
+  printers_repository:
+    dependency: "direct main"
+    description:
+      path: "packages/printers_repository"
       relative: true
     source: path
     version: "0.1.0+1"

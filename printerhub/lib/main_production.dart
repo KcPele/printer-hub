@@ -8,6 +8,7 @@ Future<void> main() async {
       preferencesRepository: dependencies.preferencesRepository,
       authRepository: dependencies.authRepository,
       organizationsRepository: dependencies.organizationsRepository,
+      printersRepository: dependencies.printersRepository,
       keptOrganizations: dependencies.keptOrganizations,
     ),
   );

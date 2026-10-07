@@ -13,7 +13,9 @@ class SupplyLevelBar extends StatelessWidget {
     super.key,
   });
 
-  final TonerColor toner;
+  /// The supply's colour. Null for a supply that has none, such as a drum
+  /// or a waste box.
+  final TonerColor? toner;
 
   /// The supply's name, for example "Cyan".
   final String label;
@@ -59,7 +61,9 @@ class SupplyLevelBar extends StatelessWidget {
                     alignment: AlignmentDirectional.centerStart,
                     widthFactor: fill,
                     child: ColoredBox(
-                      color: context.semanticColors.toner(toner),
+                      color: toner == null
+                          ? colors.textMuted
+                          : context.semanticColors.toner(toner!),
                     ),
                   ),
                 ],

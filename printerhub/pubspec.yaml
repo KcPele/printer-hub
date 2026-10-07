@@ -15,6 +15,8 @@ dependencies:
   auth_repository:
     path: packages/auth_repository
   bloc: ^9.2.1
+  connection_engine:
+    path: packages/connection_engine
   equatable: ^3.0.0
   flutter:
     sdk: flutter
@@ -31,6 +33,10 @@ dependencies:
     path: packages/organizations_repository
   preferences_repository:
     path: packages/preferences_repository
+  printer_protocols:
+    path: packages/printer_protocols
+  printers_repository:
+    path: packages/printers_repository
 
 dev_dependencies:
   bloc_lint: ^0.4.2

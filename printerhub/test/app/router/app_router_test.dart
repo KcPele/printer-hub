@@ -9,9 +9,11 @@ import 'package:printerhub/app/app.dart';
 import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/home/home.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
 import 'package:printerhub/welcome/welcome.dart';
+import 'package:printers_repository/printers_repository.dart';
 
 import '../../helpers/helpers.dart';
 
@@ -52,6 +54,9 @@ void main() {
             RepositoryProvider<OrganizationsRepository>.value(
               value: backend.organizations,
             ),
+            RepositoryProvider<PrintersRepository>.value(
+              value: backend.printers,
+            ),
           ],
           child: MultiBlocProvider(
             providers: [
@@ -59,6 +64,13 @@ void main() {
                 create: (_) => ThemeCubit(preferencesRepository: preferences),
               ),
               BlocProvider.value(value: session),
+              BlocProvider(
+                create: (_) => PrintersCubit(
+                  printersRepository: backend.printers,
+                  organizationId: session.state.organization?.id,
+                  organizationChanges: const Stream.empty(),
+                ),
+              ),
             ],
             child: MaterialApp.router(
               routerConfig: router,
@@ -164,6 +176,23 @@ void main() {
       await open(tester, AppRoutes.verifyEmail);
 
       expect(find.byType(VerifyEmailPage), findsOneWidget);
+    });
+
+    testWidgets('opens the add-printer screen and a printer by its id', (
+      tester,
+    ) async {
+      await tester.runAsync(backend.signedInBefore);
+
+      await open(tester, AppRoutes.addPrinter);
+      expect(find.byType(AddPrinterPage), findsOneWidget);
+
+      await open(tester, AppRoutes.printer('printer-7'));
+      expect(
+        tester
+            .widget<PrinterDetailPage>(find.byType(PrinterDetailPage))
+            .printerId,
+        'printer-7',
+      );
     });
   });
 }

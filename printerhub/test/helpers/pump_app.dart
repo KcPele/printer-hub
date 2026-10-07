@@ -9,8 +9,10 @@ import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printerhub/app/app.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
+import 'package:printers_repository/printers_repository.dart';
 
 import 'test_backend.dart';
 
@@ -66,6 +68,7 @@ extension PumpApp on WidgetTester {
     ThemeCubit? themeCubit,
     TestBackend? backend,
     SessionCubit? sessionCubit,
+    PrintersCubit? printersCubit,
     GoRouter? router,
   }) async {
     final preferences = preferencesRepository ?? emptyPreferences();
@@ -81,6 +84,16 @@ extension PumpApp on WidgetTester {
           keptOrganizations: await api.organizations.kept(),
         );
     if (sessionCubit == null) addTearDown(session.close);
+    final printers =
+        printersCubit ??
+        PrintersCubit(
+          printersRepository: api.printers,
+          organizationId: session.state.organization?.id,
+          organizationChanges: session.stream
+              .map((state) => state.organization?.id)
+              .distinct(),
+        );
+    if (printersCubit == null) addTearDown(printers.close);
 
     await pumpWidget(
       MultiRepositoryProvider(
@@ -90,11 +103,13 @@ extension PumpApp on WidgetTester {
           RepositoryProvider<OrganizationsRepository>.value(
             value: api.organizations,
           ),
+          RepositoryProvider<PrintersRepository>.value(value: api.printers),
         ],
         child: MultiBlocProvider(
           providers: [
             BlocProvider.value(value: theme),
             BlocProvider.value(value: session),
+            BlocProvider.value(value: printers),
           ],
           child: BlocBuilder<ThemeCubit, AppThemeId>(
             builder: (context, theme) => MaterialApp(
@@ -121,6 +136,7 @@ extension PumpApp on WidgetTester {
         preferencesRepository: preferences,
         authRepository: backend.auth,
         organizationsRepository: backend.organizations,
+        printersRepository: backend.printers,
         keptOrganizations: await backend.organizations.kept(),
       ),
     );

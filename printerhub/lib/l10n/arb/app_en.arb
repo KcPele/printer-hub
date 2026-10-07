@@ -535,5 +535,263 @@
     "settingsSignOut": "Sign out",
     "@settingsSignOut": {
         "description": "Settings entry that signs out"
+    },
+    "printersAdd": "Add a printer",
+    "@printersAdd": {
+        "description": "Button and title for adding a printer"
+    },
+    "printersRetry": "Try again",
+    "@printersRetry": {
+        "description": "Button that reloads the printers"
+    },
+    "printerStatusReady": "Ready",
+    "@printerStatusReady": {
+        "description": "Status of a printer that is online with nothing wrong"
+    },
+    "printerStatusAttention": "Needs attention",
+    "@printerStatusAttention": {
+        "description": "Status of a printer that has an error"
+    },
+    "printerStatusWarning": "Check soon",
+    "@printerStatusWarning": {
+        "description": "Status of a printer that has a warning"
+    },
+    "printerStatusOffline": "Offline",
+    "@printerStatusOffline": {
+        "description": "Status of a printer that answers but cannot serve"
+    },
+    "printerStatusUnreachable": "Not reachable",
+    "@printerStatusUnreachable": {
+        "description": "Status of a printer that does not answer on this network"
+    },
+    "printerStatusUnknown": "Not checked yet",
+    "@printerStatusUnknown": {
+        "description": "Status of a printer whose state is not known"
+    },
+    "printerStatusChecking": "Checking…",
+    "@printerStatusChecking": {
+        "description": "Shown while a printer's status is being read"
+    },
+    "addPrinterTitle": "Add a printer",
+    "@addPrinterTitle": {
+        "description": "Title of the add printer screen"
+    },
+    "addPrinterBody": "Enter the printer's address. You can find it on the printer's panel, under network settings.",
+    "@addPrinterBody": {
+        "description": "Explains the address field"
+    },
+    "addPrinterAddress": "Printer address",
+    "@addPrinterAddress": {
+        "description": "Label of the address field"
+    },
+    "addPrinterAddressHint": "192.168.1.40",
+    "@addPrinterAddressHint": {
+        "description": "Example address"
+    },
+    "addPrinterFind": "Find printer",
+    "@addPrinterFind": {
+        "description": "Button that looks for the printer at the address"
+    },
+    "addPrinterSearching": "Asking the printer what it can do…",
+    "@addPrinterSearching": {
+        "description": "Shown while the printer is being probed"
+    },
+    "addPrinterInvalid": "That does not look like an address. Try something like 192.168.1.40.",
+    "@addPrinterInvalid": {
+        "description": "Shown when the address cannot be parsed"
+    },
+    "addPrinterUnreachable": "Nothing answered at that address. Check that the printer is on and that your phone is on the same network.",
+    "@addPrinterUnreachable": {
+        "description": "Shown when no device answers"
+    },
+    "addPrinterNotAPrinter": "Something answered, but not a printer PrinterHub can talk to.",
+    "@addPrinterNotAPrinter": {
+        "description": "Shown when the device is not a supported printer"
+    },
+    "addPrinterFound": "Found it",
+    "@addPrinterFound": {
+        "description": "Title when the printer was found"
+    },
+    "addPrinterName": "Name",
+    "@addPrinterName": {
+        "description": "Label of the printer name field"
+    },
+    "addPrinterLocation": "Location (optional)",
+    "@addPrinterLocation": {
+        "description": "Label of the printer location field"
+    },
+    "addPrinterLocationHint": "Second floor, by the kitchen",
+    "@addPrinterLocationHint": {
+        "description": "Example location"
+    },
+    "addPrinterNameRequired": "Give the printer a name.",
+    "@addPrinterNameRequired": {
+        "description": "Shown under an empty printer name"
+    },
+    "addPrinterSave": "Add printer",
+    "@addPrinterSave": {
+        "description": "Button that saves the printer"
+    },
+    "addPrinterDifferent": "Try another address",
+    "@addPrinterDifferent": {
+        "description": "Button that returns to the address field"
+    },
+    "addPrinterAdded": "{name} was added.",
+    "@addPrinterAdded": {
+        "description": "Shown after a printer was added",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "featureColor": "Prints in colour",
+    "@featureColor": {
+        "description": "A printer capability"
+    },
+    "featureMono": "Prints in black and white",
+    "@featureMono": {
+        "description": "A printer capability"
+    },
+    "featureDuplex": "Prints on both sides",
+    "@featureDuplex": {
+        "description": "A printer capability"
+    },
+    "featureScanBoth": "Scans from the glass and the feeder",
+    "@featureScanBoth": {
+        "description": "A scanner capability"
+    },
+    "featureScanGlass": "Scans from the glass",
+    "@featureScanGlass": {
+        "description": "A scanner capability"
+    },
+    "featureScanFeeder": "Scans from the feeder",
+    "@featureScanFeeder": {
+        "description": "A scanner capability"
+    },
+    "featureCopy": "Copies",
+    "@featureCopy": {
+        "description": "A device capability"
+    },
+    "featureNoPrint": "Does not print over the network",
+    "@featureNoPrint": {
+        "description": "Shown for a scan-only device"
+    },
+    "printerSupplies": "Supplies",
+    "@printerSupplies": {
+        "description": "Heading above a printer's toner levels"
+    },
+    "printerSupplyPercent": "{percent}%",
+    "@printerSupplyPercent": {
+        "description": "How much of a supply is left",
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "printerSupplyUnknown": "Unknown",
+    "@printerSupplyUnknown": {
+        "description": "Shown when a supply level is not reported"
+    },
+    "printerAbilities": "What it can do",
+    "@printerAbilities": {
+        "description": "Heading above a printer's capabilities"
+    },
+    "printerConnections": "How it connects",
+    "@printerConnections": {
+        "description": "Heading above a printer's connections"
+    },
+    "printerCheck": "Check status",
+    "@printerCheck": {
+        "description": "Button that reads the printer's status again"
+    },
+    "printerRemove": "Remove printer",
+    "@printerRemove": {
+        "description": "Button that removes the printer"
+    },
+    "printerRemoveTitle": "Remove {name}?",
+    "@printerRemoveTitle": {
+        "description": "Title of the remove confirmation",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "printerRemoveBody": "It is removed for everyone in the workspace. Its job history is kept.",
+    "@printerRemoveBody": {
+        "description": "Text of the remove confirmation"
+    },
+    "printerRemoveConfirm": "Remove",
+    "@printerRemoveConfirm": {
+        "description": "Confirms removing the printer"
+    },
+    "printerRemoveCancel": "Cancel",
+    "@printerRemoveCancel": {
+        "description": "Dismisses the remove confirmation"
+    },
+    "printerRemoved": "{name} was removed.",
+    "@printerRemoved": {
+        "description": "Shown after a printer was removed",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "printerNotFound": "This printer is no longer in the workspace.",
+    "@printerNotFound": {
+        "description": "Shown when a printer's page is opened after it was removed"
+    },
+    "printerLastSeen": "Last seen {when}",
+    "@printerLastSeen": {
+        "description": "When the printer last answered",
+        "placeholders": {
+            "when": {
+                "type": "String"
+            }
+        }
+    },
+    "alertPaperJam": "Paper is jammed",
+    "@alertPaperJam": {
+        "description": "Printer alert"
+    },
+    "alertDoorOpen": "A door or cover is open",
+    "@alertDoorOpen": {
+        "description": "Printer alert"
+    },
+    "alertTonerLow": "Toner is low",
+    "@alertTonerLow": {
+        "description": "Printer alert"
+    },
+    "alertTonerEmpty": "Toner is empty",
+    "@alertTonerEmpty": {
+        "description": "Printer alert"
+    },
+    "alertPaperLow": "Paper is low",
+    "@alertPaperLow": {
+        "description": "Printer alert"
+    },
+    "alertPaperEmpty": "Out of paper",
+    "@alertPaperEmpty": {
+        "description": "Printer alert"
+    },
+    "alertOther": "The printer reports: {code}",
+    "@alertOther": {
+        "description": "Printer alert the app has no sentence for",
+        "placeholders": {
+            "code": {
+                "type": "String"
+            }
+        }
+    },
+    "homePrinters": "Your printers",
+    "@homePrinters": {
+        "description": "Heading above the printers on Home"
+    },
+    "homeSeeAll": "See all",
+    "@homeSeeAll": {
+        "description": "Link from Home to the printers list"
     }
 }

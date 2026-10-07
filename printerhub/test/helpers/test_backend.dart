@@ -6,6 +6,9 @@ import 'package:auth_repository/auth_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:local_store/local_store.dart';
 import 'package:organizations_repository/organizations_repository.dart';
+import 'package:printer_protocols/printer_protocols.dart';
+import 'package:printer_protocols/testing.dart';
+import 'package:printers_repository/printers_repository.dart';
 
 /// A pretend PrinterHub API with the real client and repositories on top,
 /// so a test exercises everything from the screen down to the request.
@@ -23,6 +26,14 @@ class TestBackend {
     );
     auth = AuthRepository(client: client, store: store);
     organizations = OrganizationsRepository(client: client, store: store);
+    device = FakePrinterHttp(
+      (request) => throw PrinterUnreachable(request.uri, 'nothing there'),
+    );
+    printers = PrintersRepository(
+      client: client,
+      probe: DeviceProbe(http: device),
+      store: store,
+    );
   }
 
   final InMemorySecureStore store = InMemorySecureStore();
@@ -30,6 +41,13 @@ class TestBackend {
   late final PrinterHubClient client;
   late final AuthRepository auth;
   late final OrganizationsRepository organizations;
+  late final PrintersRepository printers;
+
+  /// The local network. Nothing answers on it until [plugInPrinter].
+  late final FakePrinterHttp device;
+
+  /// The printers the API knows, in every workspace.
+  List<Map<String, Object?>> printerList = [];
 
   /// The account the API knows.
   Map<String, Object?> user = userBody();
@@ -71,6 +89,70 @@ class TestBackend {
     await auth.signIn(email: 'ada@example.com', password: 'correct horse');
     if (workspaces.isNotEmpty) await organizations.list();
     network.requests.clear();
+  }
+
+  /// Puts a colour multifunction printer on the local network, answering
+  /// IPP and eSCL at any address. [stateReasons] and [tonerLevels] set what
+  /// it reports about itself.
+  void plugInPrinter({
+    List<String> stateReasons = const ['none'],
+    Map<String, int> tonerLevels = const {'black': 82, 'cyan': 8},
+  }) {
+    device.device = (request) {
+      if (request.uri.path.endsWith('ScannerStatus')) {
+        return FakeAnswer.text(200, _scannerStatus);
+      }
+      if (request.uri.path.contains('eSCL')) {
+        return FakeAnswer.text(200, _scannerCapabilities);
+      }
+      return FakeAnswer.ipp(
+        ippResponse(
+          groups: [
+            IppGroup(IppGroupTag.printer, [
+              IppAttribute.single(
+                'printer-make-and-model',
+                IppValueTag.text,
+                'Xerox VersaLink C7130',
+              ),
+              IppAttribute.single('printer-state', IppValueTag.enumeration, 3),
+              IppAttribute.all(
+                'printer-state-reasons',
+                IppValueTag.keyword,
+                stateReasons,
+              ),
+              IppAttribute.single('color-supported', IppValueTag.boolean, true),
+              IppAttribute.all('sides-supported', IppValueTag.keyword, const [
+                'one-sided',
+                'two-sided-long-edge',
+              ]),
+              IppAttribute.all('marker-names', IppValueTag.name, [
+                for (final color in tonerLevels.keys)
+                  '${color[0].toUpperCase()}${color.substring(1)} Toner',
+              ]),
+              IppAttribute.all('marker-types', IppValueTag.keyword, [
+                for (final _ in tonerLevels.keys) 'toner',
+              ]),
+              IppAttribute.all(
+                'marker-colors',
+                IppValueTag.name,
+                tonerLevels.keys,
+              ),
+              IppAttribute.all(
+                'marker-levels',
+                IppValueTag.integer,
+                tonerLevels.values,
+              ),
+            ]),
+          ],
+        ),
+      );
+    };
+  }
+
+  /// Takes the printer off the network again.
+  void unplugPrinter() {
+    device.device = (request) =>
+        throw PrinterUnreachable(request.uri, 'nothing there');
   }
 
   Future<void> close() async {
@@ -136,6 +218,100 @@ class TestBackend {
           'POST /account/delete':
         return const FakeResponse(204);
     }
+    final printerRoute = _printerRoute.firstMatch(key);
+    if (printerRoute != null) return _answerPrinters(printerRoute, body);
+
     return FakeResponse.problem(404, 'not_found', detail: 'No route for $key');
   }
+
+  static final RegExp _printerRoute = RegExp(
+    '^(GET|POST|PATCH|DELETE) /organizations/([^/]+)/printers'
+    r'(?:/([^/]+))?(/status)?$',
+  );
+
+  FakeResponse _answerPrinters(RegExpMatch route, Map<String, dynamic> body) {
+    final method = route.group(1)!;
+    final organizationId = route.group(2)!;
+    final printerId = route.group(3);
+    final isStatus = route.group(4) != null;
+    int indexOf(String id) => printerList.indexWhere((p) => p['id'] == id);
+
+    if (printerId == null) {
+      if (method == 'GET') {
+        return FakeResponse(200, {
+          'items': [
+            for (final printer in printerList)
+              if (printer['organization_id'] == organizationId) printer,
+          ],
+          'next_cursor': null,
+        });
+      }
+      final created = printerBody(
+        id: 'printer-${printerList.length + 1}',
+        name: body['friendly_name'] as String,
+        location: body['location'] as String?,
+        organizationId: organizationId,
+        scans: (body['capabilities'] as Map<String, dynamic>).containsKey(
+          'scan',
+        ),
+      );
+      printerList = [...printerList, created];
+      return FakeResponse(201, created);
+    }
+
+    final index = indexOf(printerId);
+    if (index < 0) return FakeResponse.problem(404, 'printer.not_found');
+    if (method == 'DELETE') {
+      printerList = [...printerList]..removeAt(index);
+      return const FakeResponse(204);
+    }
+
+    final detail = body['detail'] as Map<String, dynamic>?;
+    final updated = {
+      ...printerList[index],
+      if (body['friendly_name'] != null) 'friendly_name': body['friendly_name'],
+      if (isStatus) 'status': body['status'],
+      if (isStatus && detail != null)
+        'status_detail': {
+          'alerts': [
+            for (final alert in detail['alerts'] as List<dynamic>? ?? [])
+              {...alert as Map<String, dynamic>, 'message': null},
+          ],
+          'consumables': [
+            for (final item in detail['consumables'] as List<dynamic>? ?? [])
+              {
+                'color': null,
+                'level_percent': null,
+                ...item as Map<String, dynamic>,
+              },
+          ],
+          'scanner_state': detail['scanner_state'] ?? 'unknown',
+          'trays': <Object?>[],
+        },
+    };
+    printerList = [...printerList]..[index] = updated;
+    return FakeResponse(200, updated);
+  }
 }
+
+const _escl =
+    'xmlns:scan="http://schemas.hp.com/imaging/escl/2011/05/03" '
+    'xmlns:pwg="http://www.pwg.org/schemas/2010/12/sm"';
+
+const _scannerStatus =
+    '<scan:ScannerStatus $_escl><pwg:State>Idle</pwg:State></scan:ScannerStatus>';
+
+final String _scannerCapabilities = [
+  '<scan:ScannerCapabilities $_escl>',
+  '<pwg:MakeAndModel>Xerox VersaLink C7130</pwg:MakeAndModel>',
+  '<scan:Platen><scan:PlatenInputCaps>',
+  '<scan:MaxWidth>2550</scan:MaxWidth><scan:MaxHeight>3508</scan:MaxHeight>',
+  '<scan:ColorMode>RGB24</scan:ColorMode>',
+  '<pwg:DocumentFormat>application/pdf</pwg:DocumentFormat>',
+  '<scan:XResolution>300</scan:XResolution>',
+  '</scan:PlatenInputCaps></scan:Platen>',
+  '<scan:Adf><scan:AdfSimplexInputCaps>',
+  '<scan:ColorMode>RGB24</scan:ColorMode>',
+  '</scan:AdfSimplexInputCaps></scan:Adf>',
+  '</scan:ScannerCapabilities>',
+].join();

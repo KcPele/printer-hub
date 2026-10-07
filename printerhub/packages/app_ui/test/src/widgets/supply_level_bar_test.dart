@@ -79,6 +79,30 @@ void main() {
       }
     });
 
+    testWidgets('draws a supply without a colour in a neutral one', (
+      tester,
+    ) async {
+      await tester.pumpThemed(
+        const SizedBox(
+          width: 200,
+          child: SupplyLevelBar(
+            toner: null,
+            label: 'Drum',
+            valueLabel: '60%',
+            level: 0.6,
+          ),
+        ),
+      );
+
+      final fill = tester.widget<ColoredBox>(
+        find.descendant(
+          of: find.byType(FractionallySizedBox),
+          matching: find.byType(ColoredBox),
+        ),
+      );
+      expect(fill.color, AppTheme.volt.light.colors.textMuted);
+    });
+
     testWidgets('is announced as one item with its level', (tester) async {
       await pump(tester, 0.72);
 

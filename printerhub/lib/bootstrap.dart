@@ -9,7 +9,9 @@ import 'package:flutter/widgets.dart';
 import 'package:local_store/local_store.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
+import 'package:printer_protocols/printer_protocols.dart';
 import 'package:printerhub/app/config/app_config.dart';
+import 'package:printers_repository/printers_repository.dart';
 
 class AppBlocObserver extends BlocObserver {
   const new();
@@ -32,6 +34,7 @@ typedef AppDependencies = ({
   PreferencesRepository preferencesRepository,
   AuthRepository authRepository,
   OrganizationsRepository organizationsRepository,
+  PrintersRepository printersRepository,
   List<Organization>? keptOrganizations,
 });
 
@@ -64,6 +67,18 @@ Future<void> bootstrap(
     client: client,
     store: secureStore,
   );
+  // Printers sign their own certificates. Each one is trusted the first
+  // time it is seen and refused if it later changes.
+  final printersRepository = PrintersRepository(
+    client: client,
+    probe: DeviceProbe(
+      http: IoPrinterHttp(
+        connectTimeout: const Duration(seconds: 3),
+        certificateCheck: CertificateTrust().check,
+      ),
+    ),
+    store: secureStore,
+  );
   await authRepository.restore();
 
   runApp(
@@ -71,6 +86,7 @@ Future<void> bootstrap(
       preferencesRepository: preferencesRepository,
       authRepository: authRepository,
       organizationsRepository: organizationsRepository,
+      printersRepository: printersRepository,
       keptOrganizations: await organizationsRepository.kept(),
     )),
   );

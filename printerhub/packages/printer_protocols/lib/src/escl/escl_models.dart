@@ -153,9 +153,11 @@ class EsclScanSettings {
       ..processing('xml', 'version="1.0" encoding="UTF-8"');
     builder.element(
       'scan:ScanSettings',
-      namespaceUris: const {
-        'scan': 'http://schemas.hp.com/imaging/escl/2011/05/03',
-        'pwg': 'http://www.pwg.org/schemas/2010/12/sm',
+      // Declared as plain attributes, which every version of the xml
+      // package writes the same way.
+      attributes: const {
+        'xmlns:scan': 'http://schemas.hp.com/imaging/escl/2011/05/03',
+        'xmlns:pwg': 'http://www.pwg.org/schemas/2010/12/sm',
       },
       nest: () {
         builder

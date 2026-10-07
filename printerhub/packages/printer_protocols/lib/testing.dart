@@ -13,13 +13,7 @@ import 'package:printer_protocols/printer_protocols.dart';
 
 /// One request a [FakePrinterHttp] received, with its body read in full.
 class SentRequest {
-  const new(
-    this.method,
-    this.uri,
-    this.headers,
-    this.body,
-    this.contentLength,
-  );
+  const new(this.method, this.uri, this.headers, this.body, this.contentLength);
 
   final String method;
   final Uri uri;
@@ -32,11 +26,7 @@ class SentRequest {
 
 /// What a [FakePrinterHttp] answers with.
 class FakeAnswer {
-  const new(
-    this.statusCode, {
-    this.body = const [],
-    this.headers = const {},
-  });
+  const new(this.statusCode, {this.body = const [], this.headers = const {}});
 
   new text(this.statusCode, String text, {this.headers = const {}})
     : body = utf8.encode(text);
