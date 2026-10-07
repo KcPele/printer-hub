@@ -39,10 +39,15 @@ jobs:
       working_directory: printerhub/packages/${{ matrix.package }}
       flutter_version: "3.47.x"
 
-  api-client:
+  dart-packages:
+    # The packages with no Flutter in them.
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [api_client, printer_protocols]
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/dart_package.yml@v1
     with:
-      working_directory: printerhub/packages/api_client
+      working_directory: printerhub/packages/${{ matrix.package }}
       dart_sdk: "3.13.5"
       coverage_excludes: "**/*.g.dart"
 

@@ -1,0 +1,16 @@
+name: printer_protocols
+description: IPP and eSCL in pure Dart. Talks to printers and scanners on the local network.
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+dev_dependencies:
+  mocktail: ^1.0.5
+  test: ^1.32.0
+  very_good_analysis: ^11.0.0
+dependencies:
+  crypto: ^3.0.7
+  meta: ^1.19.0
+  xml: ^7.1.0

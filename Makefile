@@ -86,6 +86,14 @@ app-check: ## Analyze and test the Flutter app and its packages (100% coverage r
 	cd printerhub && flutter analyze
 	cd printerhub && dart pub global run very_good_cli:very_good test --recursive --coverage --min-coverage 100 --exclude-coverage '**/*.g.dart'
 
+.PHONY: app-simulator-test
+app-simulator-test: ## Run the app's printer protocols against the simulator (needs `make simulator`)
+	cd printerhub/packages/printer_protocols && dart test --tags simulator
+
+.PHONY: app-smoke
+app-smoke: ## Run the Dart API client against a local backend (needs `make dev`)
+	cd printerhub/packages/api_client && dart run tool/smoke.dart
+
 .PHONY: app-goldens
 app-goldens: ## Regenerate the golden images after an intended visual change
 	cd printerhub/packages/app_ui && flutter test --update-goldens --tags golden
