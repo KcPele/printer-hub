@@ -16,6 +16,10 @@ import httpx
 _MAX_CHANNELS_PER_CALL = 100
 
 
+class RealtimePublishError(Exception):
+    """The realtime server refused a publish."""
+
+
 def sign_request(secret: str, method: str, path: str, params: Mapping[str, str]) -> str:
     """Signature for a Pusher HTTP API request: HMAC-SHA256 over method, path, sorted query."""
     query = "&".join(f"{key}={params[key]}" for key in sorted(params))
@@ -74,3 +78,14 @@ class PusherPublisher:
             headers={"Content-Type": "application/json"},
         )
         response.raise_for_status()
+        _raise_if_rejected(response)
+
+
+def _raise_if_rejected(response: httpx.Response) -> None:
+    """Soketi reports failures such as a bad signature in the body of a 200 response."""
+    try:
+        body = response.json()
+    except ValueError:
+        return
+    if isinstance(body, dict) and "error" in body:
+        raise RealtimePublishError(f"{body.get('code', 'unknown')}: {body['error']}")

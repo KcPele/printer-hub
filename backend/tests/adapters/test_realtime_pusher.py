@@ -4,8 +4,14 @@ import json
 from urllib.parse import parse_qsl
 
 import httpx
+import pytest
 
-from app.adapters.realtime.pusher import PusherPublisher, sign_channel_auth, sign_request
+from app.adapters.realtime.pusher import (
+    PusherPublisher,
+    RealtimePublishError,
+    sign_channel_auth,
+    sign_request,
+)
 
 
 def test_channel_auth_matches_the_pusher_reference_vector() -> None:
@@ -90,3 +96,33 @@ async def test_publish_splits_more_than_100_channels() -> None:
     await publisher.publish([f"private-user-{n}" for n in range(150)], "ping", {})
 
     assert calls == [100, 50]
+
+
+async def test_rejection_reported_inside_a_200_response_raises() -> None:
+    # Soketi answers 200 with an error body when the signature is wrong.
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"error": "The secret authentication failed", "code": 401})
+
+    publisher = PusherPublisher(
+        base_url="http://soketi:6001",
+        app_id="a",
+        key="k",
+        secret="wrong",
+        client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+    )
+
+    with pytest.raises(RealtimePublishError, match="401"):
+        await publisher.publish(["private-user-1"], "ping", {})
+
+
+async def test_http_error_status_raises() -> None:
+    publisher = PusherPublisher(
+        base_url="http://soketi:6001",
+        app_id="a",
+        key="k",
+        secret="s",
+        client=httpx.AsyncClient(transport=httpx.MockTransport(lambda _: httpx.Response(503))),
+    )
+
+    with pytest.raises(httpx.HTTPStatusError):
+        await publisher.publish(["private-user-1"], "ping", {})
