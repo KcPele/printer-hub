@@ -10,9 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.permissions import Role
 from app.core.security import create_access_token, generate_token, hash_password, hash_token
 from app.modules.auth.models import UserSession
+from app.modules.connections.models import Connection, ConnectionType
 from app.modules.organizations import service as organizations
 from app.modules.organizations.models import Membership, Organization
 from app.modules.organizations.schemas import OrganizationSettings
+from app.modules.printers.models import Printer
 from app.modules.users.models import User
 
 PASSWORD = "correct-horse-battery"
@@ -82,3 +84,37 @@ async def member_headers(
 ) -> dict[str, str]:
     """Create a new member with `role` and return their Authorization header."""
     return await auth_headers(session, await add_member(session, organization, role))
+
+
+async def create_printer(
+    session: AsyncSession, organization: Organization, **overrides: Any
+) -> Printer:
+    values: dict[str, Any] = {
+        "organization_id": organization.id,
+        "friendly_name": "Office Xerox",
+        "manufacturer": "Xerox",
+        "model": "VersaLink C7130",
+    }
+    values.update(overrides)
+    printer = Printer(**values)
+    session.add(printer)
+    await session.flush()
+    return printer
+
+
+async def create_connection(
+    session: AsyncSession, printer: Printer, **overrides: Any
+) -> Connection:
+    values: dict[str, Any] = {
+        "organization_id": printer.organization_id,
+        "printer_id": printer.id,
+        "type": ConnectionType.IPPS,
+        "purposes": ["print"],
+        "priority": 1,
+        "configuration": {"host": "192.168.1.50", "port": 631, "path": "/ipp/print", "tls": True},
+    }
+    values.update(overrides)
+    connection = Connection(**values)
+    session.add(connection)
+    await session.flush()
+    return connection

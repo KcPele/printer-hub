@@ -27,6 +27,8 @@ class Permission(enum.StrEnum):
     PRINTERS_REPORT = "printers.report"
     # Add, edit, and remove printers, connections, and their credentials.
     PRINTERS_MANAGE = "printers.manage"
+    # Read stored connection credentials in order to execute a job locally.
+    CONNECTIONS_USE_CREDENTIALS = "connections.use_credentials"
     JOBS_CREATE = "jobs.create"
     JOBS_READ_ALL = "jobs.read_all"
     JOBS_MANAGE_ALL = "jobs.manage_all"
@@ -51,6 +53,7 @@ _USER = frozenset(
         Permission.MEMBERS_READ,
         Permission.PRINTERS_READ,
         Permission.PRINTERS_REPORT,
+        Permission.CONNECTIONS_USE_CREDENTIALS,
         Permission.JOBS_CREATE,
         Permission.DOCUMENTS_CREATE,
     }

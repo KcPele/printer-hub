@@ -146,7 +146,7 @@ Soketi is the foreground channel. It does not replace APNs and FCM (§11).
 
 ### 6.6 Security
 
-- Connection credentials are Fernet-encrypted at rest and never returned by the API.
+- Connection credentials are Fernet-encrypted at rest and absent from every resource representation. A client that is about to use a connection reads them from one dedicated endpoint, which requires `connections.use_credentials` and writes an audit entry on every read.
 - A log processor redacts values of sensitive keys (`password`, `token`, `authorization`, `secret`, `pin`, `credentials`).
 - Document bytes never pass through the API. Clients upload and download through presigned URLs.
 - Pairing tokens are single-use, expire in 10 minutes, and are stored hashed.
@@ -161,7 +161,7 @@ Soketi is the foreground channel. It does not replace APNs and FCM (§11).
 | `memberships` | organization_id, user_id, role — unique (organization_id, user_id) |
 | `invitations` | organization_id, email, role, token_hash, invited_by, expires_at, accepted_at |
 | `devices` | user_id, installation_id, platform, name, model, os_version, app_version, push_provider, push_token, last_seen_at |
-| `printers` | organization_id, friendly_name, manufacturer, model, serial_number, location, capabilities, status, status_detail, auto_fallback_enabled, default_connection_id, last_seen_at, deleted_at |
+| `printers` | organization_id, friendly_name, manufacturer, model, serial_number (unique per organization), location, capabilities, status, status_detail, auto_fallback_enabled, last_seen_at, deleted_at |
 | `connections` | organization_id, printer_id, type, purposes, priority, configuration, encrypted_credentials, health, last_success_at, last_failure_at, last_latency_ms, last_error |
 | `capability_profiles` | manufacturer, model_patterns, display_name, capabilities, notes, version |
 | `pairing_tokens` | organization_id, printer_id, token_hash, created_by, expires_at, redeemed_at |
@@ -185,6 +185,8 @@ Two sources feed it:
 
 1. **Probed snapshot.** The client probes the printer and `PUT`s the result. This is the source of truth for enabling features (FRD §6.4).
 2. **Registry profile.** `capability_profiles` holds vendor baselines matched by manufacturer and model pattern. It tells clients what to probe for and which features are optional hardware. It ships seeded with the Xerox VersaLink C7100 series profile from FRD §62.
+
+The default connection of a printer is its lowest `priority` value; there is no separate pointer to keep in sync.
 
 ## 9. Job model
 

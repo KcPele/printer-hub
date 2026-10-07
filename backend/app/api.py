@@ -5,10 +5,15 @@ from fastapi import APIRouter
 from app.core.errors import problem_responses
 from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
+from app.modules.capabilities.router import admin_router as capabilities_admin_router
+from app.modules.capabilities.router import router as capabilities_router
 from app.modules.devices.router import router as devices_router
 from app.modules.health.router import router as health_router
 from app.modules.organizations.router import invitations_router
 from app.modules.organizations.router import router as organizations_router
+from app.modules.pairing.router import router as pairing_router
+from app.modules.printers.router import connections_router
+from app.modules.printers.router import router as printers_router
 from app.modules.realtime.router import router as realtime_router
 from app.modules.users.router import router as users_router
 
@@ -25,5 +30,10 @@ for router in (
     invitations_router,
     audit_router,
     realtime_router,
+    printers_router,
+    connections_router,
+    pairing_router,
+    capabilities_router,
+    capabilities_admin_router,
 ):
     api_router.include_router(router)
