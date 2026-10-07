@@ -1,7 +1,8 @@
 name: printerhub
 
 # Infrastructure starts by default: `docker compose up -d`.
-# The API, worker, and simulator run in containers with: `docker compose --profile app up -d`.
+# The API (with its embedded worker) and the simulator run in containers with:
+#   docker compose --profile app up -d --build
 # Host ports are offset so they do not collide with locally installed Postgres and Redis.
 
 x-backend-env: &backend-env
@@ -59,15 +60,6 @@ services:
       timeout: 3s
       retries: 10
 
-  migrate:
-    profiles: ["app"]
-    build: ./backend
-    command: ["alembic", "upgrade", "head"]
-    environment: *backend-env
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   api:
     profiles: ["app"]
     build: ./backend
@@ -75,23 +67,18 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
       minio:
         condition: service_healthy
-
-  worker:
-    profiles: ["app"]
-    build: ./backend
-    command: ["arq", "app.worker.WorkerSettings"]
-    environment: *backend-env
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-      redis:
-        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
   simulator:
     profiles: ["app"]

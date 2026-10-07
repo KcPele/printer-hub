@@ -32,11 +32,11 @@ seed: ## Load reference data (capability profiles, feature flags)
 	$(UV) python -m scripts.seed
 
 .PHONY: dev
-dev: ## Run the API with reload on :8000
+dev: ## Run the API (with its embedded worker) with reload on :8000
 	$(UV) uvicorn app.main:app --reload --port 8000
 
 .PHONY: worker
-worker: ## Run the background worker
+worker: ## Run the worker as its own process (set PRINTERHUB_EMBEDDED_WORKER=false on the API)
 	$(UV) arq app.worker.WorkerSettings
 
 .PHONY: simulator

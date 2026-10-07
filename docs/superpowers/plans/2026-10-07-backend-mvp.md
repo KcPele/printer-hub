@@ -1,6 +1,6 @@
 # PrinterHub Backend MVP Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build the shared API-first backend covering all 20 items of FRD §55.1.
 
@@ -104,13 +104,13 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 
 **Produces:** every `app/core` interface above except `permissions`, `deps`, `events`, `tasks`.
 
-- [ ] Scaffold the repo files and `uv sync`.
-- [ ] `docker compose up -d` and confirm Postgres, Redis, and MinIO report healthy.
-- [ ] Write core tests: password hash round trip, token hash determinism, access-token round trip and expiry, Fernet round trip, UUIDv7 ordering, problem+json shape for `AppError` and for request validation errors.
-- [ ] Implement core modules until they pass.
-- [ ] Write `test_health.py`: `/api/v1/health/live` returns 200; `/api/v1/health/ready` returns 200 and reports `database` and `redis` as `ok`.
-- [ ] Implement the app factory, health router, and test fixtures (`client`, `session`, migrated test database, per-test rollback).
-- [ ] Run `make check`. Commit `chore: scaffold backend foundation`.
+- [x] Scaffold the repo files and `uv sync`.
+- [x] `docker compose up -d` and confirm Postgres, Redis, and MinIO report healthy.
+- [x] Write core tests: password hash round trip, token hash determinism, access-token round trip and expiry, Fernet round trip, UUIDv7 ordering, problem+json shape for `AppError` and for request validation errors.
+- [x] Implement core modules until they pass.
+- [x] Write `test_health.py`: `/api/v1/health/live` returns 200; `/api/v1/health/ready` returns 200 and reports `database` and `redis` as `ok`.
+- [x] Implement the app factory, health router, and test fixtures (`client`, `session`, migrated test database, per-test rollback).
+- [x] Run `make check`. Commit `chore: scaffold backend foundation`.
 
 ### Task M1: Auth, users, sessions, devices
 
@@ -135,8 +135,8 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - Login is rate limited after the configured number of attempts.
 - Device registration is an upsert on `(user_id, installation_id)`; one user cannot read or change another user's device.
 
-- [ ] Write the tests, watch them fail, implement, run `make check`.
-- [ ] Commit `feat(auth): add accounts, sessions, and device registration`.
+- [x] Write the tests, watch them fail, implement, run `make check`.
+- [x] Commit `feat(auth): add accounts, sessions, and device registration`.
 
 ### Task M2: Organizations, RBAC, invitations, audit
 
@@ -161,8 +161,8 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - An invitation token is single-use, expires, and only works for the invited email.
 - Membership and settings changes write audit rows; `audit.read` is required to list them.
 
-- [ ] Write the tests, watch them fail, implement, run `make check`.
-- [ ] Commit `feat(orgs): add organizations, roles, invitations, and audit log`.
+- [x] Write the tests, watch them fail, implement, run `make check`.
+- [x] Commit `feat(orgs): add organizations, roles, invitations, and audit log`.
 
 ### Task M3: Printers, connections, capabilities, pairing
 
@@ -192,8 +192,8 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - A pairing token redeems once, fails after expiry, and returns no credentials.
 - Deleting a printer is a soft delete.
 
-- [ ] Write the tests, watch them fail, implement, run `make check`.
-- [ ] Commit `feat(printers): add printer profiles, connections, capability registry, and pairing`.
+- [x] Write the tests, watch them fail, implement, run `make check`.
+- [x] Commit `feat(printers): add printer profiles, connections, capability registry, and pairing`.
 
 ### Task M4: Jobs and idempotency
 
@@ -218,8 +218,8 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - Retry is allowed only from `failed` or `cancelled` and links `retry_of_job_id`.
 - Batch sync applies each item on its own and reports per-item results; replaying the batch changes nothing.
 
-- [ ] Write the tests, watch them fail, implement, run `make check`.
-- [ ] Commit `feat(jobs): add job model, idempotency, and batch sync`.
+- [x] Write the tests, watch them fail, implement, run `make check`.
+- [x] Commit `feat(jobs): add job model, idempotency, and batch sync`.
 
 ### Task M5: Presets, documents, object storage
 
@@ -245,8 +245,8 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - Delete removes the object and soft-deletes the row.
 - The S3 adapter round trips against MinIO (marked `integration`).
 
-- [ ] Write the tests, watch them fail, implement, run `make check`.
-- [ ] Commit `feat(documents): add presets, document metadata, and object storage`.
+- [x] Write the tests, watch them fail, implement, run `make check`.
+- [x] Commit `feat(documents): add presets, document metadata, and object storage`.
 
 ### Task M6: Notifications, push, worker, feature flags
 
@@ -273,16 +273,16 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - Flag resolution: organization override beats the global default; an unknown flag is absent.
 - The retention task deletes expired documents and their objects.
 
-- [ ] Write the tests, watch them fail, implement, run `make check`.
-- [ ] Commit `feat(notifications): add notifications, push providers, worker, and feature flags`.
+- [x] Write the tests, watch them fail, implement, run `make check`.
+- [x] Commit `feat(notifications): add notifications, push providers, worker, and feature flags`.
 
 ### Task M7: Simulator, contract, packaging
 
 **Files:**
-- Create: `backend/simulator/{__init__,main,ipp,escl,state,fixtures}.py`
-- Create: `backend/scripts/{export_openapi,seed}.py`, `backend/openapi.json`
-- Create: `backend/Dockerfile`, `backend/.dockerignore`, `.github/workflows/backend-ci.yml`
-- Modify: `docker-compose.yml` (add `api`, `worker`, `simulator` under the `app` profile), `README.md`, `CLAUDE.md`
+- Create: `backend/simulator/{__init__,main,ipp,printer,escl,state,fixtures}.py`, `backend/simulator/README.md`
+- Create: `backend/scripts/{start.sh,seed.py,promote_superuser.py,export_openapi.py}`, `backend/openapi.json`
+- Create: `backend/Dockerfile`, `backend/.dockerignore`, `.github/workflows/backend-ci.yml`, `docs/deployment.md`
+- Modify: `backend/app/main.py` (run the worker inside the API process), `docker-compose.yml` (add `api` and `simulator` under the `app` profile), `README.md`, `CLAUDE.md`
 - Test: `backend/tests/simulator/test_{ipp,escl,control}.py`, `backend/tests/test_openapi.py`
 
 **Test cases:**
@@ -294,10 +294,10 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - With eSCL disabled, `/eSCL/ScannerCapabilities` returns `404`.
 - `openapi.json` matches the running app.
 
-- [ ] Write the tests, watch them fail, implement, run `make check`.
-- [ ] Build the Docker image and start the full stack with `docker compose --profile app up -d`.
-- [ ] Walk the smoke flow against the running API: register, create organization, add printer, create job, report completion.
-- [ ] Commit `feat(simulator): add printer simulator, OpenAPI contract, and packaging`.
+- [x] Write the tests, watch them fail, implement, run `make check`.
+- [x] Build the Docker image.
+- [x] Walk the smoke flow against the running API: register, create organization, add printer, create job, report completion.
+- [x] Commit `feat(simulator): add printer simulator, OpenAPI contract, and packaging`.
 
 ## Self-review
 

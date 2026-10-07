@@ -1,9 +1,12 @@
 """Application settings, loaded from `PRINTERHUB_*` environment variables."""
 
+import base64
+import binascii
+import json
 from functools import lru_cache
 from typing import Literal, Self
 
-from pydantic import SecretStr, model_validator
+from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Development-only defaults. `Settings` refuses to start with these outside local and test.
@@ -29,8 +32,11 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://printerhub:printerhub@localhost:5433/printerhub"
     database_pool_size: int = 10
     redis_url: str = "redis://localhost:6380/0"
-    # "arq" queues background work in Redis for the worker process.
+    # "arq" queues background work in Redis for the worker.
     tasks_backend: Literal["arq", "memory"] = "arq"
+    # Run the worker inside the API process, so one container is the whole
+    # backend. Turn off when running `arq app.worker.WorkerSettings` separately.
+    embedded_worker: bool = True
 
     secret_key: SecretStr = SecretStr(_DEV_SECRET_KEY)
     credentials_encryption_key: SecretStr = SecretStr(_DEV_ENCRYPTION_KEY)
@@ -61,7 +67,45 @@ class Settings(BaseSettings):
     # "log" writes pushes to the log; "fcm" sends through Firebase Cloud
     # Messaging, which reaches Android directly and iOS through APNs.
     push_backend: Literal["log", "fcm", "memory"] = "log"
+    # The Firebase service-account key, as JSON or as base64 of that JSON.
     fcm_service_account_json: SecretStr | None = None
+
+    @field_validator("database_url")
+    @classmethod
+    def _use_async_driver(cls, value: str) -> str:
+        """Accept the URL forms hosting providers hand out and select the asyncpg driver."""
+        for prefix in ("postgres://", "postgresql://"):
+            if value.startswith(prefix):
+                value = "postgresql+asyncpg://" + value[len(prefix) :]
+        # libpq spells the TLS option `sslmode`; asyncpg calls it `ssl`.
+        return value.replace("?sslmode=", "?ssl=").replace("&sslmode=", "&ssl=")
+
+    @field_validator("fcm_service_account_json")
+    @classmethod
+    def _decode_service_account(cls, value: SecretStr | None) -> SecretStr | None:
+        """Accept the key as JSON or base64, and check it is the right kind of file."""
+        if value is None or not value.get_secret_value().strip():
+            return None
+        raw = value.get_secret_value().strip()
+        if not raw.startswith("{"):
+            try:
+                raw = base64.b64decode(raw, validate=True).decode()
+            except (binascii.Error, UnicodeDecodeError) as exc:
+                raise ValueError("must be the service-account JSON or base64 of it") from exc
+        try:
+            account = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise ValueError("is not valid JSON") from exc
+        if "project_info" in account:
+            raise ValueError(
+                "is google-services.json, the Android app config. The backend needs the "
+                "service-account key: Firebase console > Project settings > Service accounts "
+                "> Generate new private key"
+            )
+        missing = {"project_id", "client_email", "private_key"} - account.keys()
+        if missing:
+            raise ValueError(f"is missing {sorted(missing)}; it is not a service-account key")
+        return SecretStr(raw)
 
     @property
     def is_production_like(self) -> bool:
@@ -77,8 +121,14 @@ class Settings(BaseSettings):
             raise ValueError(
                 "PRINTERHUB_CREDENTIALS_ENCRYPTION_KEY must be set outside local and test"
             )
+        return self
+
+    @model_validator(mode="after")
+    def _require_fcm_credentials(self) -> Self:
         if self.push_backend == "fcm" and self.fcm_service_account_json is None:
-            raise ValueError("PRINTERHUB_FCM_SERVICE_ACCOUNT_JSON is required when push is fcm")
+            raise ValueError(
+                "PRINTERHUB_FCM_SERVICE_ACCOUNT_JSON is required when PRINTERHUB_PUSH_BACKEND=fcm"
+            )
         return self
 
 

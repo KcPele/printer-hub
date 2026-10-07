@@ -1,8 +1,12 @@
 """Application factory."""
 
+import asyncio
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
+from typing import Any, cast
 
+import structlog
+from arq.worker import create_worker
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
@@ -21,9 +25,33 @@ def _operation_id(route: APIRoute) -> str:
     return f"{tag}_{route.name}"
 
 
+log = structlog.get_logger(__name__)
+
+
+def _log_worker_exit(task: asyncio.Task[None]) -> None:
+    if not task.cancelled() and task.exception() is not None:
+        log.error("embedded_worker_stopped", exc_info=task.exception())
+
+
 @asynccontextmanager
 async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+    worker = None
+    worker_task: asyncio.Task[None] | None = None
+    if settings.embedded_worker and settings.tasks_backend == "arq":
+        # Imported here: the worker module builds its Redis settings on import.
+        from app.worker import WorkerSettings
+
+        # With several API processes each runs a worker. That is safe: a queued
+        # task goes to one of them, and arq runs each scheduled job once.
+        worker = create_worker(cast("Any", WorkerSettings), handle_signals=False)
+        worker_task = asyncio.create_task(worker.async_run())
+        worker_task.add_done_callback(_log_worker_exit)
     yield
+    if worker is not None and worker_task is not None:
+        await worker.close()
+        with suppress(asyncio.CancelledError):
+            await worker_task
     await get_engine().dispose()
     await get_redis().aclose()
 

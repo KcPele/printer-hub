@@ -14,6 +14,8 @@ Backend-first, mobile-first printer and scanner platform. This repo is a monorep
 | Backend architecture and the reasons behind it | `docs/superpowers/specs/2026-10-07-backend-mvp-design.md` |
 | Milestones and fixed interface names | `docs/superpowers/plans/2026-10-07-backend-mvp.md` |
 | Commands | `make help` |
+| Hosting, environment variables, push setup | `docs/deployment.md` |
+| Printer simulator endpoints and faults | `backend/simulator/README.md` |
 | API contract | `backend/openapi.json`, or `/api/docs` on a running server |
 
 ## Working in `backend/`
@@ -40,6 +42,7 @@ Adding a module: create the four files, import the models in `app/models.py`, mo
 - **Tenancy.** Every organization-owned route takes `ctx: Annotated[OrgContext, Depends(require(Permission.X))]` from `app/modules/organizations/deps.py`. Every query in its service filters by `ctx.organization.id`. A resource in another organization is a 404, the same as a missing one.
 - **Unit of work.** The session dependency commits. Services call `await session.flush()` to get IDs and surface constraint errors; they leave `commit()` to the dependency.
 - **Side effects after commit.** Background tasks go through `tasks.enqueue(session, ...)`, which waits for the commit, so a failed request sends nothing. Use `db.after_commit` for any new kind of side effect.
+- **One process.** The arq worker runs inside the API process (`embedded_worker`), so the deployment is a single container. A task function lives in `app/worker.py`, opens its own `session_scope`, and takes string arguments.
 - **FCM is the only channel to clients.** A user-facing notification is an in-app row plus an FCM push whose data payload carries the event type and IDs, so an open app can refresh from it. There is no WebSocket server; shared state such as printer status is refetched by clients.
 - **Routers return schemas.** Build the response with `Schema.model_validate(obj)` inside the endpoint. Relationships are loaded explicitly in the service; nothing lazy-loads.
 - **Errors.** Raise an `AppError` subclass from `app/core/errors.py` with a dotted `code` such as `job.invalid_transition`. Codes are API contract: add new ones, keep existing ones stable.
@@ -71,4 +74,6 @@ Adding a module: create the four files, import the models in `app/models.py`, mo
 - Conventional Commits (`feat(jobs): ...`, `fix(auth): ...`). One logical change per commit.
 - Regenerate the contract with `make openapi` whenever a route or schema changes; CI fails on a stale `openapi.json`.
 - Local infrastructure uses offset host ports (Postgres 5433, Redis 6380) so it coexists with locally installed services.
+- `main` deploys to production on push. The container runs `scripts/start.sh`: migrations, seed, then the API. A migration on `main` runs against the live database on the next deploy.
+- `backend/simulator/` shares no code with `backend/app/`. Keep it that way: it stands in for hardware.
 - Settings are `PRINTERHUB_*` environment variables defined in `backend/app/core/config.py`. Add new ones there and to `backend/.env.example`.

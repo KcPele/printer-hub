@@ -61,7 +61,7 @@ printer-hub/
     │   └── modules/
     │       └── <module>/       # router, schemas, models, service
     ├── simulator/              # fake Xerox C7130 (IPP + eSCL)
-    ├── scripts/                # export_openapi, seed
+    ├── scripts/                # start.sh, seed, promote_superuser, export_openapi
     └── tests/
 ```
 
@@ -207,7 +207,7 @@ Rules:
 - FCM is the only push service. It delivers to Android directly and to iOS through APNs, so every device registers an FCM token.
 - Each push has a visible part (title and body) and a data payload (`type`, plus IDs such as `job_id`). An open app uses the payload to refresh.
 - `PushProvider` has three implementations: `LogPushProvider` (development), `FcmPushProvider`, and `MemoryPushProvider` (tests). Direct APNs can be added as a fourth without touching callers.
-- Push is sent from the arq worker. Tokens FCM reports as unregistered are cleared from the device row.
+- Push is sent from the arq worker, which by default runs inside the API process so that one container is the whole backend. Tokens FCM reports as unregistered are cleared from the device row.
 - A user can mute notification types in their preferences; a muted type still creates the in-app row.
 - Triggers in the MVP: job completed, job failed, scan ready, organization invitation.
 

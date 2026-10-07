@@ -9,7 +9,7 @@ The backend holds identity, organizations, printer profiles, job state, document
 | Path | Contents |
 |---|---|
 | `backend/` | FastAPI service, background worker, printer simulator |
-| `docs/` | Design spec and implementation plan |
+| `docs/` | Deployment guide, design spec, implementation plan |
 | `PrinterHub_FRD_v2.0_Mobile_First.md` | Functional requirements |
 
 ## Quick start
@@ -26,9 +26,9 @@ make dev        # API on http://localhost:8000
 
 Interactive API docs: <http://localhost:8000/api/docs>.
 
-Run `make help` for every command, including `make worker` and `make simulator`.
+`make dev` runs the background worker inside the API process, so that one command is the whole backend. Run `make help` for every command, including `make simulator`.
 
-To run the whole stack in containers instead:
+To run the API and the simulator in containers instead:
 
 ```bash
 docker compose --profile app up -d --build
@@ -47,26 +47,17 @@ docker compose --profile app up -d --build
 
 Ports are offset from the defaults so they coexist with locally installed Postgres and Redis.
 
-## Using hosted services
+## Deploying
 
-Every setting is an environment variable with the `PRINTERHUB_` prefix. `backend/.env.example` lists them. To point the backend at a hosted database or object store, set the matching variables in `backend/.env`; no code changes are needed.
+One container is the whole backend. It needs PostgreSQL, Redis, and S3-compatible storage. See [docs/deployment.md](docs/deployment.md) for the settings, the required environment variables, and push notification setup.
 
-Outside `local` and `test`, the service refuses to start until `PRINTERHUB_SECRET_KEY` and `PRINTERHUB_CREDENTIALS_ENCRYPTION_KEY` are set.
+Every setting is an environment variable with the `PRINTERHUB_` prefix, defined in `backend/app/core/config.py`. Outside `local` and `test`, the service refuses to start until `PRINTERHUB_SECRET_KEY` and `PRINTERHUB_CREDENTIALS_ENCRYPTION_KEY` are set.
 
 ## Notifications
 
 **Firebase Cloud Messaging (FCM)** is the one notification service. It reaches Android directly and iOS through APNs, so both platforms register an FCM token. Every push carries a small data payload (event type and IDs), which an open app uses to refresh itself. Screens that show shared state, such as printer status, refetch when opened and on a timer.
 
-Pushes are written to the log until FCM is configured:
-
-1. Create a Firebase project and add the iOS and Android apps.
-2. Upload the APNs authentication key in the Firebase console (Project settings → Cloud Messaging).
-3. Generate a service-account key and set it in `backend/.env`:
-
-   ```
-   PRINTERHUB_PUSH_BACKEND=fcm
-   PRINTERHUB_FCM_SERVICE_ACCOUNT_JSON='{...}'
-   ```
+Pushes are written to the log until FCM is configured. [docs/deployment.md](docs/deployment.md#push-notifications) has the steps.
 
 ## Quality gates
 

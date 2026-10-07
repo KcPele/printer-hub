@@ -16,6 +16,13 @@ build/
 .env.*
 !.env.example
 
+# Firebase files. The app configs belong in the mobile project; the
+# service-account key is a server secret and belongs in no repository.
+google-services.json
+GoogleService-Info.plist
+*firebase-adminsdk*.json
+*.crdownload
+
 # Editors and OS
 .DS_Store
 .idea/
