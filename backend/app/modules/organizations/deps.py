@@ -2,40 +2,15 @@
 
 import uuid
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
 
 import structlog
 
 from app.core.deps import SessionDep
 from app.core.errors import NotFoundError, PermissionDeniedError
-from app.core.permissions import Permission, Role, role_has
+from app.core.permissions import Permission, role_has
 from app.modules.auth.deps import Auth
-from app.modules.auth.models import UserSession
 from app.modules.organizations import service
-from app.modules.organizations.models import Membership, Organization
-from app.modules.organizations.schemas import OrganizationSettings
-from app.modules.users.models import User
-
-
-@dataclass(frozen=True, slots=True)
-class OrgContext:
-    """The caller, verified as a member of the organization in the path."""
-
-    organization: Organization
-    membership: Membership
-    user: User
-    session: UserSession
-
-    @property
-    def role(self) -> Role:
-        return self.membership.role
-
-    @property
-    def settings(self) -> OrganizationSettings:
-        return service.settings_of(self.organization)
-
-    def has(self, permission: Permission) -> bool:
-        return role_has(self.membership.role, permission)
+from app.modules.organizations.context import OrgContext
 
 
 def require(permission: Permission) -> Callable[..., Awaitable[OrgContext]]:
@@ -64,3 +39,6 @@ def require(permission: Permission) -> Callable[..., Awaitable[OrgContext]]:
         )
 
     return dependency
+
+
+__all__ = ["OrgContext", "require"]
