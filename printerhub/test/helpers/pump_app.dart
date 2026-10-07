@@ -12,37 +12,58 @@ class MockPreferencesRepository extends Mock implements PreferencesRepository;
 
 class MockGoRouter extends Mock implements GoRouter;
 
-/// A preferences repository that remembers nothing between launches.
-MockPreferencesRepository emptyPreferences({String? themeName}) {
+/// Preferences held in memory for one test.
+///
+/// A new install by default: no theme chosen, welcome screens not seen.
+MockPreferencesRepository emptyPreferences({
+  String? themeName,
+  bool onboardingCompleted = false,
+}) {
   final repository = MockPreferencesRepository();
+  var welcomed = onboardingCompleted;
   when(() => repository.themeName).thenReturn(themeName);
   when(() => repository.saveThemeName(any())).thenAnswer((_) async {});
+  when(() => repository.onboardingCompleted).thenAnswer((_) => welcomed);
+  when(repository.completeOnboarding).thenAnswer((_) async => welcomed = true);
   return repository;
 }
 
+/// A router that records where a screen asks to go.
+MockGoRouter recordingRouter() {
+  final router = MockGoRouter();
+  when(() => router.push<Object?>(any())).thenAnswer((_) async => null);
+  when(() => router.go(any())).thenReturn(null);
+  return router;
+}
+
 extension PumpApp on WidgetTester {
-  /// Pumps [widget] with the app's theme, strings, and theme cubit.
+  /// Pumps [widget] with the app's theme, strings, preferences, and theme
+  /// cubit.
   ///
   /// Pass [router] to check navigation without building other screens.
   Future<void> pumpApp(
     Widget widget, {
+    PreferencesRepository? preferencesRepository,
     ThemeCubit? themeCubit,
     GoRouter? router,
   }) {
-    final cubit =
-        themeCubit ?? ThemeCubit(preferencesRepository: emptyPreferences());
+    final preferences = preferencesRepository ?? emptyPreferences();
+    final cubit = themeCubit ?? ThemeCubit(preferencesRepository: preferences);
 
     return pumpWidget(
-      BlocProvider.value(
-        value: cubit,
-        child: BlocBuilder<ThemeCubit, AppThemeId>(
-          builder: (context, theme) => MaterialApp(
-            theme: AppTheme.of(theme).data(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: router == null
-                ? widget
-                : InheritedGoRouter(goRouter: router, child: widget),
+      RepositoryProvider<PreferencesRepository>.value(
+        value: preferences,
+        child: BlocProvider.value(
+          value: cubit,
+          child: BlocBuilder<ThemeCubit, AppThemeId>(
+            builder: (context, theme) => MaterialApp(
+              theme: AppTheme.of(theme).data(),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: router == null
+                  ? widget
+                  : InheritedGoRouter(goRouter: router, child: widget),
+            ),
           ),
         ),
       ),

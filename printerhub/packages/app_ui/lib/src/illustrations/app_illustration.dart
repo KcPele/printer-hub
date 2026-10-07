@@ -6,7 +6,13 @@ import 'package:material_ui/material_ui.dart';
 /// The artwork drawn for the app.
 enum AppIllustrations {
   /// A floor-standing multifunction printer.
-  printer('printer');
+  printer('printer'),
+
+  /// A phone sending a document that comes out printed.
+  phonePrint('phone_print'),
+
+  /// A document behind a shield: it stays on the device.
+  private('private');
 
   new(this.file);
 

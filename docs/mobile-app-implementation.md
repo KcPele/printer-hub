@@ -1,7 +1,7 @@
 # PrinterHub Mobile — Implementation Document
 
 **Date:** 2026-10-07
-**Status:** Milestone A0 is in progress. Done: the three themes, theme switching that survives a restart, the shared widgets, the gallery, and the themed illustration pipeline. The generated Dart API client, with session renewal and typed errors, is in `packages/api_client`. A1 is next. Section 14 records the owner's decisions and the questions still open.
+**Status:** Milestone A0 is in progress. Done: the three themes, theme switching that survives a restart, the shared widgets, the gallery, and the themed illustration pipeline. The generated Dart API client, with session renewal and typed errors, is in `packages/api_client`. The welcome screens, the four-area shell, and Settings with the theme picker are built. The account screens of A1 are next. Section 14 records the owner's decisions and the questions still open.
 **Requirements:** `PrinterHub_FRD_v2.0_Mobile_First.md` §7 (FR-MOB), §8 (FR-CON), §55.2 (mobile MVP), §60 (acceptance on the Xerox VersaLink C7130)
 **Design references:** `design/`, on the owner's machine only. The folder is ignored by git.
 
@@ -252,11 +252,13 @@ Models other than the C7130 have not been tested on hardware. Their pages say wh
 
 ## 9. Screens
 
-Navigation is the same in every theme.
+Navigation is the same in every theme. Four areas sit in a bottom bar: Home, Printers, Activity, and Settings. Each keeps its own place, so returning to an area shows the screen that was left. Tapping the current area's tab goes back to its first screen.
+
+A new install opens on the welcome screens: three introductions, then the theme choice. They are shown once per device.
 
 | Area | Screens |
 |---|---|
-| Onboarding | Welcome, sign in, register, verify email, reset password |
+| Onboarding | Welcome (built), sign in, register, verify email, reset password |
 | Home | Printers at a glance, recent activity, quick actions |
 | Printers | List, detail (status, supplies, trays, connections), Add Printer, catalogue, diagnostics |
 | Print | Choose file, preview, options, progress, result |
@@ -264,7 +266,7 @@ Navigation is the same in every theme.
 | Activity | Job history with filters, job detail with attempts |
 | Documents | Recent, search, detail |
 | Notifications | List |
-| Settings | Profile, **theme**, organization, members and invitations, devices and sessions, notification choices, delete account |
+| Settings | **Theme** (built), profile, organization, members and invitations, devices and sessions, notification choices, delete account. A Developer section holds the design gallery until release |
 
 Permissions are requested when a feature first needs them, with a sentence explaining why (FR-MOB-002). The app asks for nothing at first launch.
 
@@ -349,7 +351,7 @@ The simulator's faults make failure paths testable without hardware: offline, pa
 |---|---|---|---|
 | 1 | The three flavors use three app IDs (`.dev`, `.stg`, and none). Firebase knows only `com.kcpele.printerhub`. | A5 | Register the other two in the same Firebase project. It is free and takes minutes. |
 | 2 | Which printer families go in the catalogue first? | A2 | The C7100 series plus about fifteen common office and home families from HP, Canon, Brother, Epson, and Xerox. |
-| 3 | Bottom navigation: which four or five areas? | A1 | Home, Printers, Activity, Settings, with Print and Scan as actions on Home and on each printer. |
+| 3 | Bottom navigation: which four or five areas? | | Built with the default: Home, Printers, Activity, Settings. Print and Scan will be actions on Home and on each printer. |
 
 ## 15. Risks
 

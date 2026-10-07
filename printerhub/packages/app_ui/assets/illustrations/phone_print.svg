@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 208" fill="none">
+  <!-- Colours here are placeholders that map to theme tokens. See
+       IllustrationPalette in lib/src/illustrations/app_illustration.dart. -->
+
+  <!-- Backdrop -->
+  <circle cx="120" cy="104" r="92" fill="#4856EB"/>
+  <ellipse cx="120" cy="196" rx="78" ry="7" fill="#1C1E2B" fill-opacity="0.14"/>
+
+  <!-- Printed page -->
+  <g transform="rotate(7 182 100)">
+    <rect x="150" y="56" width="64" height="86" rx="6" fill="#FDFDFF" stroke="#1C1E2B" stroke-width="4"/>
+    <path d="M162 76h40M162 90h40M162 104h26" stroke="#DCE1F0" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <circle cx="208" cy="146" r="16" fill="#1C1E2B"/>
+  <path d="M200 146l6 6 10-12" stroke="#FDFDFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- On its way -->
+  <circle cx="128" cy="104" r="4" fill="#1C1E2B"/>
+  <circle cx="142" cy="104" r="4" fill="#1C1E2B"/>
+
+  <!-- Phone -->
+  <rect x="36" y="30" width="80" height="150" rx="16" fill="#FFFFFF" stroke="#1C1E2B" stroke-width="4"/>
+  <rect x="64" y="40" width="24" height="6" rx="3" fill="#1C1E2B"/>
+  <rect x="50" y="58" width="52" height="64" rx="6" fill="#EFF2FA"/>
+  <path d="M60 74h32M60 86h32M60 98h20" stroke="#5E6278" stroke-width="4" stroke-linecap="round"/>
+  <rect x="50" y="134" width="52" height="28" rx="14" fill="#1C1E2B"/>
+  <path d="M66 148h20" stroke="#FDFDFF" stroke-width="4" stroke-linecap="round"/>
+</svg>

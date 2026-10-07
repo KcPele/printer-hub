@@ -59,6 +59,8 @@ A change is done when `make app-check` passes: formatting, `very_good_analysis` 
 - **Three flavors**, each with its own entry point and app ID: `development` (`.dev`), `staging` (`.stg`), `production` (`com.kcpele.printerhub`). Run one with `make app-dev`, or `flutter run --flavor <name> --target lib/main_<name>.dart`.
 - **A feature is a folder** under `lib/` with `view/`, `cubit/` or `bloc/`, and a barrel file. Tests mirror the path under `test/`.
 - **State lives in blocs and cubits.** A view renders state and sends events; it holds no logic and calls no repository.
+- **Routes** are named in `AppRoutes` and built in `lib/app/router/app_router.dart`. The four areas (Home, Printers, Activity, Settings) are branches of one shell; a screen inside an area is a child route of that branch.
+- **An empty list is a designed screen.** Use `EmptyState` from `app_ui` with an illustration and one sentence. A button is added only when the thing it starts exists.
 - **Every user-facing string** goes in `lib/l10n/arb/app_en.arb` and is read through `context.l10n`.
 - **Lufga, Volt's font, is commercial and this repository is public.** Its files live in `printerhub/packages/app_ui/assets/fonts/lufga/`, which git ignores. Never commit them, and never register a real font under the name `Lufga` in a test: fonts are global to a test run and it changes the Volt golden.
 - **Reusable code becomes a package** under `printerhub/packages/`, tested on its own. A new package is added to the matrix in `.github/workflows/mobile-ci.yml`. `docs/mobile-app-implementation.md` §3 names them and the direction dependencies may point.

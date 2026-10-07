@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 208" fill="none">
+  <!-- Colours here are placeholders that map to theme tokens. See
+       IllustrationPalette in lib/src/illustrations/app_illustration.dart. -->
+
+  <!-- Backdrop -->
+  <circle cx="120" cy="104" r="92" fill="#4856EB"/>
+  <ellipse cx="120" cy="196" rx="78" ry="7" fill="#1C1E2B" fill-opacity="0.14"/>
+
+  <!-- Document -->
+  <rect x="58" y="30" width="96" height="128" rx="10" fill="#FDFDFF" stroke="#1C1E2B" stroke-width="4"/>
+  <path d="M76 56h60M76 72h60M76 88h60M76 104h36" stroke="#DCE1F0" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- Shield -->
+  <path d="M156 92l40 13v30c0 28-18 44-40 53-22-9-40-25-40-53v-30z" fill="#1C1E2B" stroke="#1C1E2B" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M139 139l12 12 22-25" stroke="#FDFDFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -172,5 +172,129 @@
     "galleryTypeCaption": "Last used 4 minutes ago",
     "@galleryTypeCaption": {
         "description": "Sample of the smallest text style"
+    },
+    "welcomeSkip": "Skip",
+    "@welcomeSkip": {
+        "description": "Button that leaves the welcome screens early"
+    },
+    "welcomeNext": "Next",
+    "@welcomeNext": {
+        "description": "Button that shows the next welcome screen"
+    },
+    "welcomeGetStarted": "Get started",
+    "@welcomeGetStarted": {
+        "description": "Button on the last welcome screen that opens the app"
+    },
+    "welcomeFindTitle": "Find a printer, tap it, use it",
+    "@welcomeFindTitle": {
+        "description": "Title of the first welcome screen"
+    },
+    "welcomeFindBody": "PrinterHub finds the printers around you and shows what each one can do.",
+    "@welcomeFindBody": {
+        "description": "Text of the first welcome screen"
+    },
+    "welcomePrintTitle": "Print and scan from your phone",
+    "@welcomePrintTitle": {
+        "description": "Title of the second welcome screen"
+    },
+    "welcomePrintBody": "Send a document to the printer, or scan one straight into your phone.",
+    "@welcomePrintBody": {
+        "description": "Text of the second welcome screen"
+    },
+    "welcomePrivateTitle": "Your documents stay with you",
+    "@welcomePrivateTitle": {
+        "description": "Title of the third welcome screen"
+    },
+    "welcomePrivateBody": "Your phone talks to the printer directly, so printing and scanning work even without the internet.",
+    "@welcomePrivateBody": {
+        "description": "Text of the third welcome screen"
+    },
+    "welcomeThemeTitle": "Make it yours",
+    "@welcomeThemeTitle": {
+        "description": "Title of the last welcome screen, where the user picks a theme"
+    },
+    "welcomeThemeBody": "Pick a look. You can change it any time in Settings.",
+    "@welcomeThemeBody": {
+        "description": "Text of the last welcome screen"
+    },
+    "navHome": "Home",
+    "@navHome": {
+        "description": "Bottom navigation: home"
+    },
+    "navPrinters": "Printers",
+    "@navPrinters": {
+        "description": "Bottom navigation: the list of printers"
+    },
+    "navActivity": "Activity",
+    "@navActivity": {
+        "description": "Bottom navigation: job history"
+    },
+    "navSettings": "Settings",
+    "@navSettings": {
+        "description": "Bottom navigation: settings"
+    },
+    "homeHeroTitle": "Find a printer, tap it, use it",
+    "@homeHeroTitle": {
+        "description": "Headline on Home before any printer is added"
+    },
+    "homeHeroBody": "Once a printer is added, it appears here, ready to print and scan.",
+    "@homeHeroBody": {
+        "description": "Text under the Home headline before any printer is added"
+    },
+    "homeStartTitle": "Getting started",
+    "@homeStartTitle": {
+        "description": "Heading above the three steps on Home"
+    },
+    "homeStepAddTitle": "Add a printer",
+    "@homeStepAddTitle": {
+        "description": "First getting-started step"
+    },
+    "homeStepAddBody": "Nearby printers are found for you. You can also enter an address.",
+    "@homeStepAddBody": {
+        "description": "Explains the first getting-started step"
+    },
+    "homeStepUseTitle": "Print or scan",
+    "@homeStepUseTitle": {
+        "description": "Second getting-started step"
+    },
+    "homeStepUseBody": "Only the options your printer supports are shown.",
+    "@homeStepUseBody": {
+        "description": "Explains the second getting-started step"
+    },
+    "homeStepTrackTitle": "Follow every job",
+    "@homeStepTrackTitle": {
+        "description": "Third getting-started step"
+    },
+    "homeStepTrackBody": "Activity keeps what you printed and scanned, and what went wrong.",
+    "@homeStepTrackBody": {
+        "description": "Explains the third getting-started step"
+    },
+    "printersEmptyTitle": "No printers yet",
+    "@printersEmptyTitle": {
+        "description": "Title on the Printers screen when there are none"
+    },
+    "printersEmptyBody": "Printers you add appear here, ready to print and scan.",
+    "@printersEmptyBody": {
+        "description": "Text on the Printers screen when there are none"
+    },
+    "activityEmptyTitle": "Nothing here yet",
+    "@activityEmptyTitle": {
+        "description": "Title on the Activity screen when there are no jobs"
+    },
+    "activityEmptyBody": "Everything you print and scan is listed here.",
+    "@activityEmptyBody": {
+        "description": "Text on the Activity screen when there are no jobs"
+    },
+    "settingsAppearance": "Appearance",
+    "@settingsAppearance": {
+        "description": "Heading of the appearance section in Settings"
+    },
+    "settingsDeveloper": "Developer",
+    "@settingsDeveloper": {
+        "description": "Heading of the developer section in Settings"
+    },
+    "settingsGallerySubtitle": "Every shared widget in the current theme",
+    "@settingsGallerySubtitle": {
+        "description": "Explains the design gallery entry in Settings"
     }
 }

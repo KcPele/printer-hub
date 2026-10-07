@@ -32,7 +32,9 @@ class AppView extends StatefulWidget {
 }
 
 class _AppViewState extends State<AppView> {
-  late final GoRouter _router = createAppRouter();
+  late final GoRouter _router = createAppRouter(
+    preferencesRepository: context.read<PreferencesRepository>(),
+  );
 
   @override
   void dispose() {

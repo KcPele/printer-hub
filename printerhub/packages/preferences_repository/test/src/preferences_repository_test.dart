@@ -34,5 +34,21 @@ void main() {
 
       expect(second.themeName, 'indigo');
     });
+
+    test('shows the welcome screens on a new install', () async {
+      final repository = await PreferencesRepository.open();
+
+      expect(repository.onboardingCompleted, isFalse);
+    });
+
+    test('remembers that the welcome screens were seen', () async {
+      final first = await PreferencesRepository.open();
+      await first.completeOnboarding();
+
+      final second = await PreferencesRepository.open();
+
+      expect(first.onboardingCompleted, isTrue);
+      expect(second.onboardingCompleted, isTrue);
+    });
   });
 }

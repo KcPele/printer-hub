@@ -8,12 +8,13 @@ class PreferencesRepository {
   new({required this._store});
 
   static const String _themeKey = 'app_theme';
+  static const String _onboardingKey = 'onboarding_completed';
 
   /// Opens the device's preferences and loads them into memory.
   static Future<PreferencesRepository> open() async {
     final store = await SharedPreferencesWithCache.create(
       cacheOptions: const SharedPreferencesWithCacheOptions(
-        allowList: {_themeKey},
+        allowList: {_themeKey, _onboardingKey},
       ),
     );
     return PreferencesRepository(store: store);
@@ -26,4 +27,10 @@ class PreferencesRepository {
 
   /// Remembers the chosen theme.
   Future<void> saveThemeName(String name) => _store.setString(_themeKey, name);
+
+  /// Whether the welcome screens have been seen on this device.
+  bool get onboardingCompleted => _store.getBool(_onboardingKey) ?? false;
+
+  /// Remembers that the welcome screens have been seen.
+  Future<void> completeOnboarding() => _store.setBool(_onboardingKey, true);
 }

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/theme/cubit/theme_cubit.dart';
+import 'package:printerhub/theme/theme_names.dart';
 
 /// The three themes side by side. Tapping one applies it.
 class ThemePicker extends StatelessWidget {
@@ -23,11 +24,7 @@ class ThemePicker extends StatelessWidget {
           Expanded(
             child: AppThemePreview(
               theme: theme,
-              label: switch (theme.id) {
-                AppThemeId.volt => l10n.themeVolt,
-                AppThemeId.indigo => l10n.themeIndigo,
-                AppThemeId.mint => l10n.themeMint,
-              },
+              label: theme.id.label(l10n),
               selected: theme.id == selected,
               onTap: () => context.read<ThemeCubit>().select(theme.id),
             ),

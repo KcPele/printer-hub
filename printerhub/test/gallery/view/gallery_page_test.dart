@@ -58,8 +58,7 @@ void main() {
     });
 
     testWidgets('opens the theme screen from the app bar', (tester) async {
-      final router = MockGoRouter();
-      when(() => router.push<Object?>(any())).thenAnswer((_) async => null);
+      final router = recordingRouter();
       await tester.pumpApp(const GalleryPage(), router: router);
       await tester.pumpAndSettle();
 
