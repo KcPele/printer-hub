@@ -1,7 +1,176 @@
 {
     "@@locale": "en",
-    "counterAppBarTitle": "Counter",
-    "@counterAppBarTitle": {
-        "description": "Text shown in the AppBar of the Counter Page"
+    "appName": "PrinterHub",
+    "@appName": {
+        "description": "The name of the app"
+    },
+    "themeTitle": "Theme",
+    "@themeTitle": {
+        "description": "Title of the screen and section where the user picks a theme"
+    },
+    "themeDescription": "Choose how PrinterHub looks. It changes straight away.",
+    "@themeDescription": {
+        "description": "Explains the theme picker"
+    },
+    "themeVolt": "Volt",
+    "@themeVolt": {
+        "description": "Name of the charcoal and yellow theme"
+    },
+    "themeIndigo": "Indigo",
+    "@themeIndigo": {
+        "description": "Name of the indigo theme"
+    },
+    "themeMint": "Mint",
+    "@themeMint": {
+        "description": "Name of the mint theme"
+    },
+    "galleryTitle": "Design gallery",
+    "@galleryTitle": {
+        "description": "Title of the screen that shows every shared widget"
+    },
+    "gallerySubtitle": "Every shared piece of the app, in the theme you pick.",
+    "@gallerySubtitle": {
+        "description": "Explains the design gallery"
+    },
+    "galleryChangeTheme": "Change theme",
+    "@galleryChangeTheme": {
+        "description": "Tooltip of the button that opens the theme screen"
+    },
+    "galleryPrinterName": "Xerox VersaLink C7130",
+    "@galleryPrinterName": {
+        "description": "Sample printer name in the design gallery"
+    },
+    "galleryPrinterLocation": "Second floor, by the kitchen",
+    "@galleryPrinterLocation": {
+        "description": "Sample printer location in the design gallery"
+    },
+    "galleryPrinterIllustration": "A multifunction printer",
+    "@galleryPrinterIllustration": {
+        "description": "Screen reader description of the printer illustration"
+    },
+    "galleryPrint": "Print",
+    "@galleryPrint": {
+        "description": "Sample main action in the design gallery"
+    },
+    "galleryScan": "Scan",
+    "@galleryScan": {
+        "description": "Sample second action in the design gallery"
+    },
+    "galleryDetails": "View details",
+    "@galleryDetails": {
+        "description": "Sample text action in the design gallery"
+    },
+    "gallerySectionStatus": "Status",
+    "@gallerySectionStatus": {
+        "description": "Heading above the sample statuses"
+    },
+    "galleryStatusOnline": "Online",
+    "@galleryStatusOnline": {
+        "description": "Sample status: the printer is reachable"
+    },
+    "galleryStatusLowToner": "Low toner",
+    "@galleryStatusLowToner": {
+        "description": "Sample status: a toner is running out"
+    },
+    "galleryStatusPaperJam": "Paper jam",
+    "@galleryStatusPaperJam": {
+        "description": "Sample status: paper is stuck"
+    },
+    "galleryStatusPrinting": "Printing",
+    "@galleryStatusPrinting": {
+        "description": "Sample status: a job is running"
+    },
+    "galleryStatusOffline": "Offline",
+    "@galleryStatusOffline": {
+        "description": "Sample status: the printer cannot be reached"
+    },
+    "gallerySectionActivity": "Today",
+    "@gallerySectionActivity": {
+        "description": "Heading above the sample figures"
+    },
+    "galleryStatPrinted": "Pages printed",
+    "@galleryStatPrinted": {
+        "description": "Label of a sample figure"
+    },
+    "galleryStatScanned": "Pages scanned",
+    "@galleryStatScanned": {
+        "description": "Label of a sample figure"
+    },
+    "galleryStatQueued": "Jobs waiting",
+    "@galleryStatQueued": {
+        "description": "Label of a sample figure"
+    },
+    "gallerySectionSupplies": "Supplies",
+    "@gallerySectionSupplies": {
+        "description": "Heading above the sample toner levels"
+    },
+    "gallerySupplyCyan": "Cyan",
+    "@gallerySupplyCyan": {
+        "description": "Name of the cyan toner"
+    },
+    "gallerySupplyMagenta": "Magenta",
+    "@gallerySupplyMagenta": {
+        "description": "Name of the magenta toner"
+    },
+    "gallerySupplyYellow": "Yellow",
+    "@gallerySupplyYellow": {
+        "description": "Name of the yellow toner"
+    },
+    "gallerySupplyBlack": "Black",
+    "@gallerySupplyBlack": {
+        "description": "Name of the black toner"
+    },
+    "gallerySupplyPercent": "{percent}%",
+    "@gallerySupplyPercent": {
+        "description": "How much of a supply is left",
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "gallerySupplyUnknown": "Unknown",
+    "@gallerySupplyUnknown": {
+        "description": "Shown when a printer does not report a supply level"
+    },
+    "gallerySectionControls": "Controls",
+    "@gallerySectionControls": {
+        "description": "Heading above the sample inputs"
+    },
+    "galleryFieldLabel": "Printer address",
+    "@galleryFieldLabel": {
+        "description": "Label of the sample text field"
+    },
+    "galleryFieldHint": "192.168.1.40",
+    "@galleryFieldHint": {
+        "description": "Hint of the sample text field"
+    },
+    "gallerySwitchTitle": "Print in colour",
+    "@gallerySwitchTitle": {
+        "description": "Title of the sample switch"
+    },
+    "gallerySwitchSubtitle": "Uses all four toners",
+    "@gallerySwitchSubtitle": {
+        "description": "Subtitle of the sample switch"
+    },
+    "gallerySectionType": "Type",
+    "@gallerySectionType": {
+        "description": "Heading above the sample text styles"
+    },
+    "galleryTypeDisplay": "Print anything",
+    "@galleryTypeDisplay": {
+        "description": "Sample of the largest text style"
+    },
+    "galleryTypeHeadline": "Find a printer, tap it, use it",
+    "@galleryTypeHeadline": {
+        "description": "Sample of the headline text style"
+    },
+    "galleryTypeBody": "PrinterHub talks to the printer on your network, so your documents stay on your phone.",
+    "@galleryTypeBody": {
+        "description": "Sample of the body text style"
+    },
+    "galleryTypeCaption": "Last used 4 minutes ago",
+    "@galleryTypeCaption": {
+        "description": "Sample of the smallest text style"
     }
 }

@@ -1,0 +1,4 @@
+# Licensed font files stay on the owner's machine.
+*
+!.gitignore
+!README.md

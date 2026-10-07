@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:app_ui/app_ui.dart';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/widgets.dart';
+import 'package:preferences_repository/preferences_repository.dart';
 
 class AppBlocObserver extends BlocObserver {
   const new();
@@ -20,14 +22,26 @@ class AppBlocObserver extends BlocObserver {
   }
 }
 
-Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
+/// What every flavor needs before the first frame.
+typedef AppDependencies = ({PreferencesRepository preferencesRepository});
+
+Future<void> bootstrap(
+  FutureOr<Widget> Function(AppDependencies dependencies) builder,
+) async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   FlutterError.onError = (details) {
     log(details.exceptionAsString(), stackTrace: details.stack);
   };
 
   Bloc.observer = const AppBlocObserver();
 
-  // Add cross-flavor configuration here
+  // Volt's licensed font is registered when its files are in the build.
+  await AppFonts.loadLicensed();
 
-  runApp(await builder());
+  // The chosen theme is read before the first frame, so the app never
+  // flashes the wrong one.
+  final preferencesRepository = await PreferencesRepository.open();
+
+  runApp(await builder((preferencesRepository: preferencesRepository)));
 }

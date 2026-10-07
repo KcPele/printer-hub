@@ -40,8 +40,9 @@ All three ship light only. Each theme is a set of tokens per brightness, so a da
 When building or changing any app UI:
 
 - Take colour, text style, radius, and elevation from the theme tokens in `printerhub/packages/app_ui`. A feature contains no hex value, font name, or radius number.
-- Check the result in all three themes, and add a golden test in each for a shared widget.
-- Volt's primary is yellow: use it as a fill behind dark text, never as text or an icon on a light surface.
+- Check the result in all three themes (the gallery screen shows every shared widget), and add a shared widget to the golden test in `packages/app_ui`. After an intended visual change, run `make app-goldens`.
+- `context.colors.primary` is a fill. For brand-coloured text or an icon on a light surface use `context.colors.emphasis`: Volt's primary is yellow and Mint's is a light mint, and neither can be read as text.
+- A new colour pair that carries text is added to `packages/app_ui/test/src/theme/contrast_test.dart`, which holds every theme to WCAG AA.
 - Status colours (online, warning, error) and toner colours keep their meaning in every theme; they are separate tokens from the primary.
 - Illustrations, icons, and printer artwork are SVGs we draw ourselves, kept in `printerhub/packages/app_ui/assets/`. They are drawn in a fixed set of placeholder colours that map to theme tokens, so one file serves all three themes. No third-party artwork, and no bitmap where a vector will do.
 - The look to aim for: clean, professional, and inviting, with the printer as the hero of the screen. Function comes first: a screen that looks good and cannot reach the printer is not done.
@@ -52,13 +53,14 @@ The full token table, and which values are still proposals, are in `docs/mobile-
 
 Generated with Very Good CLI (`very_good create flutter_app`). Flutter 3.47, Dart 3.13, iOS and Android only.
 
-A change is done when `make app-check` passes: formatting, `very_good_analysis` lints, and tests with 100% line coverage.
+A change is done when `make app-check` passes: formatting, `very_good_analysis` lints, and tests with 100% line coverage, for the app and for each package under `printerhub/packages/`.
 
 - **Three flavors**, each with its own entry point and app ID: `development` (`.dev`), `staging` (`.stg`), `production` (`com.kcpele.printerhub`). Run one with `make app-dev`, or `flutter run --flavor <name> --target lib/main_<name>.dart`.
 - **A feature is a folder** under `lib/` with `view/`, `cubit/` or `bloc/`, and a barrel file. Tests mirror the path under `test/`.
 - **State lives in blocs and cubits.** A view renders state and sends events; it holds no logic and calls no repository.
 - **Every user-facing string** goes in `lib/l10n/arb/app_en.arb` and is read through `context.l10n`.
-- **Reusable code becomes a package** under `printerhub/packages/`, tested on its own. `docs/mobile-app-implementation.md` §3 names them and the direction dependencies may point.
+- **Lufga, Volt's font, is commercial and this repository is public.** Its files live in `printerhub/packages/app_ui/assets/fonts/lufga/`, which git ignores. Never commit them, and never register a real font under the name `Lufga` in a test: fonts are global to a test run and it changes the Volt golden.
+- **Reusable code becomes a package** under `printerhub/packages/`, tested on its own. A new package is added to the matrix in `.github/workflows/mobile-ci.yml`. `docs/mobile-app-implementation.md` §3 names them and the direction dependencies may point.
 - **The app runs print and scan jobs itself**, against the printer on the local network. Develop against `backend/simulator` (`make simulator`).
 
 ## Working in `backend/`

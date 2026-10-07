@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 208" fill="none">
+  <!-- Colours here are placeholders that map to theme tokens. See
+       IllustrationPalette in lib/src/illustrations/app_illustration.dart. -->
+
+  <!-- Backdrop -->
+  <circle cx="120" cy="100" r="92" fill="#4856EB"/>
+  <ellipse cx="120" cy="193" rx="74" ry="7" fill="#1C1E2B" fill-opacity="0.14"/>
+
+  <!-- Signal arcs -->
+  <path d="M190 40a16 16 0 0 1 16 16" stroke="#1C1E2B" stroke-width="4" stroke-linecap="round"/>
+  <path d="M190 26a30 30 0 0 1 30 30" stroke="#1C1E2B" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="190" cy="56" r="4" fill="#1C1E2B"/>
+
+  <!-- Feet -->
+  <rect x="72" y="184" width="16" height="8" rx="4" fill="#1C1E2B"/>
+  <rect x="152" y="184" width="16" height="8" rx="4" fill="#1C1E2B"/>
+
+  <!-- Paper trays -->
+  <rect x="62" y="116" width="116" height="72" rx="10" fill="#FFFFFF" stroke="#1C1E2B" stroke-width="4"/>
+  <path d="M62 140h116M62 164h116" stroke="#1C1E2B" stroke-width="3"/>
+  <rect x="106" y="126" width="28" height="5" rx="2.5" fill="#1C1E2B"/>
+  <rect x="106" y="150" width="28" height="5" rx="2.5" fill="#1C1E2B"/>
+  <rect x="106" y="174" width="28" height="5" rx="2.5" fill="#1C1E2B"/>
+
+  <!-- Printed page leaving the output slot -->
+  <rect x="82" y="72" width="62" height="34" rx="3" fill="#FDFDFF" stroke="#1C1E2B" stroke-width="3"/>
+  <path d="M91 82h34M91 90h44" stroke="#DCE1F0" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Body -->
+  <rect x="54" y="92" width="132" height="34" rx="10" fill="#FFFFFF" stroke="#1C1E2B" stroke-width="4"/>
+  <rect x="70" y="104" width="78" height="8" rx="4" fill="#1C1E2B"/>
+
+  <!-- Control panel -->
+  <rect x="156" y="100" width="20" height="16" rx="4" fill="#1C1E2B"/>
+  <circle cx="166" cy="108" r="3" fill="#3DDC84"/>
+
+  <!-- Scanner lid and document feeder -->
+  <rect x="60" y="54" width="120" height="22" rx="8" fill="#1C1E2B"/>
+  <path d="M78 54l8-18h68l8 18z" fill="#FFFFFF" stroke="#1C1E2B" stroke-width="4" stroke-linejoin="round"/>
+  <rect x="94" y="22" width="52" height="20" rx="3" fill="#FDFDFF" stroke="#1C1E2B" stroke-width="3"/>
+  <path d="M103 31h34" stroke="#DCE1F0" stroke-width="3" stroke-linecap="round"/>
+</svg>

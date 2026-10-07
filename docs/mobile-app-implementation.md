@@ -1,7 +1,7 @@
 # PrinterHub Mobile — Implementation Document
 
 **Date:** 2026-10-07
-**Status:** The project template is generated and passing its checks. Milestone A0 is in progress. Section 14 records the owner's decisions and the questions still open.
+**Status:** Milestone A0 is in progress. Done: the three themes, theme switching that survives a restart, the shared widgets, the gallery, and the themed illustration pipeline. Left in A0: the generated Dart API client. Section 14 records the owner's decisions and the questions still open.
 **Requirements:** `PrinterHub_FRD_v2.0_Mobile_First.md` §7 (FR-MOB), §8 (FR-CON), §55.2 (mobile MVP), §60 (acceptance on the Xerox VersaLink C7130)
 **Design references:** `design/`, on the owner's machine only. The folder is ignored by git.
 
@@ -55,6 +55,7 @@ printerhub/                        # the Flutter app
 │   ├── printer_discovery/         # mDNS / DNS-SD browsing
 │   ├── connection_engine/         # probing, transports, fallback, job runner
 │   ├── local_store/               # drift database, secure storage
+│   ├── preferences_repository/    # device preferences: the chosen theme
 │   └── *_repository/              # auth, printers, jobs, documents, notifications
 └── test/
 ```
@@ -80,7 +81,8 @@ A theme changes colour, type, shape, and elevation. It never changes layout, nav
 | Design reference | `app theme 1.webp`, `printer-connect-screen-design.webp` | `app theme 2.webp` | `app theme 3.webp` |
 | Character | Bold, high contrast | Soft, friendly | Clean, technical |
 | Primary | `#FFFF1E` | `#4856EB` | `#46D7B7` |
-| Text on primary | `#212121` | `#FFFFFF` | `#FFFFFF` |
+| Text on primary | `#212121` | `#FFFFFF` | `#0B3B32` |
+| Brand colour as text (`emphasis`) | `#212121` | `#4856EB` | `#0A7461` |
 | Background | `#EEEEEE` | `#EFF2FA` | `#FFFFFF` |
 | Surface (cards) | `#FFFFFF` | `#FFFFFF` | `#F7F7F7` |
 | Inverse surface | `#212121` | `#1C1E2B` | `#1A1A1A` |
@@ -94,7 +96,9 @@ Volt's values are stated in its design reference. Indigo's and Mint's primary an
 
 The design references show three different apps. We take each one's look (colour, type, shape, depth) and apply it to one set of screens. Their screen layouts are not copied.
 
-Lufga is a commercial font, licensed by the owner. Its files go in `packages/app_ui/assets/fonts/lufga/`. Until they are there, Volt falls back to the system font; nothing else changes.
+Two values differ from what the references show, because the originals fail contrast. White text on Mint's primary is 1.8:1, so text on it is a deep teal. And a brand colour is not always readable as text on a light surface (Volt's yellow, Mint's mint), so each theme has an `emphasis` colour for brand-coloured text and icons. A test holds every text pair in every theme to WCAG AA.
+
+Lufga is a commercial font, licensed by the owner. The repository is public, so its files are not committed: they go in `packages/app_ui/assets/fonts/lufga/`, which git ignores. The app bundles whatever is in that folder and registers it at start-up. Without the files, Volt uses the system font and everything still builds. **A release build must be made on a machine that has the files.**
 
 **Rules:**
 
@@ -104,7 +108,7 @@ Lufga is a commercial font, licensed by the owner. Its files go in `packages/app
 - Each theme meets WCAG AA contrast for text (FRD §34).
 - Every shared widget has a golden test in all three themes.
 
-**Structure:** `app_ui` defines one `AppTheme` per theme, built from the same token set and exposed through Flutter's `ThemeExtension`. `ThemeCubit` holds the current choice, saves it on the device, and syncs it to the user's preferences so it follows them to a new phone.
+**Structure:** `app_ui` defines one `AppTheme` per theme, built from the same token set and exposed through Flutter's `ThemeExtension`. `ThemeCubit` holds the current choice and saves it on the device through `preferences_repository`; it is read before the first frame, so the app never opens in the wrong theme. From A1 the choice also syncs to the user's preferences on the backend, so it follows them to a new phone.
 
 **Dark mode** is a second axis. A theme is a set of tokens per brightness, and a screen never asks which brightness it is in. The first release ships the light set of each theme. Adding dark means writing three more token sets and offering light, dark, and system in Settings (FRD §45); no screen changes.
 

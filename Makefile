@@ -72,10 +72,14 @@ client-check: ## Typecheck and test the TypeScript API client
 	pnpm api:check
 
 .PHONY: app-check
-app-check: ## Analyze and test the Flutter app (100% coverage required)
-	cd printerhub && dart format --set-exit-if-changed lib test
+app-check: ## Analyze and test the Flutter app and its packages (100% coverage required)
+	cd printerhub && dart format --set-exit-if-changed lib test packages
 	cd printerhub && flutter analyze
-	cd printerhub && dart pub global run very_good_cli:very_good test --coverage --min-coverage 100
+	cd printerhub && dart pub global run very_good_cli:very_good test --recursive --coverage --min-coverage 100
+
+.PHONY: app-goldens
+app-goldens: ## Regenerate the golden images after an intended visual change
+	cd printerhub/packages/app_ui && flutter test --update-goldens --tags golden
 
 .PHONY: app-dev
 app-dev: ## Run the Flutter app's development flavor on a connected device or simulator

@@ -8,14 +8,19 @@ environment:
   flutter: ^3.47.0
 
 dependencies:
+  app_ui:
+    path: packages/app_ui
   bloc: ^9.2.1
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
   flutter_localizations:
     sdk: flutter
+  go_router: ^18.0.2
   intl: ^0.20.2
   material_ui: ^1.1.1
+  preferences_repository:
+    path: packages/preferences_repository
 
 dev_dependencies:
   bloc_lint: ^0.4.2

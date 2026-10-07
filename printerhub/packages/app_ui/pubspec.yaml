@@ -1,0 +1,33 @@
+name: app_ui
+description: PrinterHub design tokens, the three themes, and shared widgets.
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+  flutter: ^3.47.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_svg: ^2.3.0
+  material_ui: ^1.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.5
+  very_good_analysis: ^11.0.0
+
+flutter:
+  assets:
+    - assets/illustrations/
+    # Licensed font files, when present. See the README in that folder.
+    - assets/fonts/lufga/
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/plus_jakarta_sans/PlusJakartaSans.ttf
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/manrope/Manrope.ttf
