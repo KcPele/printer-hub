@@ -9,7 +9,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Development-only defaults. `Settings` refuses to start with these outside local and test.
 _DEV_SECRET_KEY = "dev-only-secret-key-change-me-0123456789abcdef"  # noqa: S105
 _DEV_ENCRYPTION_KEY = "Rm91hMg3qrza2TmING-MHs64-xWne_tBvZy8q9dVJ0Q="
-_DEV_SOKETI_SECRET = "printerhub-dev-secret"  # noqa: S105
 
 Environment = Literal["local", "test", "staging", "production"]
 
@@ -57,17 +56,6 @@ class Settings(BaseSettings):
     s3_presign_ttl_seconds: int = 15 * 60
     max_document_size_bytes: int = 200 * 1024 * 1024
 
-    # Live WebSocket updates are optional. "none" needs no extra service: open
-    # apps refresh from the data payload of FCM pushes. "soketi" adds instant
-    # updates through a Soketi (Pusher protocol) server.
-    realtime_backend: Literal["none", "soketi", "memory"] = "none"
-    soketi_url: str = "http://localhost:6001"
-    # Address clients use to reach Soketi, when it differs from `soketi_url`.
-    soketi_public_url: str | None = None
-    soketi_app_id: str = "printerhub"
-    soketi_app_key: str = "printerhub-key"
-    soketi_app_secret: SecretStr = SecretStr(_DEV_SOKETI_SECRET)
-
     # "log" writes pushes to the log; "fcm" sends through Firebase Cloud
     # Messaging, which reaches Android directly and iOS through APNs.
     push_backend: Literal["log", "fcm"] = "log"
@@ -87,11 +75,6 @@ class Settings(BaseSettings):
             raise ValueError(
                 "PRINTERHUB_CREDENTIALS_ENCRYPTION_KEY must be set outside local and test"
             )
-        if (
-            self.realtime_backend == "soketi"
-            and self.soketi_app_secret.get_secret_value() == _DEV_SOKETI_SECRET
-        ):
-            raise ValueError("PRINTERHUB_SOKETI_APP_SECRET must be set outside local and test")
         if self.push_backend == "fcm" and self.fcm_service_account_json is None:
             raise ValueError("PRINTERHUB_FCM_SERVICE_ACCOUNT_JSON is required when push is fcm")
         return self

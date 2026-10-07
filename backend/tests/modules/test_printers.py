@@ -2,7 +2,6 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.realtime.memory import MemoryPublisher
 from app.core.permissions import Role
 from app.modules.audit.models import AuditLog
 from app.modules.printers.models import Printer
@@ -35,7 +34,7 @@ CAPABILITIES = {
 
 
 async def test_add_printer_with_verified_connections(
-    client: httpx.AsyncClient, session: AsyncSession, realtime: MemoryPublisher
+    client: httpx.AsyncClient, session: AsyncSession
 ) -> None:
     owner = await create_user(session)
     organization = await create_organization(session, owner)
@@ -71,9 +70,6 @@ async def test_add_printer_with_verified_connections(
     assert [c["type"] for c in body["connections"]] == ["ipps", "airprint", "escl"]
     assert [c["priority"] for c in body["connections"]] == [1, 2, 3]
     assert body["default_connection_id"] == body["connections"][0]["id"]
-    [event] = realtime.events("printer.created")
-    assert event.channels == (f"private-org-{organization.id}",)
-    assert event.data["printer_id"] == body["id"]
     actions = set(await session.scalars(select(AuditLog.action)))
     assert {"printer.added", "connection.created"} <= actions
 
@@ -230,8 +226,8 @@ async def test_viewer_cannot_report(client: httpx.AsyncClient, session: AsyncSes
     assert response.status_code == 403
 
 
-async def test_status_report_updates_printer_and_emits_once_per_change(
-    client: httpx.AsyncClient, session: AsyncSession, realtime: MemoryPublisher
+async def test_status_report_updates_printer(
+    client: httpx.AsyncClient, session: AsyncSession
 ) -> None:
     organization = await create_organization(session, await create_user(session))
     printer = await create_printer(session, organization)
@@ -256,7 +252,6 @@ async def test_status_report_updates_printer_and_emits_once_per_change(
     }
 
     first = await client.post(url, headers=headers, json=report)
-    await client.post(url, headers=headers, json=report)
 
     assert first.status_code == 200
     body = first.json()
@@ -264,12 +259,11 @@ async def test_status_report_updates_printer_and_emits_once_per_change(
     assert body["last_seen_at"] is not None
     assert body["status_detail"]["consumables"][0]["level_percent"] == 12
     assert body["status_detail"]["alerts"][0]["code"] == "media-empty"
-    assert len(realtime.events("printer.status_changed")) == 1
 
     # A report without detail keeps the last known detail.
     offline = await client.post(url, headers=headers, json={"status": "offline"})
+    assert offline.json()["status"] == "offline"
     assert offline.json()["status_detail"]["trays"][0]["state"] == "empty"
-    assert len(realtime.events("printer.status_changed")) == 2
 
 
 async def test_printer_list_is_paginated(client: httpx.AsyncClient, session: AsyncSession) -> None:

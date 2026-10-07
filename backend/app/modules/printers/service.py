@@ -7,7 +7,6 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import events
 from app.core.errors import ConflictError, NotFoundError
 from app.core.pagination import PageParams, paginate
 from app.modules.audit import service as audit
@@ -47,15 +46,6 @@ def to_read(printer: Printer, printer_connections: list[Connection]) -> PrinterR
         default_connection_id=printer_connections[0].id if printer_connections else None,
         created_at=printer.created_at,
         updated_at=printer.updated_at,
-    )
-
-
-def _emit(printer: Printer, session: AsyncSession, type: str, **data: str) -> None:
-    events.emit(
-        session,
-        [events.org_channel(printer.organization_id)],
-        type,
-        {"printer_id": str(printer.id), **data},
     )
 
 
@@ -132,7 +122,6 @@ async def create(
         await connections.create(
             session, printer=printer, actor_user_id=actor_user_id, payload=connection
         )
-    _emit(printer, session, "printer.created")
     return printer
 
 
@@ -153,7 +142,6 @@ async def update(
             actor_user_id=actor_user_id,
             detail={"changed": sorted(changes)},
         )
-        _emit(printer, session, "printer.updated")
     return printer
 
 
@@ -170,7 +158,6 @@ async def remove(session: AsyncSession, *, printer: Printer, actor_user_id: uuid
         detail={"friendly_name": printer.friendly_name},
     )
     await session.flush()
-    _emit(printer, session, "printer.deleted")
 
 
 async def set_capabilities(
@@ -180,19 +167,15 @@ async def set_capabilities(
     printer.capabilities = capabilities.model_dump(mode="json", by_alias=True)
     printer.capabilities_updated_at = datetime.now(UTC)
     await session.flush()
-    _emit(printer, session, "printer.capabilities_updated")
     return printer
 
 
 async def report_status(
     session: AsyncSession, *, printer: Printer, report: PrinterStatusReport
 ) -> Printer:
-    before = (printer.status, printer.status_detail)
     printer.status = report.status
     if report.detail is not None:
         printer.status_detail = report.detail.model_dump(mode="json")
     printer.last_seen_at = datetime.now(UTC)
     await session.flush()
-    if before != (printer.status, printer.status_detail):
-        _emit(printer, session, "printer.status_changed", status=printer.status.value)
     return printer

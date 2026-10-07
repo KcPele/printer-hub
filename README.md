@@ -53,9 +53,9 @@ Every setting is an environment variable with the `PRINTERHUB_` prefix. `backend
 
 Outside `local` and `test`, the service refuses to start until `PRINTERHUB_SECRET_KEY` and `PRINTERHUB_CREDENTIALS_ENCRYPTION_KEY` are set.
 
-## Notifications and live updates
+## Notifications
 
-**Firebase Cloud Messaging (FCM)** is the one notification service. It reaches Android directly and iOS through APNs, so both platforms register an FCM token. Every push carries a small data payload (event type and IDs), which an open app uses to refresh itself.
+**Firebase Cloud Messaging (FCM)** is the one notification service. It reaches Android directly and iOS through APNs, so both platforms register an FCM token. Every push carries a small data payload (event type and IDs), which an open app uses to refresh itself. Screens that show shared state, such as printer status, refetch when opened and on a timer.
 
 Pushes are written to the log until FCM is configured:
 
@@ -67,8 +67,6 @@ Pushes are written to the log until FCM is configured:
    PRINTERHUB_PUSH_BACKEND=fcm
    PRINTERHUB_FCM_SERVICE_ACCOUNT_JSON='{...}'
    ```
-
-**Soketi is optional.** It adds instant WebSocket updates for screens that watch other people's activity, such as a web dashboard. Without it those screens refresh on a timer. To turn it on, deploy Soketi, set `PRINTERHUB_REALTIME_BACKEND=soketi` and the `PRINTERHUB_SOKETI_*` values. Locally: `docker compose --profile realtime up -d`.
 
 ## Quality gates
 

@@ -14,7 +14,6 @@ from app.modules.organizations.router import router as organizations_router
 from app.modules.pairing.router import router as pairing_router
 from app.modules.printers.router import connections_router
 from app.modules.printers.router import router as printers_router
-from app.modules.realtime.router import router as realtime_router
 from app.modules.users.router import router as users_router
 
 API_V1_PREFIX = "/api/v1"
@@ -29,7 +28,6 @@ for router in (
     organizations_router,
     invitations_router,
     audit_router,
-    realtime_router,
     printers_router,
     connections_router,
     pairing_router,

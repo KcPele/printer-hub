@@ -6,7 +6,7 @@
 
 **Architecture:** A FastAPI modular monolith. Each domain module owns `models`, `schemas`, `service`, and `router`. Shared infrastructure lives in `app/core`. External systems (push, object storage) sit behind adapters with in-memory fakes.
 
-**Tech Stack:** Python 3.14, FastAPI, Pydantic v2, SQLAlchemy 2 async, asyncpg, Alembic, PostgreSQL 17, Redis 7, MinIO, Soketi, arq, structlog, uv, ruff, mypy, pytest.
+**Tech Stack:** Python 3.14, FastAPI, Pydantic v2, SQLAlchemy 2 async, asyncpg, Alembic, PostgreSQL 17, Redis 7, MinIO, arq, structlog, uv, ruff, mypy, pytest.
 
 **Spec:** `docs/superpowers/specs/2026-10-07-backend-mvp-design.md`
 
@@ -20,8 +20,8 @@
 - Every organization-owned query filters by `organization_id` taken from `OrgContext`.
 - Secrets never appear in logs or API responses.
 - `ruff check`, `ruff format --check`, `mypy`, and `pytest` pass before every commit.
-- Host ports: Postgres `5433`, Redis `6380`, MinIO `9000`/`9001`, API `8000`, simulator `8631`. Soketi `6001` only under the optional `realtime` profile.
-- FCM is the only push service. Live WebSocket events are optional and may be dropped, so user-facing changes always go out as notifications.
+- Host ports: Postgres `5433`, Redis `6380`, MinIO `9000`/`9001`, API `8000`, simulator `8631`.
+- FCM is the only channel to clients. There is no WebSocket server.
 - Commits follow Conventional Commits.
 
 ## Shared interfaces
@@ -80,17 +80,6 @@ Auth, CurrentUser, SuperUser               # AuthContext has .user and .session
 # app/modules/organizations/deps.py
 @dataclass class OrgContext                 # organization, membership, user, session, role, settings
 def require(permission: Permission) -> dependency returning OrgContext
-
-# app/core/events.py
-def org_channel(organization_id: UUID) -> str         # private-org-{id}
-def org_jobs_channel(organization_id: UUID) -> str    # private-org-{id}-jobs
-def user_channel(user_id: UUID) -> str                # private-user-{id}
-def emit(session, channels: Sequence[str], type: str, data: dict[str, Any]) -> None
-
-# app/adapters/realtime/base.py
-class RealtimePublisher(Protocol):
-    async def publish(self, channels: Sequence[str], event: str, data: dict[str, Any]) -> None
-    def authorize(self, socket_id: str, channel: str) -> str
 
 # app/core/tasks.py
 def enqueue(session, task_name: str, **kwargs: Any) -> None   # runs after commit
@@ -206,21 +195,19 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - [ ] Write the tests, watch them fail, implement, run `make check`.
 - [ ] Commit `feat(printers): add printer profiles, connections, capability registry, and pairing`.
 
-### Task M4: Jobs, idempotency, live events
+### Task M4: Jobs and idempotency
 
 **Files:**
-- Create: `backend/app/core/{events,idempotency}.py`
-- Create: `backend/app/adapters/realtime/{base,null,pusher,memory}.py`
+- Create: `backend/app/core/idempotency.py`
+- Create: `backend/app/modules/organizations/context.py` (`OrgContext`, importable by services)
 - Create: `backend/app/modules/jobs/{models,schemas,service,router,state}.py`
-- Create: `backend/app/modules/realtime/{schemas,service,router}.py`
-- Modify: `docker-compose.yml` (add `soketi`), `backend/app/core/config.py`, `backend/.env.example`
-- Modify: `backend/app/modules/printers/service.py`, `backend/app/modules/connections/service.py` (emit events)
 - Create: `backend/migrations/versions/*_jobs_idempotency.py`
-- Test: `backend/tests/modules/test_{jobs,jobs_batch,realtime,job_state}.py`, `backend/tests/core/test_idempotency.py`, `backend/tests/adapters/test_realtime_pusher.py`
+- Test: `backend/tests/modules/test_{jobs,jobs_batch,job_state}.py`, `backend/tests/core/test_idempotency.py`
 
-**Endpoints:**
-- Under `/organizations/{org_id}`: `POST /jobs` (requires `Idempotency-Key`), `GET /jobs`, `GET /jobs/{id}`, `POST /jobs/{id}/events`, `POST /jobs/{id}/cancel`, `POST /jobs/{id}/retry`, `POST /jobs/batch`
-- `GET /realtime/config`, `POST /realtime/auth`
+**Endpoints (under `/organizations/{org_id}`):**
+- `POST /jobs` (requires `Idempotency-Key`), `GET /jobs`, `GET /jobs/{id}`, `GET /jobs/{id}/events`
+- `POST /jobs/{id}/events`, `POST /jobs/{id}/cancel`, `POST /jobs/{id}/retry`
+- `POST /jobs/batch`
 
 **Test cases:**
 - State machine: forward transitions pass, backward transitions and any transition out of a terminal state raise `job.invalid_transition`.
@@ -230,14 +217,9 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 - A second event on a different connection sets `fallback_occurred`.
 - Retry is allowed only from `failed` or `cancelled` and links `retry_of_job_id`.
 - Batch sync applies each item on its own and reports per-item results; replaying the batch changes nothing.
-- A job event publishes `job.updated` to the organization jobs channel and the owner's user channel after commit, and nothing when the request fails.
-- A status report publishes `printer.status_changed` to the organization channel.
-- Channel authorization: a member may subscribe to their organization channel; a `user` role is refused the jobs channel; nobody may subscribe to another user's channel; an unknown channel is refused.
-- The Pusher publisher signs requests so that a reference implementation of the signature verifies, and signs channel authorizations as `key:hmac_sha256(secret, "socket_id:channel")`.
 
 - [ ] Write the tests, watch them fail, implement, run `make check`.
-- [ ] Publish one event to a local Soketi container (`docker compose --profile realtime up -d`) and confirm it is accepted.
-- [ ] Commit `feat(jobs): add job model, idempotency, batch sync, and live events`.
+- [ ] Commit `feat(jobs): add job model, idempotency, and batch sync`.
 
 ### Task M5: Presets, documents, object storage
 
@@ -324,7 +306,7 @@ def record(session, *, action: str, target_type: str, target_id: UUID | None,
 | §6.1 API conventions | M0 (errors, pagination, IDs), M7 (OpenAPI export) |
 | §6.2 Authentication and sessions | M1 |
 | §6.3 Tenancy and authorization | M2; policy enforcement in M4 and M5 |
-| §6.4 Unit of work and events | M0 (`after_commit`), M4 (`events`, Soketi publisher, channel auth), M6 (`tasks`) |
+| §6.4 Unit of work and side effects | M0 (`after_commit`), M6 (`tasks`, FCM data payloads) |
 | §6.5 Idempotency | M4 |
 | §6.6 Security | M0 (crypto, redaction), M3 (credentials, pairing), M5 (presigned URLs) |
 | §8 Capability schema | M3 |

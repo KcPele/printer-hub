@@ -7,7 +7,6 @@ from datetime import UTC, datetime
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import events
 from app.core.crypto import decrypt_json, encrypt_json
 from app.core.errors import NotFoundError, ValidationFailedError
 from app.modules.audit import service as audit
@@ -221,12 +220,6 @@ async def reorder(
         detail={"order": [str(connection_id) for connection_id in connection_ids]},
     )
     await session.flush()
-    events.emit(
-        session,
-        [events.org_channel(printer.organization_id)],
-        "printer.updated",
-        {"printer_id": str(printer.id)},
-    )
     return [by_id[connection_id] for connection_id in connection_ids]
 
 
@@ -239,7 +232,6 @@ async def report_health(
 ) -> Connection:
     connection = await get(session, printer=printer, connection_id=connection_id)
     now = datetime.now(UTC)
-    previous = connection.health
     connection.health = report.health
     connection.last_latency_ms = report.latency_ms
     if report.health in _HEALTHY:
@@ -250,15 +242,4 @@ async def report_health(
         connection.last_failure_at = now
         connection.last_error = report.error
     await session.flush()
-    if previous is not report.health:
-        events.emit(
-            session,
-            [events.org_channel(printer.organization_id)],
-            "connection.health_changed",
-            {
-                "printer_id": str(printer.id),
-                "connection_id": str(connection.id),
-                "health": report.health.value,
-            },
-        )
     return connection

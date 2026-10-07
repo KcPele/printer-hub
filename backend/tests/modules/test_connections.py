@@ -4,7 +4,6 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.adapters.realtime.memory import MemoryPublisher
 from app.core.crypto import decrypt_json
 from app.core.permissions import Role
 from app.modules.audit.models import AuditLog
@@ -186,7 +185,7 @@ async def test_reorder_must_list_every_connection_exactly_once(
 
 
 async def test_health_report_records_success_and_failure(
-    client: httpx.AsyncClient, session: AsyncSession, realtime: MemoryPublisher
+    client: httpx.AsyncClient, session: AsyncSession
 ) -> None:
     owner = await create_user(session)
     organization = await create_organization(session, owner)
@@ -212,9 +211,6 @@ async def test_health_report_records_success_and_failure(
     assert failed.json()["last_failure_at"] is not None
     assert failed.json()["last_error"] == "401 from printer"
 
-    await client.post(url, headers=reporter, json={"health": "auth_required"})
-    changes = realtime.events("connection.health_changed")
-    assert [event.data["health"] for event in changes] == ["connected", "auth_required"]
     await session.refresh(printer)
     assert printer.last_seen_at is not None
 

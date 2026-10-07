@@ -2,7 +2,6 @@ name: printerhub
 
 # Infrastructure starts by default: `docker compose up -d`.
 # The API, worker, and simulator run in containers with: `docker compose --profile app up -d`.
-# Soketi (optional live WebSocket updates) starts with: `docker compose --profile realtime up -d`.
 # Host ports are offset so they do not collide with locally installed Postgres and Redis.
 
 x-backend-env: &backend-env
@@ -56,22 +55,6 @@ services:
       - minio-data:/data
     healthcheck:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
-  soketi:
-    profiles: ["realtime"]
-    image: quay.io/soketi/soketi:1.6-16-debian
-    environment:
-      SOKETI_DEFAULT_APP_ID: printerhub
-      SOKETI_DEFAULT_APP_KEY: printerhub-key
-      SOKETI_DEFAULT_APP_SECRET: printerhub-dev-secret
-      SOKETI_DEFAULT_APP_ENABLE_CLIENT_MESSAGES: "false"
-    ports:
-      - "6001:6001"
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:6001/', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 5s
       timeout: 3s
       retries: 10
