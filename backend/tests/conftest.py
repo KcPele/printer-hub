@@ -20,6 +20,7 @@ os.environ["PRINTERHUB_REDIS_URL"] = os.environ.get(
 )
 os.environ["PRINTERHUB_STORAGE_BACKEND"] = "memory"
 os.environ["PRINTERHUB_PUSH_BACKEND"] = "log"
+os.environ["PRINTERHUB_REALTIME_BACKEND"] = "memory"
 os.environ["PRINTERHUB_LOG_LEVEL"] = "WARNING"
 os.environ["PRINTERHUB_CORS_ORIGINS"] = "[]"
 
@@ -37,6 +38,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from app.adapters.realtime import get_realtime_publisher
+from app.adapters.realtime.memory import MemoryPublisher
 from app.core.config import get_settings
 from app.core.db import get_engine, get_session, session_scope
 from app.core.redis import get_redis
@@ -131,3 +134,12 @@ async def client(app: FastAPI) -> AsyncIterator[httpx.AsyncClient]:
 @pytest.fixture(autouse=True)
 async def _clean_redis() -> None:
     await get_redis().flushdb()
+
+
+@pytest.fixture(autouse=True)
+def realtime() -> MemoryPublisher:
+    """The in-memory live-event publisher, emptied before each test."""
+    publisher = get_realtime_publisher()
+    assert isinstance(publisher, MemoryPublisher)
+    publisher.published.clear()
+    return publisher

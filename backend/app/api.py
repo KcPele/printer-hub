@@ -9,6 +9,7 @@ from app.modules.devices.router import router as devices_router
 from app.modules.health.router import router as health_router
 from app.modules.organizations.router import invitations_router
 from app.modules.organizations.router import router as organizations_router
+from app.modules.realtime.router import router as realtime_router
 from app.modules.users.router import router as users_router
 
 API_V1_PREFIX = "/api/v1"
@@ -23,5 +24,6 @@ for router in (
     organizations_router,
     invitations_router,
     audit_router,
+    realtime_router,
 ):
     api_router.include_router(router)
