@@ -2,7 +2,7 @@
 
 # dont ever say in your commit message, co-authored by claude
 
-Backend-first, mobile-first printer and scanner platform. This repo is a monorepo: `backend/` and `packages/api-client/` exist today; `mobile/` and `web/` join later.
+Backend-first, mobile-first printer and scanner platform. This repo is a monorepo: `backend/` (FastAPI), `printerhub/` (the Flutter app), and `packages/api-client/` (TypeScript client for the later web app).
 
 **The backend never talks to a printer.** Clients run print and scan jobs on the local network and report state. Anything that needs to reach a printer belongs in a client or in `backend/simulator/`.
 
@@ -17,7 +17,49 @@ Backend-first, mobile-first printer and scanner platform. This repo is a monorep
 | Hosting, environment variables, push setup | `docs/deployment.md` |
 | Printer simulator endpoints and faults | `backend/simulator/README.md` |
 | API contract | `backend/openapi.json`, or `/api/docs` on a running server |
-| Calling the API from an app | `packages/api-client/README.md` |
+| Calling the API from the web app | `packages/api-client/README.md` |
+| Mobile app architecture, milestones, open decisions | `docs/mobile-app-implementation.md` |
+| Visual references for the three themes | `design/` (on the owner's machine only; ignored by git) |
+
+## The mobile app has three themes
+
+The user picks a theme in Settings and it applies at once. **One layout, three skins:** every screen is built once and must look right in all three. A theme changes colour, type, shape, and elevation; layout, navigation, and wording stay the same. The files in `design/` are references for each skin's look, not screens to copy.
+
+All three ship light only. Each theme is a set of tokens per brightness, so a dark variant is added in `app_ui` without touching a screen.
+
+| | Volt | Indigo | Mint |
+|---|---|---|---|
+| Design file | `app theme 1.webp`, `printer-connect-screen-design.webp` | `app theme 2.webp` | `app theme 3.webp` |
+| Primary | `#FFFF1E` | `#4856EB` | `#46D7B7` |
+| Background | `#EEEEEE` | `#EFF2FA` | `#FFFFFF` |
+| Dark surface and text | `#212121` | `#1C1E2B` | `#1A1A1A` |
+| Font | Lufga | Plus Jakarta Sans | Manrope |
+| Corners | Pills and circles | Large (20 to 28) | Medium (12 to 16) |
+| Depth | Flat | Soft shadows | Hairline borders |
+
+When building or changing any app UI:
+
+- Take colour, text style, radius, and elevation from the theme tokens in `printerhub/packages/app_ui`. A feature contains no hex value, font name, or radius number.
+- Check the result in all three themes, and add a golden test in each for a shared widget.
+- Volt's primary is yellow: use it as a fill behind dark text, never as text or an icon on a light surface.
+- Status colours (online, warning, error) and toner colours keep their meaning in every theme; they are separate tokens from the primary.
+- Illustrations, icons, and printer artwork are SVGs we draw ourselves, kept in `printerhub/packages/app_ui/assets/`. They are drawn in a fixed set of placeholder colours that map to theme tokens, so one file serves all three themes. No third-party artwork, and no bitmap where a vector will do.
+- The look to aim for: clean, professional, and inviting, with the printer as the hero of the screen. Function comes first: a screen that looks good and cannot reach the printer is not done.
+
+The full token table, and which values are still proposals, are in `docs/mobile-app-implementation.md` §4.
+
+## Working in `printerhub/` (the Flutter app)
+
+Generated with Very Good CLI (`very_good create flutter_app`). Flutter 3.47, Dart 3.13, iOS and Android only.
+
+A change is done when `make app-check` passes: formatting, `very_good_analysis` lints, and tests with 100% line coverage.
+
+- **Three flavors**, each with its own entry point and app ID: `development` (`.dev`), `staging` (`.stg`), `production` (`com.kcpele.printerhub`). Run one with `make app-dev`, or `flutter run --flavor <name> --target lib/main_<name>.dart`.
+- **A feature is a folder** under `lib/` with `view/`, `cubit/` or `bloc/`, and a barrel file. Tests mirror the path under `test/`.
+- **State lives in blocs and cubits.** A view renders state and sends events; it holds no logic and calls no repository.
+- **Every user-facing string** goes in `lib/l10n/arb/app_en.arb` and is read through `context.l10n`.
+- **Reusable code becomes a package** under `printerhub/packages/`, tested on its own. `docs/mobile-app-implementation.md` §3 names them and the direction dependencies may point.
+- **The app runs print and scan jobs itself**, against the printer on the local network. Develop against `backend/simulator` (`make simulator`).
 
 ## Working in `backend/`
 
@@ -76,7 +118,7 @@ Adding a module: create the four files, import the models in `app/models.py`, mo
 - Conventional Commits (`feat(jobs): ...`, `fix(auth): ...`). One logical change per commit.
 - Run `make openapi` whenever a route or schema changes. It rewrites `backend/openapi.json` and the client types in `packages/api-client/src/schema.d.ts`; commit both. CI fails when either is stale.
 - The contract is the source of the apps' types. When a generated type is looser than the API's behavior, fix the backend schema or `_polish_contract` in `app/main.py`, never the generated file.
-- Apps call the API only through `@printerhub/api-client`.
+- Apps reach the API only through a client generated from `backend/openapi.json`: the Dart client for the Flutter app, `@printerhub/api-client` for the web app.
 - Local infrastructure uses offset host ports (Postgres 5433, Redis 6380) so it coexists with locally installed services.
 - `main` deploys to production on push. The container runs `scripts/start.sh`: migrations, seed, then the API. A migration on `main` runs against the live database on the next deploy.
 - `backend/simulator/` shares no code with `backend/app/`. Keep it that way: it stands in for hardware.

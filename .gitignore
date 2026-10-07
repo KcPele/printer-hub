@@ -23,6 +23,9 @@ GoogleService-Info.plist
 *firebase-adminsdk*.json
 *.crdownload
 
+# Design references: third-party concept shots, kept on the owner's machine only.
+/design/
+
 # Editors and OS
 .DS_Store
 # Root only: the Flutter app keeps its run configurations and has its own rules.
