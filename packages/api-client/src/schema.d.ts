@@ -21,7 +21,7 @@ export interface paths {
          *     Answers 409 while the caller is the last owner of an organization that
          *     has other members.
          */
-        post: operations["account_delete_account"];
+        post: operations["delete_account"];
         delete?: never;
         options?: never;
         head?: never;
@@ -38,7 +38,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Create Profile */
-        post: operations["admin_create_profile"];
+        post: operations["create_profile"];
         delete?: never;
         options?: never;
         head?: never;
@@ -54,10 +54,10 @@ export interface paths {
         };
         get?: never;
         /** Replace Profile */
-        put: operations["admin_replace_profile"];
+        put: operations["replace_profile"];
         post?: never;
         /** Delete Profile */
-        delete: operations["admin_delete_profile"];
+        delete: operations["delete_profile"];
         options?: never;
         head?: never;
         patch?: never;
@@ -71,7 +71,7 @@ export interface paths {
             cookie?: never;
         };
         /** List Feature Flags */
-        get: operations["admin_list_feature_flags"];
+        get: operations["list_feature_flags"];
         put?: never;
         post?: never;
         delete?: never;
@@ -92,10 +92,10 @@ export interface paths {
          * Put Feature Flag
          * @description Create a flag or change its global value.
          */
-        put: operations["admin_put_feature_flag"];
+        put: operations["put_feature_flag"];
         post?: never;
         /** Delete Feature Flag */
-        delete: operations["admin_delete_feature_flag"];
+        delete: operations["delete_feature_flag"];
         options?: never;
         head?: never;
         patch?: never;
@@ -113,10 +113,10 @@ export interface paths {
          * Put Feature Flag Override
          * @description Set a flag for one organization, whatever its global value.
          */
-        put: operations["admin_put_feature_flag_override"];
+        put: operations["put_feature_flag_override"];
         post?: never;
         /** Delete Feature Flag Override */
-        delete: operations["admin_delete_feature_flag_override"];
+        delete: operations["delete_feature_flag_override"];
         options?: never;
         head?: never;
         patch?: never;
@@ -135,7 +135,7 @@ export interface paths {
          * Resend Verification
          * @description Email a new verification code. Any earlier code stops working.
          */
-        post: operations["auth_resend_verification"];
+        post: operations["resend_verification"];
         delete?: never;
         options?: never;
         head?: never;
@@ -155,7 +155,7 @@ export interface paths {
          * Verify Email
          * @description Confirm the caller's email address with the code sent at sign-up.
          */
-        post: operations["auth_verify_email"];
+        post: operations["verify_email"];
         delete?: never;
         options?: never;
         head?: never;
@@ -172,7 +172,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Login */
-        post: operations["auth_login"];
+        post: operations["login"];
         delete?: never;
         options?: never;
         head?: never;
@@ -189,7 +189,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Logout */
-        post: operations["auth_logout"];
+        post: operations["logout"];
         delete?: never;
         options?: never;
         head?: never;
@@ -209,7 +209,7 @@ export interface paths {
          * Change Password
          * @description Change the password and sign out every other session.
          */
-        post: operations["auth_change_password"];
+        post: operations["change_password"];
         delete?: never;
         options?: never;
         head?: never;
@@ -231,7 +231,7 @@ export interface paths {
          *
          *     Always answers 204, whether or not the address has an account.
          */
-        post: operations["auth_forgot_password"];
+        post: operations["forgot_password"];
         delete?: never;
         options?: never;
         head?: never;
@@ -254,7 +254,7 @@ export interface paths {
          *     A code works once, expires after a few minutes, and stops working after
          *     a few wrong attempts.
          */
-        post: operations["auth_reset_password"];
+        post: operations["reset_password"];
         delete?: never;
         options?: never;
         head?: never;
@@ -276,7 +276,7 @@ export interface paths {
          *
          *     Submitting an already rotated token revokes the session.
          */
-        post: operations["auth_refresh"];
+        post: operations["refresh"];
         delete?: never;
         options?: never;
         head?: never;
@@ -293,7 +293,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Register */
-        post: operations["auth_register"];
+        post: operations["register"];
         delete?: never;
         options?: never;
         head?: never;
@@ -308,7 +308,7 @@ export interface paths {
             cookie?: never;
         };
         /** List Sessions */
-        get: operations["auth_list_sessions"];
+        get: operations["list_sessions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -328,7 +328,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Revoke Session */
-        delete: operations["auth_revoke_session"];
+        delete: operations["revoke_session"];
         options?: never;
         head?: never;
         patch?: never;
@@ -342,7 +342,7 @@ export interface paths {
             cookie?: never;
         };
         /** List Profiles */
-        get: operations["capabilities_list_profiles"];
+        get: operations["list_profiles"];
         put?: never;
         post?: never;
         delete?: never;
@@ -362,7 +362,7 @@ export interface paths {
          * Match Profile
          * @description The vendor baseline for a discovered printer: what to expect and what to probe.
          */
-        get: operations["capabilities_match_profile"];
+        get: operations["match_profile"];
         put?: never;
         post?: never;
         delete?: never;
@@ -379,7 +379,7 @@ export interface paths {
             cookie?: never;
         };
         /** List Devices */
-        get: operations["devices_list_devices"];
+        get: operations["list_devices"];
         put?: never;
         /**
          * Register Device
@@ -387,7 +387,7 @@ export interface paths {
          *
          *     Call after every sign-in and whenever the push token changes.
          */
-        post: operations["devices_register_device"];
+        post: operations["register_device"];
         delete?: never;
         options?: never;
         head?: never;
@@ -405,11 +405,11 @@ export interface paths {
         put?: never;
         post?: never;
         /** Delete Device */
-        delete: operations["devices_delete_device"];
+        delete: operations["delete_device"];
         options?: never;
         head?: never;
         /** Update Device */
-        patch: operations["devices_update_device"];
+        patch: operations["update_device"];
         trace?: never;
     };
     "/api/v1/health/live": {
@@ -423,7 +423,7 @@ export interface paths {
          * Live
          * @description The process is running.
          */
-        get: operations["health_live"];
+        get: operations["live"];
         put?: never;
         post?: never;
         delete?: never;
@@ -443,7 +443,7 @@ export interface paths {
          * Ready
          * @description The process can reach its dependencies and serve traffic.
          */
-        get: operations["health_ready"];
+        get: operations["ready"];
         put?: never;
         post?: never;
         delete?: never;
@@ -463,7 +463,7 @@ export interface paths {
          * List My Invitations
          * @description Pending invitations sent to the caller's email address.
          */
-        get: operations["organizations_list_my_invitations"];
+        get: operations["list_my_invitations"];
         put?: never;
         post?: never;
         delete?: never;
@@ -485,7 +485,7 @@ export interface paths {
          * Accept Invitation
          * @description Join with the token from an invitation link. The caller's email must match.
          */
-        post: operations["organizations_accept_invitation"];
+        post: operations["accept_invitation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -505,7 +505,7 @@ export interface paths {
          * Accept My Invitation
          * @description Accept one of the caller's pending invitations from inside the app.
          */
-        post: operations["organizations_accept_my_invitation"];
+        post: operations["accept_my_invitation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -523,7 +523,7 @@ export interface paths {
          * List Notifications
          * @description The caller's notifications across all organizations, newest first.
          */
-        get: operations["notifications_list_notifications"];
+        get: operations["list_notifications"];
         put?: never;
         post?: never;
         delete?: never;
@@ -542,7 +542,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Mark All Read */
-        post: operations["notifications_mark_all_read"];
+        post: operations["mark_all_read"];
         delete?: never;
         options?: never;
         head?: never;
@@ -557,7 +557,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Unread Count */
-        get: operations["notifications_get_unread_count"];
+        get: operations["get_unread_count"];
         put?: never;
         post?: never;
         delete?: never;
@@ -576,7 +576,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Mark Read */
-        post: operations["notifications_mark_read"];
+        post: operations["mark_read"];
         delete?: never;
         options?: never;
         head?: never;
@@ -594,13 +594,13 @@ export interface paths {
          * List Organizations
          * @description Organizations the caller belongs to.
          */
-        get: operations["organizations_list_organizations"];
+        get: operations["list_organizations"];
         put?: never;
         /**
          * Create Organization
          * @description Create an organization. The caller becomes its owner.
          */
-        post: operations["organizations_create_organization"];
+        post: operations["create_organization"];
         delete?: never;
         options?: never;
         head?: never;
@@ -615,18 +615,18 @@ export interface paths {
             cookie?: never;
         };
         /** Get Organization */
-        get: operations["organizations_get_organization"];
+        get: operations["get_organization"];
         put?: never;
         post?: never;
         /**
          * Delete Organization
          * @description Delete the organization with all its printers, jobs, and documents.
          */
-        delete: operations["organizations_delete_organization"];
+        delete: operations["delete_organization"];
         options?: never;
         head?: never;
         /** Update Organization */
-        patch: operations["organizations_update_organization"];
+        patch: operations["update_organization"];
         trace?: never;
     };
     "/api/v1/organizations/{org_id}/audit-logs": {
@@ -637,7 +637,7 @@ export interface paths {
             cookie?: never;
         };
         /** List Audit Logs */
-        get: operations["audit_list_audit_logs"];
+        get: operations["list_audit_logs"];
         put?: never;
         post?: never;
         delete?: never;
@@ -657,7 +657,7 @@ export interface paths {
          * List Documents
          * @description Documents, newest first. Members without `documents.read_all` see only their own.
          */
-        get: operations["documents_list_documents"];
+        get: operations["list_documents"];
         put?: never;
         /**
          * Create Document
@@ -667,7 +667,7 @@ export interface paths {
          *     A `cloud` document returns upload instructions: send the bytes to that
          *     URL, then call `complete-upload`.
          */
-        post: operations["documents_create_document"];
+        post: operations["create_document"];
         delete?: never;
         options?: never;
         head?: never;
@@ -682,18 +682,18 @@ export interface paths {
             cookie?: never;
         };
         /** Get Document */
-        get: operations["documents_get_document"];
+        get: operations["get_document"];
         put?: never;
         post?: never;
         /**
          * Delete Document
          * @description Delete the document and, for a cloud document, its stored file.
          */
-        delete: operations["documents_delete_document"];
+        delete: operations["delete_document"];
         options?: never;
         head?: never;
         /** Update Document */
-        patch: operations["documents_update_document"];
+        patch: operations["update_document"];
         trace?: never;
     };
     "/api/v1/organizations/{org_id}/documents/{document_id}/complete-upload": {
@@ -709,7 +709,7 @@ export interface paths {
          * Complete Upload
          * @description Confirm the upload finished. The stored file's size is checked against the declared one.
          */
-        post: operations["documents_complete_upload"];
+        post: operations["complete_upload"];
         delete?: never;
         options?: never;
         head?: never;
@@ -727,7 +727,7 @@ export interface paths {
          * Get Download Url
          * @description A short-lived link to the stored file of a cloud document.
          */
-        get: operations["documents_get_download_url"];
+        get: operations["get_download_url"];
         put?: never;
         post?: never;
         delete?: never;
@@ -747,7 +747,7 @@ export interface paths {
          * Get Upload Url
          * @description Fresh upload instructions, for when the first ones expired before the upload finished.
          */
-        get: operations["documents_get_upload_url"];
+        get: operations["get_upload_url"];
         put?: never;
         post?: never;
         delete?: never;
@@ -767,7 +767,7 @@ export interface paths {
          * Get Feature Flags
          * @description Flags as they apply to this organization. Treat a flag that is absent as off.
          */
-        get: operations["feature-flags_get_feature_flags"];
+        get: operations["get_feature_flags"];
         put?: never;
         post?: never;
         delete?: never;
@@ -784,13 +784,13 @@ export interface paths {
             cookie?: never;
         };
         /** List Invitations */
-        get: operations["organizations_list_invitations"];
+        get: operations["list_invitations"];
         put?: never;
         /**
          * Create Invitation
          * @description Invite someone by email. The token appears only in this response.
          */
-        post: operations["organizations_create_invitation"];
+        post: operations["create_invitation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -808,7 +808,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Revoke Invitation */
-        delete: operations["organizations_revoke_invitation"];
+        delete: operations["revoke_invitation"];
         options?: never;
         head?: never;
         patch?: never;
@@ -825,7 +825,7 @@ export interface paths {
          * List Jobs
          * @description Job history, newest first. Members without `jobs.read_all` see only their own jobs.
          */
-        get: operations["jobs_list_jobs"];
+        get: operations["list_jobs"];
         put?: never;
         /**
          * Create Job
@@ -834,7 +834,7 @@ export interface paths {
          *     Send a fresh `Idempotency-Key` per job and reuse it on every retry of the
          *     request, so a lost response never creates a second job (FR-PRN-022).
          */
-        post: operations["jobs_create_job"];
+        post: operations["create_job"];
         delete?: never;
         options?: never;
         head?: never;
@@ -857,7 +857,7 @@ export interface paths {
          *     Items are independent: one failing does not affect the others. The call
          *     is safe to repeat.
          */
-        post: operations["jobs_sync_jobs"];
+        post: operations["sync_jobs"];
         delete?: never;
         options?: never;
         head?: never;
@@ -872,7 +872,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get Job */
-        get: operations["jobs_get_job"];
+        get: operations["get_job"];
         put?: never;
         post?: never;
         delete?: never;
@@ -891,7 +891,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Cancel Job */
-        post: operations["jobs_cancel_job"];
+        post: operations["cancel_job"];
         delete?: never;
         options?: never;
         head?: never;
@@ -909,7 +909,7 @@ export interface paths {
          * List Job Events
          * @description Every reported state change and connection attempt, oldest first.
          */
-        get: operations["jobs_list_job_events"];
+        get: operations["list_job_events"];
         put?: never;
         /**
          * Report Job Event
@@ -918,7 +918,7 @@ export interface paths {
          *     Name the connection used on each attempt. When it differs from the
          *     previous one the job is marked as having fallen back (FR-CON-010).
          */
-        post: operations["jobs_report_job_event"];
+        post: operations["report_job_event"];
         delete?: never;
         options?: never;
         head?: never;
@@ -938,7 +938,7 @@ export interface paths {
          * Retry Job
          * @description Create a new job with the same settings as a failed or cancelled one.
          */
-        post: operations["jobs_retry_job"];
+        post: operations["retry_job"];
         delete?: never;
         options?: never;
         head?: never;
@@ -953,7 +953,7 @@ export interface paths {
             cookie?: never;
         };
         /** List Members */
-        get: operations["organizations_list_members"];
+        get: operations["list_members"];
         put?: never;
         post?: never;
         delete?: never;
@@ -976,11 +976,11 @@ export interface paths {
          * Remove Member
          * @description Remove a member. Any member may remove themselves to leave.
          */
-        delete: operations["organizations_remove_member"];
+        delete: operations["remove_member"];
         options?: never;
         head?: never;
         /** Change Member Role */
-        patch: operations["organizations_change_member_role"];
+        patch: operations["change_member_role"];
         trace?: never;
     };
     "/api/v1/organizations/{org_id}/presets": {
@@ -994,7 +994,7 @@ export interface paths {
          * List Presets
          * @description The caller's personal presets and the organization's shared ones.
          */
-        get: operations["presets_list_presets"];
+        get: operations["list_presets"];
         put?: never;
         /**
          * Create Preset
@@ -1003,7 +1003,7 @@ export interface paths {
          *     A `personal` preset belongs to the caller. An `organization` preset is
          *     shared with every member and needs `presets.manage_org`.
          */
-        post: operations["presets_create_preset"];
+        post: operations["create_preset"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1018,15 +1018,15 @@ export interface paths {
             cookie?: never;
         };
         /** Get Preset */
-        get: operations["presets_get_preset"];
+        get: operations["get_preset"];
         put?: never;
         post?: never;
         /** Delete Preset */
-        delete: operations["presets_delete_preset"];
+        delete: operations["delete_preset"];
         options?: never;
         head?: never;
         /** Update Preset */
-        patch: operations["presets_update_preset"];
+        patch: operations["update_preset"];
         trace?: never;
     };
     "/api/v1/organizations/{org_id}/printers": {
@@ -1037,13 +1037,13 @@ export interface paths {
             cookie?: never;
         };
         /** List Printers */
-        get: operations["printers_list_printers"];
+        get: operations["list_printers"];
         put?: never;
         /**
          * Add Printer
          * @description Register a printer together with the connection paths the client verified.
          */
-        post: operations["printers_add_printer"];
+        post: operations["add_printer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1058,15 +1058,15 @@ export interface paths {
             cookie?: never;
         };
         /** Get Printer */
-        get: operations["printers_get_printer"];
+        get: operations["get_printer"];
         put?: never;
         post?: never;
         /** Remove Printer */
-        delete: operations["printers_remove_printer"];
+        delete: operations["remove_printer"];
         options?: never;
         head?: never;
         /** Update Printer */
-        patch: operations["printers_update_printer"];
+        patch: operations["update_printer"];
         trace?: never;
     };
     "/api/v1/organizations/{org_id}/printers/{printer_id}/capabilities": {
@@ -1081,7 +1081,7 @@ export interface paths {
          * Report Capabilities
          * @description Replace the capability snapshot with what the client just probed.
          */
-        put: operations["printers_report_capabilities"];
+        put: operations["report_capabilities"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1100,10 +1100,10 @@ export interface paths {
          * List Connections
          * @description Connections in fallback order, most preferred first.
          */
-        get: operations["connections_list_connections"];
+        get: operations["list_connections"];
         put?: never;
         /** Add Connection */
-        post: operations["connections_add_connection"];
+        post: operations["add_connection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1122,7 +1122,7 @@ export interface paths {
          * Set Connection Priority
          * @description Set the order in which clients try connections (FR-CON-009, FR-CON-011).
          */
-        put: operations["connections_set_connection_priority"];
+        put: operations["set_connection_priority"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1138,15 +1138,15 @@ export interface paths {
             cookie?: never;
         };
         /** Get Connection */
-        get: operations["connections_get_connection"];
+        get: operations["get_connection"];
         put?: never;
         post?: never;
         /** Remove Connection */
-        delete: operations["connections_remove_connection"];
+        delete: operations["remove_connection"];
         options?: never;
         head?: never;
         /** Update Connection */
-        patch: operations["connections_update_connection"];
+        patch: operations["update_connection"];
         trace?: never;
     };
     "/api/v1/organizations/{org_id}/printers/{printer_id}/connections/{connection_id}/credentials": {
@@ -1163,7 +1163,7 @@ export interface paths {
          *     Every read is written to the audit log. Keep the result in platform
          *     secure storage (FR-MOB-018).
          */
-        get: operations["connections_read_connection_credentials"];
+        get: operations["read_connection_credentials"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1185,7 +1185,7 @@ export interface paths {
          * Report Connection Health
          * @description Report the outcome of using or testing a connection (FR-CON-012, FR-ONB-005).
          */
-        post: operations["connections_report_connection_health"];
+        post: operations["report_connection_health"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1205,7 +1205,7 @@ export interface paths {
          * Create Pairing Token
          * @description Create a short-lived, single-use pairing code to show as a QR code.
          */
-        post: operations["pairing_create_pairing_token"];
+        post: operations["create_pairing_token"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1225,7 +1225,7 @@ export interface paths {
          * Report Status
          * @description Report printer state observed on the local network.
          */
-        post: operations["printers_report_status"];
+        post: operations["report_status"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1245,7 +1245,7 @@ export interface paths {
          * Redeem Pairing Token
          * @description Resolve a scanned pairing code to its printer profile and connections.
          */
-        post: operations["pairing_redeem_pairing_token"];
+        post: operations["redeem_pairing_token"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1260,14 +1260,14 @@ export interface paths {
             cookie?: never;
         };
         /** Get Me */
-        get: operations["users_get_me"];
+        get: operations["get_me"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         /** Update Me */
-        patch: operations["users_update_me"];
+        patch: operations["update_me"];
         trace?: never;
     };
 }
@@ -2297,6 +2297,7 @@ export interface components {
             invited_by_user_id: string | null;
             role: components["schemas"]["Role"];
         };
+        JobCreate: components["schemas"]["PrintJobCreate"] | components["schemas"]["ScanJobCreate"] | components["schemas"]["CopyJobCreate"];
         /**
          * JobEventCreate
          * @description A state change observed by the client executing the job.
@@ -2364,6 +2365,7 @@ export interface components {
             reported_by_user_id: string | null;
             status: components["schemas"]["JobStatus"];
         };
+        JobRead: components["schemas"]["PrintJobRead"] | components["schemas"]["ScanJobRead"] | components["schemas"]["CopyJobRead"];
         /**
          * JobStatus
          * @enum {string}
@@ -2382,8 +2384,7 @@ export interface components {
             events?: components["schemas"]["JobEventCreate"][];
             /** Idempotency Key */
             idempotency_key: string;
-            /** Job */
-            job: components["schemas"]["PrintJobCreate"] | components["schemas"]["ScanJobCreate"] | components["schemas"]["CopyJobCreate"];
+            job: components["schemas"]["JobCreate"];
         };
         /**
          * JobSyncRequest
@@ -2403,8 +2404,7 @@ export interface components {
             error: components["schemas"]["JobSyncError"] | null;
             /** Idempotency Key */
             idempotency_key: string;
-            /** Job */
-            job: (components["schemas"]["PrintJobRead"] | components["schemas"]["ScanJobRead"] | components["schemas"]["CopyJobRead"]) | null;
+            job: components["schemas"]["JobRead"] | null;
             /**
              * Outcome
              * @enum {string}
@@ -2594,13 +2594,6 @@ export interface components {
             name?: string | null;
             settings?: components["schemas"]["OrganizationSettings-Input"] | null;
         };
-        /** Page[Annotated[Union[PrintJobRead, ScanJobRead, CopyJobRead], FieldInfo(annotation=NoneType, required=True, discriminator='type')]] */
-        Page_Annotated_Union_PrintJobRead__ScanJobRead__CopyJobRead___FieldInfo_annotation_NoneType__required_True__discriminator__type____: {
-            /** Items */
-            items: (components["schemas"]["PrintJobRead"] | components["schemas"]["ScanJobRead"] | components["schemas"]["CopyJobRead"])[];
-            /** Next Cursor */
-            next_cursor: string | null;
-        };
         /** Page[AuditLogRead] */
         Page_AuditLogRead_: {
             /** Items */
@@ -2612,6 +2605,13 @@ export interface components {
         Page_DocumentRead_: {
             /** Items */
             items: components["schemas"]["DocumentRead"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** Page[JobRead] */
+        Page_JobRead_: {
+            /** Items */
+            items: components["schemas"]["JobRead"][];
             /** Next Cursor */
             next_cursor: string | null;
         };
@@ -2695,6 +2695,8 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        PresetCreate: components["schemas"]["PrintPresetCreate"] | components["schemas"]["ScanPresetCreate"] | components["schemas"]["CopyPresetCreate"];
+        PresetRead: components["schemas"]["PrintPresetRead"] | components["schemas"]["ScanPresetRead"] | components["schemas"]["CopyPresetRead"];
         /**
          * PresetScope
          * @enum {string}
@@ -3841,6 +3843,12 @@ export interface components {
         UploadStatus: "not_applicable" | "pending" | "uploaded";
         /** UserPreferences */
         "UserPreferences-Input": {
+            /**
+             * App Theme
+             * @default volt
+             * @enum {string}
+             */
+            app_theme?: "volt" | "indigo" | "mint";
             /** Default Organization Id */
             default_organization_id?: string | null;
             /** Default Printer Id */
@@ -3856,6 +3864,12 @@ export interface components {
         };
         /** UserPreferences */
         "UserPreferences-Output": {
+            /**
+             * App Theme
+             * @default volt
+             * @enum {string}
+             */
+            app_theme: "volt" | "indigo" | "mint";
             /** Default Organization Id */
             default_organization_id: string | null;
             /** Default Printer Id */
@@ -3924,7 +3938,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    account_delete_account: {
+    delete_account: {
         parameters: {
             query?: never;
             header?: never;
@@ -3991,7 +4005,7 @@ export interface operations {
             };
         };
     };
-    admin_create_profile: {
+    create_profile: {
         parameters: {
             query?: never;
             header?: never;
@@ -4060,7 +4074,7 @@ export interface operations {
             };
         };
     };
-    admin_replace_profile: {
+    replace_profile: {
         parameters: {
             query?: never;
             header?: never;
@@ -4131,7 +4145,7 @@ export interface operations {
             };
         };
     };
-    admin_delete_profile: {
+    delete_profile: {
         parameters: {
             query?: never;
             header?: never;
@@ -4187,7 +4201,7 @@ export interface operations {
             };
         };
     };
-    admin_list_feature_flags: {
+    list_feature_flags: {
         parameters: {
             query?: never;
             header?: never;
@@ -4243,7 +4257,7 @@ export interface operations {
             };
         };
     };
-    admin_put_feature_flag: {
+    put_feature_flag: {
         parameters: {
             query?: never;
             header?: never;
@@ -4305,7 +4319,7 @@ export interface operations {
             };
         };
     };
-    admin_delete_feature_flag: {
+    delete_feature_flag: {
         parameters: {
             query?: never;
             header?: never;
@@ -4361,7 +4375,7 @@ export interface operations {
             };
         };
     };
-    admin_put_feature_flag_override: {
+    put_feature_flag_override: {
         parameters: {
             query?: never;
             header?: never;
@@ -4424,7 +4438,7 @@ export interface operations {
             };
         };
     };
-    admin_delete_feature_flag_override: {
+    delete_feature_flag_override: {
         parameters: {
             query?: never;
             header?: never;
@@ -4481,7 +4495,7 @@ export interface operations {
             };
         };
     };
-    auth_resend_verification: {
+    resend_verification: {
         parameters: {
             query?: never;
             header?: never;
@@ -4544,7 +4558,7 @@ export interface operations {
             };
         };
     };
-    auth_verify_email: {
+    verify_email: {
         parameters: {
             query?: never;
             header?: never;
@@ -4604,7 +4618,7 @@ export interface operations {
             };
         };
     };
-    auth_login: {
+    login: {
         parameters: {
             query?: never;
             header?: never;
@@ -4673,7 +4687,7 @@ export interface operations {
             };
         };
     };
-    auth_logout: {
+    logout: {
         parameters: {
             query?: never;
             header?: never;
@@ -4727,7 +4741,7 @@ export interface operations {
             };
         };
     };
-    auth_change_password: {
+    change_password: {
         parameters: {
             query?: never;
             header?: never;
@@ -4785,7 +4799,7 @@ export interface operations {
             };
         };
     };
-    auth_forgot_password: {
+    forgot_password: {
         parameters: {
             query?: never;
             header?: never;
@@ -4852,7 +4866,7 @@ export interface operations {
             };
         };
     };
-    auth_reset_password: {
+    reset_password: {
         parameters: {
             query?: never;
             header?: never;
@@ -4919,7 +4933,7 @@ export interface operations {
             };
         };
     };
-    auth_refresh: {
+    refresh: {
         parameters: {
             query?: never;
             header?: never;
@@ -4979,7 +4993,7 @@ export interface operations {
             };
         };
     };
-    auth_register: {
+    register: {
         parameters: {
             query?: never;
             header?: never;
@@ -5057,7 +5071,7 @@ export interface operations {
             };
         };
     };
-    auth_list_sessions: {
+    list_sessions: {
         parameters: {
             query?: never;
             header?: never;
@@ -5113,7 +5127,7 @@ export interface operations {
             };
         };
     };
-    auth_revoke_session: {
+    revoke_session: {
         parameters: {
             query?: never;
             header?: never;
@@ -5169,7 +5183,7 @@ export interface operations {
             };
         };
     };
-    capabilities_list_profiles: {
+    list_profiles: {
         parameters: {
             query?: {
                 manufacturer?: string | null;
@@ -5227,7 +5241,7 @@ export interface operations {
             };
         };
     };
-    capabilities_match_profile: {
+    match_profile: {
         parameters: {
             query: {
                 manufacturer: string;
@@ -5286,7 +5300,7 @@ export interface operations {
             };
         };
     };
-    devices_list_devices: {
+    list_devices: {
         parameters: {
             query?: never;
             header?: never;
@@ -5342,7 +5356,7 @@ export interface operations {
             };
         };
     };
-    devices_register_device: {
+    register_device: {
         parameters: {
             query?: never;
             header?: never;
@@ -5402,7 +5416,7 @@ export interface operations {
             };
         };
     };
-    devices_delete_device: {
+    delete_device: {
         parameters: {
             query?: never;
             header?: never;
@@ -5458,7 +5472,7 @@ export interface operations {
             };
         };
     };
-    devices_update_device: {
+    update_device: {
         parameters: {
             query?: never;
             header?: never;
@@ -5520,7 +5534,7 @@ export interface operations {
             };
         };
     };
-    health_live: {
+    live: {
         parameters: {
             query?: never;
             header?: never;
@@ -5576,7 +5590,7 @@ export interface operations {
             };
         };
     };
-    health_ready: {
+    ready: {
         parameters: {
             query?: never;
             header?: never;
@@ -5641,7 +5655,7 @@ export interface operations {
             };
         };
     };
-    organizations_list_my_invitations: {
+    list_my_invitations: {
         parameters: {
             query?: never;
             header?: never;
@@ -5697,7 +5711,7 @@ export interface operations {
             };
         };
     };
-    organizations_accept_invitation: {
+    accept_invitation: {
         parameters: {
             query?: never;
             header?: never;
@@ -5766,7 +5780,7 @@ export interface operations {
             };
         };
     };
-    organizations_accept_my_invitation: {
+    accept_my_invitation: {
         parameters: {
             query?: never;
             header?: never;
@@ -5833,7 +5847,7 @@ export interface operations {
             };
         };
     };
-    notifications_list_notifications: {
+    list_notifications: {
         parameters: {
             query?: {
                 unread_only?: boolean;
@@ -5894,7 +5908,7 @@ export interface operations {
             };
         };
     };
-    notifications_mark_all_read: {
+    mark_all_read: {
         parameters: {
             query?: never;
             header?: never;
@@ -5948,7 +5962,7 @@ export interface operations {
             };
         };
     };
-    notifications_get_unread_count: {
+    get_unread_count: {
         parameters: {
             query?: never;
             header?: never;
@@ -6004,7 +6018,7 @@ export interface operations {
             };
         };
     };
-    notifications_mark_read: {
+    mark_read: {
         parameters: {
             query?: never;
             header?: never;
@@ -6062,7 +6076,7 @@ export interface operations {
             };
         };
     };
-    organizations_list_organizations: {
+    list_organizations: {
         parameters: {
             query?: never;
             header?: never;
@@ -6118,7 +6132,7 @@ export interface operations {
             };
         };
     };
-    organizations_create_organization: {
+    create_organization: {
         parameters: {
             query?: never;
             header?: never;
@@ -6178,7 +6192,7 @@ export interface operations {
             };
         };
     };
-    organizations_get_organization: {
+    get_organization: {
         parameters: {
             query?: never;
             header?: never;
@@ -6236,7 +6250,7 @@ export interface operations {
             };
         };
     };
-    organizations_delete_organization: {
+    delete_organization: {
         parameters: {
             query?: never;
             header?: never;
@@ -6292,7 +6306,7 @@ export interface operations {
             };
         };
     };
-    organizations_update_organization: {
+    update_organization: {
         parameters: {
             query?: never;
             header?: never;
@@ -6354,7 +6368,7 @@ export interface operations {
             };
         };
     };
-    audit_list_audit_logs: {
+    list_audit_logs: {
         parameters: {
             query?: {
                 action?: string | null;
@@ -6420,7 +6434,7 @@ export interface operations {
             };
         };
     };
-    documents_list_documents: {
+    list_documents: {
         parameters: {
             query?: {
                 /** @description Matches file name, recognized text, or a tag */
@@ -6490,7 +6504,7 @@ export interface operations {
             };
         };
     };
-    documents_create_document: {
+    create_document: {
         parameters: {
             query?: never;
             header?: {
@@ -6572,7 +6586,7 @@ export interface operations {
             };
         };
     };
-    documents_get_document: {
+    get_document: {
         parameters: {
             query?: never;
             header?: never;
@@ -6631,7 +6645,7 @@ export interface operations {
             };
         };
     };
-    documents_delete_document: {
+    delete_document: {
         parameters: {
             query?: never;
             header?: never;
@@ -6688,7 +6702,7 @@ export interface operations {
             };
         };
     };
-    documents_update_document: {
+    update_document: {
         parameters: {
             query?: never;
             header?: never;
@@ -6751,7 +6765,7 @@ export interface operations {
             };
         };
     };
-    documents_complete_upload: {
+    complete_upload: {
         parameters: {
             query?: never;
             header?: never;
@@ -6819,7 +6833,7 @@ export interface operations {
             };
         };
     };
-    documents_get_download_url: {
+    get_download_url: {
         parameters: {
             query?: never;
             header?: never;
@@ -6887,7 +6901,7 @@ export interface operations {
             };
         };
     };
-    documents_get_upload_url: {
+    get_upload_url: {
         parameters: {
             query?: never;
             header?: never;
@@ -6955,7 +6969,7 @@ export interface operations {
             };
         };
     };
-    "feature-flags_get_feature_flags": {
+    get_feature_flags: {
         parameters: {
             query?: never;
             header?: never;
@@ -7013,7 +7027,7 @@ export interface operations {
             };
         };
     };
-    organizations_list_invitations: {
+    list_invitations: {
         parameters: {
             query?: never;
             header?: never;
@@ -7071,7 +7085,7 @@ export interface operations {
             };
         };
     };
-    organizations_create_invitation: {
+    create_invitation: {
         parameters: {
             query?: never;
             header?: never;
@@ -7142,7 +7156,7 @@ export interface operations {
             };
         };
     };
-    organizations_revoke_invitation: {
+    revoke_invitation: {
         parameters: {
             query?: never;
             header?: never;
@@ -7199,7 +7213,7 @@ export interface operations {
             };
         };
     };
-    jobs_list_jobs: {
+    list_jobs: {
         parameters: {
             query?: {
                 printer_id?: string | null;
@@ -7227,7 +7241,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Page_Annotated_Union_PrintJobRead__ScanJobRead__CopyJobRead___FieldInfo_annotation_NoneType__required_True__discriminator__type____"];
+                    "application/json": components["schemas"]["Page_JobRead_"];
                 };
             };
             /** @description Unauthorized */
@@ -7268,7 +7282,7 @@ export interface operations {
             };
         };
     };
-    jobs_create_job: {
+    create_job: {
         parameters: {
             query?: never;
             header: {
@@ -7282,7 +7296,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PrintJobCreate"] | components["schemas"]["ScanJobCreate"] | components["schemas"]["CopyJobCreate"];
+                "application/json": components["schemas"]["JobCreate"];
             };
         };
         responses: {
@@ -7292,7 +7306,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrintJobRead"] | components["schemas"]["ScanJobRead"] | components["schemas"]["CopyJobRead"];
+                    "application/json": components["schemas"]["JobRead"];
                 };
             };
             /** @description Successful Response */
@@ -7301,7 +7315,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrintJobRead"] | components["schemas"]["ScanJobRead"] | components["schemas"]["CopyJobRead"];
+                    "application/json": components["schemas"]["JobRead"];
                 };
             };
             /** @description Bad Request */
@@ -7360,7 +7374,7 @@ export interface operations {
             };
         };
     };
-    jobs_sync_jobs: {
+    sync_jobs: {
         parameters: {
             query?: never;
             header?: never;
@@ -7422,7 +7436,7 @@ export interface operations {
             };
         };
     };
-    jobs_get_job: {
+    get_job: {
         parameters: {
             query?: never;
             header?: never;
@@ -7440,7 +7454,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrintJobRead"] | components["schemas"]["ScanJobRead"] | components["schemas"]["CopyJobRead"];
+                    "application/json": components["schemas"]["JobRead"];
                 };
             };
             /** @description Unauthorized */
@@ -7481,7 +7495,7 @@ export interface operations {
             };
         };
     };
-    jobs_cancel_job: {
+    cancel_job: {
         parameters: {
             query?: never;
             header?: never;
@@ -7499,7 +7513,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrintJobRead"] | components["schemas"]["ScanJobRead"] | components["schemas"]["CopyJobRead"];
+                    "application/json": components["schemas"]["JobRead"];
                 };
             };
             /** @description Unauthorized */
@@ -7549,7 +7563,7 @@ export interface operations {
             };
         };
     };
-    jobs_list_job_events: {
+    list_job_events: {
         parameters: {
             query?: never;
             header?: never;
@@ -7608,7 +7622,7 @@ export interface operations {
             };
         };
     };
-    jobs_report_job_event: {
+    report_job_event: {
         parameters: {
             query?: never;
             header?: never;
@@ -7630,7 +7644,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrintJobRead"] | components["schemas"]["ScanJobRead"] | components["schemas"]["CopyJobRead"];
+                    "application/json": components["schemas"]["JobRead"];
                 };
             };
             /** @description Unauthorized */
@@ -7680,7 +7694,7 @@ export interface operations {
             };
         };
     };
-    jobs_retry_job: {
+    retry_job: {
         parameters: {
             query?: never;
             header: {
@@ -7701,7 +7715,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrintJobRead"] | components["schemas"]["ScanJobRead"] | components["schemas"]["CopyJobRead"];
+                    "application/json": components["schemas"]["JobRead"];
                 };
             };
             /** @description Successful Response */
@@ -7710,7 +7724,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrintJobRead"] | components["schemas"]["ScanJobRead"] | components["schemas"]["CopyJobRead"];
+                    "application/json": components["schemas"]["JobRead"];
                 };
             };
             /** @description Bad Request */
@@ -7769,7 +7783,7 @@ export interface operations {
             };
         };
     };
-    organizations_list_members: {
+    list_members: {
         parameters: {
             query?: never;
             header?: never;
@@ -7827,7 +7841,7 @@ export interface operations {
             };
         };
     };
-    organizations_remove_member: {
+    remove_member: {
         parameters: {
             query?: never;
             header?: never;
@@ -7893,7 +7907,7 @@ export interface operations {
             };
         };
     };
-    organizations_change_member_role: {
+    change_member_role: {
         parameters: {
             query?: never;
             header?: never;
@@ -7965,7 +7979,7 @@ export interface operations {
             };
         };
     };
-    presets_list_presets: {
+    list_presets: {
         parameters: {
             query?: {
                 type?: components["schemas"]["JobType"] | null;
@@ -7985,7 +7999,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": (components["schemas"]["PrintPresetRead"] | components["schemas"]["ScanPresetRead"] | components["schemas"]["CopyPresetRead"])[];
+                    "application/json": components["schemas"]["PresetRead"][];
                 };
             };
             /** @description Unauthorized */
@@ -8026,7 +8040,7 @@ export interface operations {
             };
         };
     };
-    presets_create_preset: {
+    create_preset: {
         parameters: {
             query?: never;
             header?: never;
@@ -8037,7 +8051,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PrintPresetCreate"] | components["schemas"]["ScanPresetCreate"] | components["schemas"]["CopyPresetCreate"];
+                "application/json": components["schemas"]["PresetCreate"];
             };
         };
         responses: {
@@ -8047,7 +8061,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrintPresetRead"] | components["schemas"]["ScanPresetRead"] | components["schemas"]["CopyPresetRead"];
+                    "application/json": components["schemas"]["PresetRead"];
                 };
             };
             /** @description Unauthorized */
@@ -8088,7 +8102,7 @@ export interface operations {
             };
         };
     };
-    presets_get_preset: {
+    get_preset: {
         parameters: {
             query?: never;
             header?: never;
@@ -8106,7 +8120,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrintPresetRead"] | components["schemas"]["ScanPresetRead"] | components["schemas"]["CopyPresetRead"];
+                    "application/json": components["schemas"]["PresetRead"];
                 };
             };
             /** @description Unauthorized */
@@ -8147,7 +8161,7 @@ export interface operations {
             };
         };
     };
-    presets_delete_preset: {
+    delete_preset: {
         parameters: {
             query?: never;
             header?: never;
@@ -8204,7 +8218,7 @@ export interface operations {
             };
         };
     };
-    presets_update_preset: {
+    update_preset: {
         parameters: {
             query?: never;
             header?: never;
@@ -8226,7 +8240,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrintPresetRead"] | components["schemas"]["ScanPresetRead"] | components["schemas"]["CopyPresetRead"];
+                    "application/json": components["schemas"]["PresetRead"];
                 };
             };
             /** @description Unauthorized */
@@ -8267,7 +8281,7 @@ export interface operations {
             };
         };
     };
-    printers_list_printers: {
+    list_printers: {
         parameters: {
             query?: {
                 limit?: number;
@@ -8329,7 +8343,7 @@ export interface operations {
             };
         };
     };
-    printers_add_printer: {
+    add_printer: {
         parameters: {
             query?: never;
             header?: never;
@@ -8400,7 +8414,7 @@ export interface operations {
             };
         };
     };
-    printers_get_printer: {
+    get_printer: {
         parameters: {
             query?: never;
             header?: never;
@@ -8459,7 +8473,7 @@ export interface operations {
             };
         };
     };
-    printers_remove_printer: {
+    remove_printer: {
         parameters: {
             query?: never;
             header?: never;
@@ -8516,7 +8530,7 @@ export interface operations {
             };
         };
     };
-    printers_update_printer: {
+    update_printer: {
         parameters: {
             query?: never;
             header?: never;
@@ -8588,7 +8602,7 @@ export interface operations {
             };
         };
     };
-    printers_report_capabilities: {
+    report_capabilities: {
         parameters: {
             query?: never;
             header?: never;
@@ -8651,7 +8665,7 @@ export interface operations {
             };
         };
     };
-    connections_list_connections: {
+    list_connections: {
         parameters: {
             query?: never;
             header?: never;
@@ -8710,7 +8724,7 @@ export interface operations {
             };
         };
     };
-    connections_add_connection: {
+    add_connection: {
         parameters: {
             query?: never;
             header?: never;
@@ -8773,7 +8787,7 @@ export interface operations {
             };
         };
     };
-    connections_set_connection_priority: {
+    set_connection_priority: {
         parameters: {
             query?: never;
             header?: never;
@@ -8836,7 +8850,7 @@ export interface operations {
             };
         };
     };
-    connections_get_connection: {
+    get_connection: {
         parameters: {
             query?: never;
             header?: never;
@@ -8896,7 +8910,7 @@ export interface operations {
             };
         };
     };
-    connections_remove_connection: {
+    remove_connection: {
         parameters: {
             query?: never;
             header?: never;
@@ -8954,7 +8968,7 @@ export interface operations {
             };
         };
     };
-    connections_update_connection: {
+    update_connection: {
         parameters: {
             query?: never;
             header?: never;
@@ -9018,7 +9032,7 @@ export interface operations {
             };
         };
     };
-    connections_read_connection_credentials: {
+    read_connection_credentials: {
         parameters: {
             query?: never;
             header?: never;
@@ -9078,7 +9092,7 @@ export interface operations {
             };
         };
     };
-    connections_report_connection_health: {
+    report_connection_health: {
         parameters: {
             query?: never;
             header?: never;
@@ -9142,7 +9156,7 @@ export interface operations {
             };
         };
     };
-    pairing_create_pairing_token: {
+    create_pairing_token: {
         parameters: {
             query?: never;
             header?: never;
@@ -9201,7 +9215,7 @@ export interface operations {
             };
         };
     };
-    printers_report_status: {
+    report_status: {
         parameters: {
             query?: never;
             header?: never;
@@ -9264,7 +9278,7 @@ export interface operations {
             };
         };
     };
-    pairing_redeem_pairing_token: {
+    redeem_pairing_token: {
         parameters: {
             query?: never;
             header?: never;
@@ -9324,7 +9338,7 @@ export interface operations {
             };
         };
     };
-    users_get_me: {
+    get_me: {
         parameters: {
             query?: never;
             header?: never;
@@ -9380,7 +9394,7 @@ export interface operations {
             };
         };
     };
-    users_update_me: {
+    update_me: {
         parameters: {
             query?: never;
             header?: never;

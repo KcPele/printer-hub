@@ -2928,6 +2928,27 @@
         "title": "InvitationRead",
         "type": "object"
       },
+      "JobCreate": {
+        "discriminator": {
+          "mapping": {
+            "copy": "#/components/schemas/CopyJobCreate",
+            "print": "#/components/schemas/PrintJobCreate",
+            "scan": "#/components/schemas/ScanJobCreate"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PrintJobCreate"
+          },
+          {
+            "$ref": "#/components/schemas/ScanJobCreate"
+          },
+          {
+            "$ref": "#/components/schemas/CopyJobCreate"
+          }
+        ]
+      },
       "JobEventCreate": {
         "description": "A state change observed by the client executing the job.",
         "properties": {
@@ -3135,6 +3156,27 @@
         "title": "JobEventRead",
         "type": "object"
       },
+      "JobRead": {
+        "discriminator": {
+          "mapping": {
+            "copy": "#/components/schemas/CopyJobRead",
+            "print": "#/components/schemas/PrintJobRead",
+            "scan": "#/components/schemas/ScanJobRead"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PrintJobRead"
+          },
+          {
+            "$ref": "#/components/schemas/ScanJobRead"
+          },
+          {
+            "$ref": "#/components/schemas/CopyJobRead"
+          }
+        ]
+      },
       "JobStatus": {
         "enum": [
           "queued",
@@ -3190,26 +3232,7 @@
             "type": "string"
           },
           "job": {
-            "discriminator": {
-              "mapping": {
-                "copy": "#/components/schemas/CopyJobCreate",
-                "print": "#/components/schemas/PrintJobCreate",
-                "scan": "#/components/schemas/ScanJobCreate"
-              },
-              "propertyName": "type"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/PrintJobCreate"
-              },
-              {
-                "$ref": "#/components/schemas/ScanJobCreate"
-              },
-              {
-                "$ref": "#/components/schemas/CopyJobCreate"
-              }
-            ],
-            "title": "Job"
+            "$ref": "#/components/schemas/JobCreate"
           }
         },
         "required": [
@@ -3273,31 +3296,12 @@
           "job": {
             "anyOf": [
               {
-                "discriminator": {
-                  "mapping": {
-                    "copy": "#/components/schemas/CopyJobRead",
-                    "print": "#/components/schemas/PrintJobRead",
-                    "scan": "#/components/schemas/ScanJobRead"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/PrintJobRead"
-                  },
-                  {
-                    "$ref": "#/components/schemas/ScanJobRead"
-                  },
-                  {
-                    "$ref": "#/components/schemas/CopyJobRead"
-                  }
-                ]
+                "$ref": "#/components/schemas/JobRead"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Job"
+            ]
           },
           "outcome": {
             "enum": [
@@ -3787,52 +3791,6 @@
         "title": "OrganizationUpdate",
         "type": "object"
       },
-      "Page_Annotated_Union_PrintJobRead__ScanJobRead__CopyJobRead___FieldInfo_annotation_NoneType__required_True__discriminator__type____": {
-        "properties": {
-          "items": {
-            "items": {
-              "discriminator": {
-                "mapping": {
-                  "copy": "#/components/schemas/CopyJobRead",
-                  "print": "#/components/schemas/PrintJobRead",
-                  "scan": "#/components/schemas/ScanJobRead"
-                },
-                "propertyName": "type"
-              },
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/PrintJobRead"
-                },
-                {
-                  "$ref": "#/components/schemas/ScanJobRead"
-                },
-                {
-                  "$ref": "#/components/schemas/CopyJobRead"
-                }
-              ]
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Cursor"
-          }
-        },
-        "required": [
-          "items",
-          "next_cursor"
-        ],
-        "title": "Page[Annotated[Union[PrintJobRead, ScanJobRead, CopyJobRead], FieldInfo(annotation=NoneType, required=True, discriminator='type')]]",
-        "type": "object"
-      },
       "Page_AuditLogRead_": {
         "properties": {
           "items": {
@@ -3887,6 +3845,34 @@
           "next_cursor"
         ],
         "title": "Page[DocumentRead]",
+        "type": "object"
+      },
+      "Page_JobRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/JobRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "Page[JobRead]",
         "type": "object"
       },
       "Page_NotificationRead_": {
@@ -4072,6 +4058,48 @@
         ],
         "title": "PasswordResetRequest",
         "type": "object"
+      },
+      "PresetCreate": {
+        "discriminator": {
+          "mapping": {
+            "copy": "#/components/schemas/CopyPresetCreate",
+            "print": "#/components/schemas/PrintPresetCreate",
+            "scan": "#/components/schemas/ScanPresetCreate"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PrintPresetCreate"
+          },
+          {
+            "$ref": "#/components/schemas/ScanPresetCreate"
+          },
+          {
+            "$ref": "#/components/schemas/CopyPresetCreate"
+          }
+        ]
+      },
+      "PresetRead": {
+        "discriminator": {
+          "mapping": {
+            "copy": "#/components/schemas/CopyPresetRead",
+            "print": "#/components/schemas/PrintPresetRead",
+            "scan": "#/components/schemas/ScanPresetRead"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PrintPresetRead"
+          },
+          {
+            "$ref": "#/components/schemas/ScanPresetRead"
+          },
+          {
+            "$ref": "#/components/schemas/CopyPresetRead"
+          }
+        ]
       },
       "PresetScope": {
         "enum": [
@@ -7164,6 +7192,16 @@
       },
       "UserPreferences-Input": {
         "properties": {
+          "app_theme": {
+            "default": "volt",
+            "enum": [
+              "volt",
+              "indigo",
+              "mint"
+            ],
+            "title": "App Theme",
+            "type": "string"
+          },
           "default_organization_id": {
             "anyOf": [
               {
@@ -7212,6 +7250,16 @@
       },
       "UserPreferences-Output": {
         "properties": {
+          "app_theme": {
+            "default": "volt",
+            "enum": [
+              "volt",
+              "indigo",
+              "mint"
+            ],
+            "title": "App Theme",
+            "type": "string"
+          },
           "default_organization_id": {
             "anyOf": [
               {
@@ -7257,6 +7305,7 @@
         },
         "required": [
           "theme",
+          "app_theme",
           "default_organization_id",
           "default_printer_id",
           "muted_notification_types"
@@ -7390,7 +7439,7 @@
     "/api/v1/account/delete": {
       "post": {
         "description": "Permanently delete the caller's account. This cannot be undone.\n\nOrganizations where the caller is the only member are deleted with it.\nAnswers 409 while the caller is the last owner of an organization that\nhas other members.",
-        "operationId": "account_delete_account",
+        "operationId": "delete_account",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7469,7 +7518,7 @@
     },
     "/api/v1/admin/capability-profiles": {
       "post": {
-        "operationId": "admin_create_profile",
+        "operationId": "create_profile",
         "requestBody": {
           "content": {
             "application/json": {
@@ -7555,7 +7604,7 @@
     },
     "/api/v1/admin/capability-profiles/{profile_id}": {
       "delete": {
-        "operationId": "admin_delete_profile",
+        "operationId": "delete_profile",
         "parameters": [
           {
             "in": "path",
@@ -7624,7 +7673,7 @@
         ]
       },
       "put": {
-        "operationId": "admin_replace_profile",
+        "operationId": "replace_profile",
         "parameters": [
           {
             "in": "path",
@@ -7722,7 +7771,7 @@
     },
     "/api/v1/admin/feature-flags": {
       "get": {
-        "operationId": "admin_list_feature_flags",
+        "operationId": "list_feature_flags",
         "responses": {
           "200": {
             "content": {
@@ -7731,7 +7780,7 @@
                   "items": {
                     "$ref": "#/components/schemas/FeatureFlagRead"
                   },
-                  "title": "Response Admin List Feature Flags",
+                  "title": "Response List Feature Flags",
                   "type": "array"
                 }
               }
@@ -7792,7 +7841,7 @@
     },
     "/api/v1/admin/feature-flags/{key}": {
       "delete": {
-        "operationId": "admin_delete_feature_flag",
+        "operationId": "delete_feature_flag",
         "parameters": [
           {
             "in": "path",
@@ -7862,7 +7911,7 @@
       },
       "put": {
         "description": "Create a flag or change its global value.",
-        "operationId": "admin_put_feature_flag",
+        "operationId": "put_feature_flag",
         "parameters": [
           {
             "in": "path",
@@ -7950,7 +7999,7 @@
     },
     "/api/v1/admin/feature-flags/{key}/overrides/{organization_id}": {
       "delete": {
-        "operationId": "admin_delete_feature_flag_override",
+        "operationId": "delete_feature_flag_override",
         "parameters": [
           {
             "in": "path",
@@ -8030,7 +8079,7 @@
       },
       "put": {
         "description": "Set a flag for one organization, whatever its global value.",
-        "operationId": "admin_put_feature_flag_override",
+        "operationId": "put_feature_flag_override",
         "parameters": [
           {
             "in": "path",
@@ -8129,7 +8178,7 @@
     "/api/v1/auth/email/resend": {
       "post": {
         "description": "Email a new verification code. Any earlier code stops working.",
-        "operationId": "auth_resend_verification",
+        "operationId": "resend_verification",
         "responses": {
           "204": {
             "description": "Successful Response"
@@ -8199,7 +8248,7 @@
     "/api/v1/auth/email/verify": {
       "post": {
         "description": "Confirm the caller's email address with the code sent at sign-up.",
-        "operationId": "auth_verify_email",
+        "operationId": "verify_email",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8275,7 +8324,7 @@
     },
     "/api/v1/auth/login": {
       "post": {
-        "operationId": "auth_login",
+        "operationId": "login",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8356,7 +8405,7 @@
     },
     "/api/v1/auth/logout": {
       "post": {
-        "operationId": "auth_logout",
+        "operationId": "logout",
         "responses": {
           "204": {
             "description": "Successful Response"
@@ -8416,7 +8465,7 @@
     "/api/v1/auth/password/change": {
       "post": {
         "description": "Change the password and sign out every other session.",
-        "operationId": "auth_change_password",
+        "operationId": "change_password",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8486,7 +8535,7 @@
     "/api/v1/auth/password/forgot": {
       "post": {
         "description": "Email a 6-digit reset code.\n\nAlways answers 204, whether or not the address has an account.",
-        "operationId": "auth_forgot_password",
+        "operationId": "forgot_password",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8561,7 +8610,7 @@
     "/api/v1/auth/password/reset": {
       "post": {
         "description": "Choose a new password using the emailed code. Signs out every session.\n\nA code works once, expires after a few minutes, and stops working after\na few wrong attempts.",
-        "operationId": "auth_reset_password",
+        "operationId": "reset_password",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8636,7 +8685,7 @@
     "/api/v1/auth/refresh": {
       "post": {
         "description": "Rotate the refresh token. The submitted token stops working.\n\nSubmitting an already rotated token revokes the session.",
-        "operationId": "auth_refresh",
+        "operationId": "refresh",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8707,7 +8756,7 @@
     },
     "/api/v1/auth/register": {
       "post": {
-        "operationId": "auth_register",
+        "operationId": "register",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8798,7 +8847,7 @@
     },
     "/api/v1/auth/sessions": {
       "get": {
-        "operationId": "auth_list_sessions",
+        "operationId": "list_sessions",
         "responses": {
           "200": {
             "content": {
@@ -8807,7 +8856,7 @@
                   "items": {
                     "$ref": "#/components/schemas/SessionRead"
                   },
-                  "title": "Response Auth List Sessions",
+                  "title": "Response List Sessions",
                   "type": "array"
                 }
               }
@@ -8868,7 +8917,7 @@
     },
     "/api/v1/auth/sessions/{session_id}": {
       "delete": {
-        "operationId": "auth_revoke_session",
+        "operationId": "revoke_session",
         "parameters": [
           {
             "in": "path",
@@ -8939,7 +8988,7 @@
     },
     "/api/v1/capability-profiles": {
       "get": {
-        "operationId": "capabilities_list_profiles",
+        "operationId": "list_profiles",
         "parameters": [
           {
             "in": "query",
@@ -8966,7 +9015,7 @@
                   "items": {
                     "$ref": "#/components/schemas/CapabilityProfileRead"
                   },
-                  "title": "Response Capabilities List Profiles",
+                  "title": "Response List Profiles",
                   "type": "array"
                 }
               }
@@ -9028,7 +9077,7 @@
     "/api/v1/capability-profiles/match": {
       "get": {
         "description": "The vendor baseline for a discovered printer: what to expect and what to probe.",
-        "operationId": "capabilities_match_profile",
+        "operationId": "match_profile",
         "parameters": [
           {
             "in": "query",
@@ -9118,7 +9167,7 @@
     },
     "/api/v1/devices": {
       "get": {
-        "operationId": "devices_list_devices",
+        "operationId": "list_devices",
         "responses": {
           "200": {
             "content": {
@@ -9127,7 +9176,7 @@
                   "items": {
                     "$ref": "#/components/schemas/DeviceRead"
                   },
-                  "title": "Response Devices List Devices",
+                  "title": "Response List Devices",
                   "type": "array"
                 }
               }
@@ -9187,7 +9236,7 @@
       },
       "post": {
         "description": "Register this installation, or update it if it is already known.\n\nCall after every sign-in and whenever the push token changes.",
-        "operationId": "devices_register_device",
+        "operationId": "register_device",
         "requestBody": {
           "content": {
             "application/json": {
@@ -9263,7 +9312,7 @@
     },
     "/api/v1/devices/{device_id}": {
       "delete": {
-        "operationId": "devices_delete_device",
+        "operationId": "delete_device",
         "parameters": [
           {
             "in": "path",
@@ -9332,7 +9381,7 @@
         ]
       },
       "patch": {
-        "operationId": "devices_update_device",
+        "operationId": "update_device",
         "parameters": [
           {
             "in": "path",
@@ -9421,7 +9470,7 @@
     "/api/v1/health/live": {
       "get": {
         "description": "The process is running.",
-        "operationId": "health_live",
+        "operationId": "live",
         "responses": {
           "200": {
             "content": {
@@ -9483,7 +9532,7 @@
     "/api/v1/health/ready": {
       "get": {
         "description": "The process can reach its dependencies and serve traffic.",
-        "operationId": "health_ready",
+        "operationId": "ready",
         "responses": {
           "200": {
             "content": {
@@ -9555,7 +9604,7 @@
     "/api/v1/invitations": {
       "get": {
         "description": "Pending invitations sent to the caller's email address.",
-        "operationId": "organizations_list_my_invitations",
+        "operationId": "list_my_invitations",
         "responses": {
           "200": {
             "content": {
@@ -9564,7 +9613,7 @@
                   "items": {
                     "$ref": "#/components/schemas/MyInvitationRead"
                   },
-                  "title": "Response Organizations List My Invitations",
+                  "title": "Response List My Invitations",
                   "type": "array"
                 }
               }
@@ -9626,7 +9675,7 @@
     "/api/v1/invitations/accept": {
       "post": {
         "description": "Join with the token from an invitation link. The caller's email must match.",
-        "operationId": "organizations_accept_invitation",
+        "operationId": "accept_invitation",
         "requestBody": {
           "content": {
             "application/json": {
@@ -9713,7 +9762,7 @@
     "/api/v1/invitations/{invitation_id}/accept": {
       "post": {
         "description": "Accept one of the caller's pending invitations from inside the app.",
-        "operationId": "organizations_accept_my_invitation",
+        "operationId": "accept_my_invitation",
         "parameters": [
           {
             "in": "path",
@@ -9802,7 +9851,7 @@
     "/api/v1/notifications": {
       "get": {
         "description": "The caller's notifications across all organizations, newest first.",
-        "operationId": "notifications_list_notifications",
+        "operationId": "list_notifications",
         "parameters": [
           {
             "in": "query",
@@ -9910,7 +9959,7 @@
     },
     "/api/v1/notifications/read-all": {
       "post": {
-        "operationId": "notifications_mark_all_read",
+        "operationId": "mark_all_read",
         "responses": {
           "204": {
             "description": "Successful Response"
@@ -9969,7 +10018,7 @@
     },
     "/api/v1/notifications/unread-count": {
       "get": {
-        "operationId": "notifications_get_unread_count",
+        "operationId": "get_unread_count",
         "responses": {
           "200": {
             "content": {
@@ -10035,7 +10084,7 @@
     },
     "/api/v1/notifications/{notification_id}/read": {
       "post": {
-        "operationId": "notifications_mark_read",
+        "operationId": "mark_read",
         "parameters": [
           {
             "in": "path",
@@ -10114,7 +10163,7 @@
     "/api/v1/organizations": {
       "get": {
         "description": "Organizations the caller belongs to.",
-        "operationId": "organizations_list_organizations",
+        "operationId": "list_organizations",
         "responses": {
           "200": {
             "content": {
@@ -10123,7 +10172,7 @@
                   "items": {
                     "$ref": "#/components/schemas/OrganizationRead"
                   },
-                  "title": "Response Organizations List Organizations",
+                  "title": "Response List Organizations",
                   "type": "array"
                 }
               }
@@ -10183,7 +10232,7 @@
       },
       "post": {
         "description": "Create an organization. The caller becomes its owner.",
-        "operationId": "organizations_create_organization",
+        "operationId": "create_organization",
         "requestBody": {
           "content": {
             "application/json": {
@@ -10260,7 +10309,7 @@
     "/api/v1/organizations/{org_id}": {
       "delete": {
         "description": "Delete the organization with all its printers, jobs, and documents.",
-        "operationId": "organizations_delete_organization",
+        "operationId": "delete_organization",
         "parameters": [
           {
             "in": "path",
@@ -10329,7 +10378,7 @@
         ]
       },
       "get": {
-        "operationId": "organizations_get_organization",
+        "operationId": "get_organization",
         "parameters": [
           {
             "in": "path",
@@ -10405,7 +10454,7 @@
         ]
       },
       "patch": {
-        "operationId": "organizations_update_organization",
+        "operationId": "update_organization",
         "parameters": [
           {
             "in": "path",
@@ -10493,7 +10542,7 @@
     },
     "/api/v1/organizations/{org_id}/audit-logs": {
       "get": {
-        "operationId": "audit_list_audit_logs",
+        "operationId": "list_audit_logs",
         "parameters": [
           {
             "in": "path",
@@ -10668,7 +10717,7 @@
     "/api/v1/organizations/{org_id}/documents": {
       "get": {
         "description": "Documents, newest first. Members without `documents.read_all` see only their own.",
-        "operationId": "documents_list_documents",
+        "operationId": "list_documents",
         "parameters": [
           {
             "in": "path",
@@ -10894,7 +10943,7 @@
       },
       "post": {
         "description": "Register a document.\n\nA `local` document records metadata only; its bytes stay on the device.\nA `cloud` document returns upload instructions: send the bytes to that\nURL, then call `complete-upload`.",
-        "operationId": "documents_create_document",
+        "operationId": "create_document",
         "parameters": [
           {
             "in": "path",
@@ -11021,7 +11070,7 @@
     "/api/v1/organizations/{org_id}/documents/{document_id}": {
       "delete": {
         "description": "Delete the document and, for a cloud document, its stored file.",
-        "operationId": "documents_delete_document",
+        "operationId": "delete_document",
         "parameters": [
           {
             "in": "path",
@@ -11100,7 +11149,7 @@
         ]
       },
       "get": {
-        "operationId": "documents_get_document",
+        "operationId": "get_document",
         "parameters": [
           {
             "in": "path",
@@ -11186,7 +11235,7 @@
         ]
       },
       "patch": {
-        "operationId": "documents_update_document",
+        "operationId": "update_document",
         "parameters": [
           {
             "in": "path",
@@ -11285,7 +11334,7 @@
     "/api/v1/organizations/{org_id}/documents/{document_id}/complete-upload": {
       "post": {
         "description": "Confirm the upload finished. The stored file's size is checked against the declared one.",
-        "operationId": "documents_complete_upload",
+        "operationId": "complete_upload",
         "parameters": [
           {
             "in": "path",
@@ -11384,7 +11433,7 @@
     "/api/v1/organizations/{org_id}/documents/{document_id}/download-url": {
       "get": {
         "description": "A short-lived link to the stored file of a cloud document.",
-        "operationId": "documents_get_download_url",
+        "operationId": "get_download_url",
         "parameters": [
           {
             "in": "path",
@@ -11483,7 +11532,7 @@
     "/api/v1/organizations/{org_id}/documents/{document_id}/upload-url": {
       "get": {
         "description": "Fresh upload instructions, for when the first ones expired before the upload finished.",
-        "operationId": "documents_get_upload_url",
+        "operationId": "get_upload_url",
         "parameters": [
           {
             "in": "path",
@@ -11582,7 +11631,7 @@
     "/api/v1/organizations/{org_id}/feature-flags": {
       "get": {
         "description": "Flags as they apply to this organization. Treat a flag that is absent as off.",
-        "operationId": "feature-flags_get_feature_flags",
+        "operationId": "get_feature_flags",
         "parameters": [
           {
             "in": "path",
@@ -11660,7 +11709,7 @@
     },
     "/api/v1/organizations/{org_id}/invitations": {
       "get": {
-        "operationId": "organizations_list_invitations",
+        "operationId": "list_invitations",
         "parameters": [
           {
             "in": "path",
@@ -11681,7 +11730,7 @@
                   "items": {
                     "$ref": "#/components/schemas/InvitationRead"
                   },
-                  "title": "Response Organizations List Invitations",
+                  "title": "Response List Invitations",
                   "type": "array"
                 }
               }
@@ -11741,7 +11790,7 @@
       },
       "post": {
         "description": "Invite someone by email. The token appears only in this response.",
-        "operationId": "organizations_create_invitation",
+        "operationId": "create_invitation",
         "parameters": [
           {
             "in": "path",
@@ -11839,7 +11888,7 @@
     },
     "/api/v1/organizations/{org_id}/invitations/{invitation_id}": {
       "delete": {
-        "operationId": "organizations_revoke_invitation",
+        "operationId": "revoke_invitation",
         "parameters": [
           {
             "in": "path",
@@ -11921,7 +11970,7 @@
     "/api/v1/organizations/{org_id}/jobs": {
       "get": {
         "description": "Job history, newest first. Members without `jobs.read_all` see only their own jobs.",
-        "operationId": "jobs_list_jobs",
+        "operationId": "list_jobs",
         "parameters": [
           {
             "in": "path",
@@ -12074,7 +12123,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page_Annotated_Union_PrintJobRead__ScanJobRead__CopyJobRead___FieldInfo_annotation_NoneType__required_True__discriminator__type____"
+                  "$ref": "#/components/schemas/Page_JobRead_"
                 }
               }
             },
@@ -12133,7 +12182,7 @@
       },
       "post": {
         "description": "Record a job the client is about to execute.\n\nSend a fresh `Idempotency-Key` per job and reuse it on every retry of the\nrequest, so a lost response never creates a second job (FR-PRN-022).",
-        "operationId": "jobs_create_job",
+        "operationId": "create_job",
         "parameters": [
           {
             "in": "path",
@@ -12161,26 +12210,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "discriminator": {
-                  "mapping": {
-                    "copy": "#/components/schemas/CopyJobCreate",
-                    "print": "#/components/schemas/PrintJobCreate",
-                    "scan": "#/components/schemas/ScanJobCreate"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/PrintJobCreate"
-                  },
-                  {
-                    "$ref": "#/components/schemas/ScanJobCreate"
-                  },
-                  {
-                    "$ref": "#/components/schemas/CopyJobCreate"
-                  }
-                ],
-                "title": "Payload"
+                "$ref": "#/components/schemas/JobCreate"
               }
             }
           },
@@ -12191,26 +12221,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "discriminator": {
-                    "mapping": {
-                      "copy": "#/components/schemas/CopyJobRead",
-                      "print": "#/components/schemas/PrintJobRead",
-                      "scan": "#/components/schemas/ScanJobRead"
-                    },
-                    "propertyName": "type"
-                  },
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/PrintJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ScanJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/CopyJobRead"
-                    }
-                  ],
-                  "title": "Response 200 Jobs Create Job"
+                  "$ref": "#/components/schemas/JobRead"
                 }
               }
             },
@@ -12220,26 +12231,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "discriminator": {
-                    "mapping": {
-                      "copy": "#/components/schemas/CopyJobRead",
-                      "print": "#/components/schemas/PrintJobRead",
-                      "scan": "#/components/schemas/ScanJobRead"
-                    },
-                    "propertyName": "type"
-                  },
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/PrintJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ScanJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/CopyJobRead"
-                    }
-                  ],
-                  "title": "Response Jobs Create Job"
+                  "$ref": "#/components/schemas/JobRead"
                 }
               }
             },
@@ -12320,7 +12312,7 @@
     "/api/v1/organizations/{org_id}/jobs/batch": {
       "post": {
         "description": "Upload jobs and their state history recorded while offline.\n\nItems are independent: one failing does not affect the others. The call\nis safe to repeat.",
-        "operationId": "jobs_sync_jobs",
+        "operationId": "sync_jobs",
         "parameters": [
           {
             "in": "path",
@@ -12408,7 +12400,7 @@
     },
     "/api/v1/organizations/{org_id}/jobs/{job_id}": {
       "get": {
-        "operationId": "jobs_get_job",
+        "operationId": "get_job",
         "parameters": [
           {
             "in": "path",
@@ -12436,26 +12428,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "discriminator": {
-                    "mapping": {
-                      "copy": "#/components/schemas/CopyJobRead",
-                      "print": "#/components/schemas/PrintJobRead",
-                      "scan": "#/components/schemas/ScanJobRead"
-                    },
-                    "propertyName": "type"
-                  },
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/PrintJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ScanJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/CopyJobRead"
-                    }
-                  ],
-                  "title": "Response Jobs Get Job"
+                  "$ref": "#/components/schemas/JobRead"
                 }
               }
             },
@@ -12515,7 +12488,7 @@
     },
     "/api/v1/organizations/{org_id}/jobs/{job_id}/cancel": {
       "post": {
-        "operationId": "jobs_cancel_job",
+        "operationId": "cancel_job",
         "parameters": [
           {
             "in": "path",
@@ -12543,26 +12516,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "discriminator": {
-                    "mapping": {
-                      "copy": "#/components/schemas/CopyJobRead",
-                      "print": "#/components/schemas/PrintJobRead",
-                      "scan": "#/components/schemas/ScanJobRead"
-                    },
-                    "propertyName": "type"
-                  },
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/PrintJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ScanJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/CopyJobRead"
-                    }
-                  ],
-                  "title": "Response Jobs Cancel Job"
+                  "$ref": "#/components/schemas/JobRead"
                 }
               }
             },
@@ -12633,7 +12587,7 @@
     "/api/v1/organizations/{org_id}/jobs/{job_id}/events": {
       "get": {
         "description": "Every reported state change and connection attempt, oldest first.",
-        "operationId": "jobs_list_job_events",
+        "operationId": "list_job_events",
         "parameters": [
           {
             "in": "path",
@@ -12664,7 +12618,7 @@
                   "items": {
                     "$ref": "#/components/schemas/JobEventRead"
                   },
-                  "title": "Response Jobs List Job Events",
+                  "title": "Response List Job Events",
                   "type": "array"
                 }
               }
@@ -12724,7 +12678,7 @@
       },
       "post": {
         "description": "Report a state change from the client executing the job.\n\nName the connection used on each attempt. When it differs from the\nprevious one the job is marked as having fallen back (FR-CON-010).",
-        "operationId": "jobs_report_job_event",
+        "operationId": "report_job_event",
         "parameters": [
           {
             "in": "path",
@@ -12762,26 +12716,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "discriminator": {
-                    "mapping": {
-                      "copy": "#/components/schemas/CopyJobRead",
-                      "print": "#/components/schemas/PrintJobRead",
-                      "scan": "#/components/schemas/ScanJobRead"
-                    },
-                    "propertyName": "type"
-                  },
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/PrintJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ScanJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/CopyJobRead"
-                    }
-                  ],
-                  "title": "Response Jobs Report Job Event"
+                  "$ref": "#/components/schemas/JobRead"
                 }
               }
             },
@@ -12852,7 +12787,7 @@
     "/api/v1/organizations/{org_id}/jobs/{job_id}/retry": {
       "post": {
         "description": "Create a new job with the same settings as a failed or cancelled one.",
-        "operationId": "jobs_retry_job",
+        "operationId": "retry_job",
         "parameters": [
           {
             "in": "path",
@@ -12891,26 +12826,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "discriminator": {
-                    "mapping": {
-                      "copy": "#/components/schemas/CopyJobRead",
-                      "print": "#/components/schemas/PrintJobRead",
-                      "scan": "#/components/schemas/ScanJobRead"
-                    },
-                    "propertyName": "type"
-                  },
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/PrintJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ScanJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/CopyJobRead"
-                    }
-                  ],
-                  "title": "Response 200 Jobs Retry Job"
+                  "$ref": "#/components/schemas/JobRead"
                 }
               }
             },
@@ -12920,26 +12836,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "discriminator": {
-                    "mapping": {
-                      "copy": "#/components/schemas/CopyJobRead",
-                      "print": "#/components/schemas/PrintJobRead",
-                      "scan": "#/components/schemas/ScanJobRead"
-                    },
-                    "propertyName": "type"
-                  },
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/PrintJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ScanJobRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/CopyJobRead"
-                    }
-                  ],
-                  "title": "Response Jobs Retry Job"
+                  "$ref": "#/components/schemas/JobRead"
                 }
               }
             },
@@ -13019,7 +12916,7 @@
     },
     "/api/v1/organizations/{org_id}/members": {
       "get": {
-        "operationId": "organizations_list_members",
+        "operationId": "list_members",
         "parameters": [
           {
             "in": "path",
@@ -13040,7 +12937,7 @@
                   "items": {
                     "$ref": "#/components/schemas/MemberRead"
                   },
-                  "title": "Response Organizations List Members",
+                  "title": "Response List Members",
                   "type": "array"
                 }
               }
@@ -13102,7 +12999,7 @@
     "/api/v1/organizations/{org_id}/members/{user_id}": {
       "delete": {
         "description": "Remove a member. Any member may remove themselves to leave.",
-        "operationId": "organizations_remove_member",
+        "operationId": "remove_member",
         "parameters": [
           {
             "in": "path",
@@ -13191,7 +13088,7 @@
         ]
       },
       "patch": {
-        "operationId": "organizations_change_member_role",
+        "operationId": "change_member_role",
         "parameters": [
           {
             "in": "path",
@@ -13300,7 +13197,7 @@
     "/api/v1/organizations/{org_id}/presets": {
       "get": {
         "description": "The caller's personal presets and the organization's shared ones.",
-        "operationId": "presets_list_presets",
+        "operationId": "list_presets",
         "parameters": [
           {
             "in": "path",
@@ -13352,27 +13249,9 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "discriminator": {
-                      "mapping": {
-                        "copy": "#/components/schemas/CopyPresetRead",
-                        "print": "#/components/schemas/PrintPresetRead",
-                        "scan": "#/components/schemas/ScanPresetRead"
-                      },
-                      "propertyName": "type"
-                    },
-                    "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/PrintPresetRead"
-                      },
-                      {
-                        "$ref": "#/components/schemas/ScanPresetRead"
-                      },
-                      {
-                        "$ref": "#/components/schemas/CopyPresetRead"
-                      }
-                    ]
+                    "$ref": "#/components/schemas/PresetRead"
                   },
-                  "title": "Response Presets List Presets",
+                  "title": "Response List Presets",
                   "type": "array"
                 }
               }
@@ -13432,7 +13311,7 @@
       },
       "post": {
         "description": "Save settings as a preset.\n\nA `personal` preset belongs to the caller. An `organization` preset is\nshared with every member and needs `presets.manage_org`.",
-        "operationId": "presets_create_preset",
+        "operationId": "create_preset",
         "parameters": [
           {
             "in": "path",
@@ -13449,26 +13328,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "discriminator": {
-                  "mapping": {
-                    "copy": "#/components/schemas/CopyPresetCreate",
-                    "print": "#/components/schemas/PrintPresetCreate",
-                    "scan": "#/components/schemas/ScanPresetCreate"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/PrintPresetCreate"
-                  },
-                  {
-                    "$ref": "#/components/schemas/ScanPresetCreate"
-                  },
-                  {
-                    "$ref": "#/components/schemas/CopyPresetCreate"
-                  }
-                ],
-                "title": "Payload"
+                "$ref": "#/components/schemas/PresetCreate"
               }
             }
           },
@@ -13479,26 +13339,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "discriminator": {
-                    "mapping": {
-                      "copy": "#/components/schemas/CopyPresetRead",
-                      "print": "#/components/schemas/PrintPresetRead",
-                      "scan": "#/components/schemas/ScanPresetRead"
-                    },
-                    "propertyName": "type"
-                  },
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/PrintPresetRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ScanPresetRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/CopyPresetRead"
-                    }
-                  ],
-                  "title": "Response Presets Create Preset"
+                  "$ref": "#/components/schemas/PresetRead"
                 }
               }
             },
@@ -13558,7 +13399,7 @@
     },
     "/api/v1/organizations/{org_id}/presets/{preset_id}": {
       "delete": {
-        "operationId": "presets_delete_preset",
+        "operationId": "delete_preset",
         "parameters": [
           {
             "in": "path",
@@ -13637,7 +13478,7 @@
         ]
       },
       "get": {
-        "operationId": "presets_get_preset",
+        "operationId": "get_preset",
         "parameters": [
           {
             "in": "path",
@@ -13665,26 +13506,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "discriminator": {
-                    "mapping": {
-                      "copy": "#/components/schemas/CopyPresetRead",
-                      "print": "#/components/schemas/PrintPresetRead",
-                      "scan": "#/components/schemas/ScanPresetRead"
-                    },
-                    "propertyName": "type"
-                  },
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/PrintPresetRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ScanPresetRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/CopyPresetRead"
-                    }
-                  ],
-                  "title": "Response Presets Get Preset"
+                  "$ref": "#/components/schemas/PresetRead"
                 }
               }
             },
@@ -13742,7 +13564,7 @@
         ]
       },
       "patch": {
-        "operationId": "presets_update_preset",
+        "operationId": "update_preset",
         "parameters": [
           {
             "in": "path",
@@ -13780,26 +13602,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "discriminator": {
-                    "mapping": {
-                      "copy": "#/components/schemas/CopyPresetRead",
-                      "print": "#/components/schemas/PrintPresetRead",
-                      "scan": "#/components/schemas/ScanPresetRead"
-                    },
-                    "propertyName": "type"
-                  },
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/PrintPresetRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/ScanPresetRead"
-                    },
-                    {
-                      "$ref": "#/components/schemas/CopyPresetRead"
-                    }
-                  ],
-                  "title": "Response Presets Update Preset"
+                  "$ref": "#/components/schemas/PresetRead"
                 }
               }
             },
@@ -13859,7 +13662,7 @@
     },
     "/api/v1/organizations/{org_id}/printers": {
       "get": {
-        "operationId": "printers_list_printers",
+        "operationId": "list_printers",
         "parameters": [
           {
             "in": "path",
@@ -13966,7 +13769,7 @@
       },
       "post": {
         "description": "Register a printer together with the connection paths the client verified.",
-        "operationId": "printers_add_printer",
+        "operationId": "add_printer",
         "parameters": [
           {
             "in": "path",
@@ -14064,7 +13867,7 @@
     },
     "/api/v1/organizations/{org_id}/printers/{printer_id}": {
       "delete": {
-        "operationId": "printers_remove_printer",
+        "operationId": "remove_printer",
         "parameters": [
           {
             "in": "path",
@@ -14143,7 +13946,7 @@
         ]
       },
       "get": {
-        "operationId": "printers_get_printer",
+        "operationId": "get_printer",
         "parameters": [
           {
             "in": "path",
@@ -14229,7 +14032,7 @@
         ]
       },
       "patch": {
-        "operationId": "printers_update_printer",
+        "operationId": "update_printer",
         "parameters": [
           {
             "in": "path",
@@ -14338,7 +14141,7 @@
     "/api/v1/organizations/{org_id}/printers/{printer_id}/capabilities": {
       "put": {
         "description": "Replace the capability snapshot with what the client just probed.",
-        "operationId": "printers_report_capabilities",
+        "operationId": "report_capabilities",
         "parameters": [
           {
             "in": "path",
@@ -14437,7 +14240,7 @@
     "/api/v1/organizations/{org_id}/printers/{printer_id}/connections": {
       "get": {
         "description": "Connections in fallback order, most preferred first.",
-        "operationId": "connections_list_connections",
+        "operationId": "list_connections",
         "parameters": [
           {
             "in": "path",
@@ -14468,7 +14271,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ConnectionRead"
                   },
-                  "title": "Response Connections List Connections",
+                  "title": "Response List Connections",
                   "type": "array"
                 }
               }
@@ -14527,7 +14330,7 @@
         ]
       },
       "post": {
-        "operationId": "connections_add_connection",
+        "operationId": "add_connection",
         "parameters": [
           {
             "in": "path",
@@ -14626,7 +14429,7 @@
     "/api/v1/organizations/{org_id}/printers/{printer_id}/connections/priority": {
       "put": {
         "description": "Set the order in which clients try connections (FR-CON-009, FR-CON-011).",
-        "operationId": "connections_set_connection_priority",
+        "operationId": "set_connection_priority",
         "parameters": [
           {
             "in": "path",
@@ -14667,7 +14470,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ConnectionRead"
                   },
-                  "title": "Response Connections Set Connection Priority",
+                  "title": "Response Set Connection Priority",
                   "type": "array"
                 }
               }
@@ -14728,7 +14531,7 @@
     },
     "/api/v1/organizations/{org_id}/printers/{printer_id}/connections/{connection_id}": {
       "delete": {
-        "operationId": "connections_remove_connection",
+        "operationId": "remove_connection",
         "parameters": [
           {
             "in": "path",
@@ -14817,7 +14620,7 @@
         ]
       },
       "get": {
-        "operationId": "connections_get_connection",
+        "operationId": "get_connection",
         "parameters": [
           {
             "in": "path",
@@ -14913,7 +14716,7 @@
         ]
       },
       "patch": {
-        "operationId": "connections_update_connection",
+        "operationId": "update_connection",
         "parameters": [
           {
             "in": "path",
@@ -15022,7 +14825,7 @@
     "/api/v1/organizations/{org_id}/printers/{printer_id}/connections/{connection_id}/credentials": {
       "get": {
         "description": "Stored credentials, for a client about to use the connection.\n\nEvery read is written to the audit log. Keep the result in platform\nsecure storage (FR-MOB-018).",
-        "operationId": "connections_read_connection_credentials",
+        "operationId": "read_connection_credentials",
         "parameters": [
           {
             "in": "path",
@@ -15121,7 +14924,7 @@
     "/api/v1/organizations/{org_id}/printers/{printer_id}/connections/{connection_id}/health": {
       "post": {
         "description": "Report the outcome of using or testing a connection (FR-CON-012, FR-ONB-005).",
-        "operationId": "connections_report_connection_health",
+        "operationId": "report_connection_health",
         "parameters": [
           {
             "in": "path",
@@ -15230,7 +15033,7 @@
     "/api/v1/organizations/{org_id}/printers/{printer_id}/pairing-tokens": {
       "post": {
         "description": "Create a short-lived, single-use pairing code to show as a QR code.",
-        "operationId": "pairing_create_pairing_token",
+        "operationId": "create_pairing_token",
         "parameters": [
           {
             "in": "path",
@@ -15319,7 +15122,7 @@
     "/api/v1/organizations/{org_id}/printers/{printer_id}/status": {
       "post": {
         "description": "Report printer state observed on the local network.",
-        "operationId": "printers_report_status",
+        "operationId": "report_status",
         "parameters": [
           {
             "in": "path",
@@ -15418,7 +15221,7 @@
     "/api/v1/pairing/redeem": {
       "post": {
         "description": "Resolve a scanned pairing code to its printer profile and connections.",
-        "operationId": "pairing_redeem_pairing_token",
+        "operationId": "redeem_pairing_token",
         "requestBody": {
           "content": {
             "application/json": {
@@ -15494,7 +15297,7 @@
     },
     "/api/v1/users/me": {
       "get": {
-        "operationId": "users_get_me",
+        "operationId": "get_me",
         "responses": {
           "200": {
             "content": {
@@ -15558,7 +15361,7 @@
         ]
       },
       "patch": {
-        "operationId": "users_update_me",
+        "operationId": "update_me",
         "requestBody": {
           "content": {
             "application/json": {

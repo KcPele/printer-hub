@@ -16,8 +16,27 @@ def test_operation_ids_are_unique_and_readable() -> None:
     ]
 
     assert len(operation_ids) == len(set(operation_ids))
-    assert "jobs_create_job" in operation_ids
-    assert "auth_login" in operation_ids
+    assert "create_job" in operation_ids
+    assert "login" in operation_ids
+
+
+def test_every_union_of_models_has_a_name() -> None:
+    """A union written inline makes a generated client invent a type per endpoint."""
+    schema = json.loads(render())
+
+    def inline_unions(node: object, path: str = "") -> list[str]:
+        if isinstance(node, dict):
+            found = [path] if "oneOf" in node else []
+            return found + [p for k, v in node.items() for p in inline_unions(v, f"{path}/{k}")]
+        if isinstance(node, list):
+            return [p for i, v in enumerate(node) for p in inline_unions(v, f"{path}[{i}]")]
+        return []
+
+    assert inline_unions(schema["paths"]) == []
+    for name in ("JobCreate", "JobRead", "PresetCreate", "PresetRead"):
+        union = schema["components"]["schemas"][name]
+        assert union["discriminator"]["propertyName"] == "type"
+        assert len(union["oneOf"]) == 3
 
 
 def _operations() -> list[dict[str, object]]:
@@ -55,12 +74,12 @@ def test_idempotency_key_is_required_where_it_is_enforced() -> None:
         if parameter["name"] == "Idempotency-Key" and not parameter["required"]
     }
 
-    assert required == {"jobs_create_job", "jobs_retry_job"}
-    assert optional == {"documents_create_document"}
+    assert required == {"create_job", "retry_job"}
+    assert optional == {"create_document"}
 
 
 def test_replayed_creates_describe_their_body() -> None:
     by_id = {operation["operationId"]: operation for operation in _operations()}
-    for operation_id in ("jobs_create_job", "jobs_retry_job", "documents_create_document"):
+    for operation_id in ("create_job", "retry_job", "create_document"):
         replay = by_id[operation_id]["responses"]["200"]  # type: ignore[index]
         assert "application/json" in replay["content"], operation_id

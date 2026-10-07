@@ -38,6 +38,7 @@ async def test_new_user_has_default_preferences(
 
     assert response.json()["preferences"] == {
         "theme": "system",
+        "app_theme": "volt",
         "default_organization_id": None,
         "default_printer_id": None,
         "muted_notification_types": [],
@@ -56,3 +57,20 @@ async def test_invalid_preference_is_rejected(
     )
 
     assert response.status_code == 422
+
+
+async def test_app_theme_follows_the_user(client: httpx.AsyncClient, session: AsyncSession) -> None:
+    user = await create_user(session)
+    headers = await auth_headers(session, user)
+
+    saved = await client.patch(
+        f"{API}/users/me", headers=headers, json={"preferences": {"app_theme": "mint"}}
+    )
+    unknown = await client.patch(
+        f"{API}/users/me", headers=headers, json={"preferences": {"app_theme": "neon"}}
+    )
+
+    assert saved.json()["preferences"]["app_theme"] == "mint"
+    assert unknown.status_code == 422
+    me = await client.get(f"{API}/users/me", headers=headers)
+    assert me.json()["preferences"]["app_theme"] == "mint"

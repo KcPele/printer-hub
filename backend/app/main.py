@@ -1,6 +1,7 @@
 """Application factory."""
 
 import asyncio
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 from typing import Any, cast
@@ -21,9 +22,45 @@ from app.core.redis import get_redis
 
 
 def _operation_id(route: APIRoute) -> str:
-    """`<tag>_<function>` gives generated API clients readable method names."""
-    tag = route.tags[0] if route.tags else "default"
-    return f"{tag}_{route.name}"
+    """The endpoint function's name, which generated clients use as the method name.
+
+    Clients group methods by tag, so `list_jobs` reads as `jobs.listJobs`.
+    Function names are therefore unique across the API; a test checks it.
+    """
+    return route.name
+
+
+def _shared_suffix(names: list[str]) -> str:
+    """`PrintJobCreate`, `ScanJobCreate`, `CopyJobCreate` share `JobCreate`."""
+    reversed_prefix = os.path.commonprefix([name[::-1] for name in names])
+    suffix = reversed_prefix[::-1]
+    while suffix and not suffix[0].isupper():
+        suffix = suffix[1:]
+    return suffix
+
+
+def _name_request_unions(schema: dict[str, Any]) -> None:
+    """Give a request body that is one of several models a name of its own.
+
+    FastAPI writes such a body inline, so a generated client invents a
+    different type for each endpoint that takes it. Responses already refer to
+    a named union (`JobRead`); this does the same for bodies (`JobCreate`).
+    """
+    components: dict[str, Any] = schema.setdefault("components", {}).setdefault("schemas", {})
+    for path_item in schema.get("paths", {}).values():
+        for operation in path_item.values():
+            if not isinstance(operation, dict):
+                continue
+            for media in operation.get("requestBody", {}).get("content", {}).values():
+                body = media.get("schema", {})
+                if "oneOf" not in body:
+                    continue
+                members = [member["$ref"].rsplit("/", 1)[-1] for member in body["oneOf"]]
+                name = _shared_suffix(members)
+                union = {key: body[key] for key in ("oneOf", "discriminator") if key in body}
+                if components.setdefault(name, union) != union:
+                    raise RuntimeError(f"Request body union {members} collides with schema {name}")
+                media["schema"] = {"$ref": f"#/components/schemas/{name}"}
 
 
 log = structlog.get_logger(__name__)
@@ -60,7 +97,7 @@ async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
 def _polish_contract(schema: dict[str, Any]) -> None:
     """Make the published OpenAPI document say what the API actually does.
 
-    Generated clients take their types from this document, so two places
+    Generated clients take their types from this document, so the places
     where FastAPI's output is looser than the behavior are tightened:
 
     - Error responses are `application/problem+json` bodies shaped like
@@ -68,7 +105,9 @@ def _polish_contract(schema: dict[str, Any]) -> None:
       generated client unable to tell what an error body is.
     - `Idempotency-Key` is required where a missing one is rejected. It is
       read as optional so that the rejection can carry a specific error code.
+    - A request body that is one of several models is a named schema.
     """
+    _name_request_unions(schema)
     problem = {"schema": {"$ref": "#/components/schemas/Problem"}}
     for path_item in schema.get("paths", {}).values():
         for operation in path_item.values():

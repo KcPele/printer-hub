@@ -109,7 +109,9 @@ class CopyJobCreate(_JobCreateBase):
     settings: CopySettings = Field(default_factory=CopySettings)
 
 
-JobCreate = Annotated[PrintJobCreate | ScanJobCreate | CopyJobCreate, Field(discriminator="type")]
+type JobCreate = Annotated[
+    PrintJobCreate | ScanJobCreate | CopyJobCreate, Field(discriminator="type")
+]
 
 
 # --- Read --------------------------------------------------------------------
@@ -160,7 +162,7 @@ class CopyJobRead(_JobReadBase):
     settings: CopySettings
 
 
-JobRead = Annotated[PrintJobRead | ScanJobRead | CopyJobRead, Field(discriminator="type")]
+type JobRead = Annotated[PrintJobRead | ScanJobRead | CopyJobRead, Field(discriminator="type")]
 
 
 # --- Events ------------------------------------------------------------------

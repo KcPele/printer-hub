@@ -34,7 +34,7 @@ class CopyPresetCreate(_PresetCreateBase):
     settings: CopySettings = Field(default_factory=CopySettings)
 
 
-PresetCreate = Annotated[
+type PresetCreate = Annotated[
     PrintPresetCreate | ScanPresetCreate | CopyPresetCreate, Field(discriminator="type")
 ]
 
@@ -78,6 +78,6 @@ class CopyPresetRead(_PresetReadBase):
     settings: CopySettings
 
 
-PresetRead = Annotated[
+type PresetRead = Annotated[
     PrintPresetRead | ScanPresetRead | CopyPresetRead, Field(discriminator="type")
 ]
