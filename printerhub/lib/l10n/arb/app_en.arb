@@ -2727,6 +2727,34 @@
     "@scanTextNotRead": {
         "description": "Shown under a scan kept in the workspace when text recognition failed"
     },
+    "scanCamera": "Use your phone's camera",
+    "@scanCamera": {
+        "description": "Button that opens the phone's document camera to scan pages"
+    },
+    "scanCameraMore": "Add pages with the camera",
+    "@scanCameraMore": {
+        "description": "Button on the scanned pages that adds more with the phone's camera"
+    },
+    "scanCameraAction": "Scan with your phone's camera",
+    "@scanCameraAction": {
+        "description": "Button on the page of a printer with no scanner"
+    },
+    "scanNoScanner": "This printer has no scanner.",
+    "@scanNoScanner": {
+        "description": "Shown on the scan screen of a printer that cannot scan"
+    },
+    "scanCameraInstead": "Your phone's camera can scan the pages instead. It finds each page and straightens it.",
+    "@scanCameraInstead": {
+        "description": "Shown with the camera button for a printer that cannot scan"
+    },
+    "scanFromCamera": "From your phone's camera",
+    "@scanFromCamera": {
+        "description": "Label on a page that was taken with the phone's camera, not scanned by the printer"
+    },
+    "scanFailedCamera": "The camera could not be used. Try again.",
+    "@scanFailedCamera": {
+        "description": "Shown when the phone's document camera fails"
+    },
     "scanPrint": "Print it",
     "@scanPrint": {
         "description": "Button that prints a finished scan"

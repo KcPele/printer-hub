@@ -398,6 +398,97 @@ void main() {
       expect(find.text('ID card'), findsNothing);
     });
 
+    group('with the phone’s camera switched on', () {
+      Future<void> pumpWithCamera(WidgetTester tester) async {
+        backend.features = {'camera_scan': true};
+        await pump(tester);
+        await tester.runAsync(
+          BlocProvider.of<FeaturesCubit>(tester.element(find.byType(ScanView)))
+              .load,
+        );
+        await tester.pump();
+      }
+
+      /// Presses [button] and lets the camera, which writes files, finish.
+      Future<void> take(WidgetTester tester, String button) async {
+        await press(tester, find.text(button));
+        await until(tester, () => find.text('Pages').evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('takes pages beside the scanner’s, and says which are '
+          'which', (tester) async {
+        await pumpWithCamera(tester);
+        await scan(tester);
+        expect(find.text("From your phone's camera"), findsNothing);
+
+        await press(tester, find.text('Add pages with the camera'));
+        await until(tester, () => find.text('Page 2').evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+
+        expect(find.text("From your phone's camera"), findsOneWidget);
+        expect(find.text('Scan more pages'), findsOneWidget);
+      });
+
+      testWidgets('starts a scan from the camera', (tester) async {
+        await pumpWithCamera(tester);
+
+        await take(tester, "Use your phone's camera");
+
+        expect(find.text('Page 1'), findsOneWidget);
+        expect(find.text("From your phone's camera"), findsOneWidget);
+        expect(backend.scansStarted, isEmpty);
+      });
+
+      testWidgets('is not offered for an ID card', (tester) async {
+        await pumpWithCamera(tester);
+        expect(find.text("Use your phone's camera"), findsOneWidget);
+
+        await press(tester, find.text('ID card'));
+        await tester.pumpAndSettle();
+
+        expect(find.text("Use your phone's camera"), findsNothing);
+      });
+
+      testWidgets('scans for a printer that has no scanner', (tester) async {
+        backend.printerList = [printerBody(scans: false)];
+        await pumpWithCamera(tester);
+
+        expect(find.text('This printer has no scanner.'), findsOneWidget);
+        expect(find.text('How to scan it'), findsNothing);
+
+        backend.camera.fails = true;
+        await press(tester, find.text("Use your phone's camera"));
+        await until(
+          tester,
+          () => find.textContaining('could not be used').evaluate().isNotEmpty,
+        );
+        expect(find.textContaining('could not be used'), findsOneWidget);
+
+        backend.camera.fails = false;
+        await take(tester, "Use your phone's camera");
+
+        expect(find.text("From your phone's camera"), findsOneWidget);
+        // Nothing more can come from a scanner that is not there.
+        expect(find.text('Scan more pages'), findsNothing);
+        expect(find.text('Add pages with the camera'), findsOneWidget);
+      });
+    });
+
+    testWidgets('offers no camera on a phone without one, or in a workspace '
+        'that has it switched off', (tester) async {
+      await pump(tester);
+      expect(find.text("Use your phone's camera"), findsNothing);
+
+      backend.printerList = [printerBody(scans: false)];
+      backend.camera.available = false;
+      backend.features = {'camera_scan': true};
+      await pump(tester);
+
+      expect(find.text('This printer has no scanner.'), findsOneWidget);
+      expect(find.text("Use your phone's camera"), findsNothing);
+    });
+
     testWidgets('names the scan, saves it, and shares it', (tester) async {
       await pump(tester);
       await scan(tester);

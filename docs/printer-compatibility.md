@@ -120,7 +120,7 @@ Run these in order, and note the model and firmware beside each result.
 8. Scan from the glass, kept as a PDF and as a picture. Scan three sheets from the feeder, and both sides of them. Scan with the feeder empty. Note what `ScannerCapabilities` lists for `DocumentFormat`, and whether a JPEG scan from the feeder gives one page per request. Scan an ID card with the ID card switch on, print the PDF at full size, and lay the card on the print: it should match, and the corner the app names should be the corner the scanner starts from.
 9. Switch on IPP authentication, add the printer again, and print.
 10. Switch on HTTPS-only, and repeat 1 and 6.
-11. On a phone: NFC tap, QR code, and Bluetooth sighting, none of which has run on hardware.
+11. On a phone: NFC tap, QR code, and Bluetooth sighting, none of which has run on hardware. Also on a phone: scan two pages with the phone's camera for a printer with no scanner, print them, and keep them; and share a PDF from another app to PrinterHub.
 
 ## Sources
 

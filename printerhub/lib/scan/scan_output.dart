@@ -19,6 +19,18 @@ abstract interface class ScanTextReader {
   Future<String> read(List<File> pictures);
 }
 
+/// The phone's own document camera: it finds a page's edges, straightens
+/// it, and hands back a picture of each page.
+abstract interface class PageCamera {
+  /// False on a phone that has none.
+  bool get available;
+
+  /// Opens the camera, and returns the pages taken as JPEG files, in
+  /// order. Empty when the person took none. Throws when the camera could
+  /// not be used.
+  Future<List<File>> capture();
+}
+
 /// A paper size a scan can be made at.
 class ScanPaper {
   const new(this.name, this.widthMm, this.heightMm);

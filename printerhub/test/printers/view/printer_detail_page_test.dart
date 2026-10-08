@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:api_client/testing.dart';
 import 'package:app_ui/app_ui.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -10,6 +11,7 @@ import 'package:printer_protocols/testing.dart';
 import 'package:printerhub/app/app.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/printers/widgets/pairing_code_sheet.dart';
+import 'package:printerhub/workspace/workspace.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../helpers/helpers.dart';
@@ -113,6 +115,27 @@ void main() {
 
       await scrollTo(tester, find.text('Check status'));
       expect(find.widgetWithText(OutlinedButton, 'Scan'), findsNothing);
+    });
+
+    testWidgets('offers the phone’s camera for a printer without a scanner, '
+        'in a workspace that has it switched on', (tester) async {
+      backend
+        ..printerList = [printerBody(scans: false)]
+        ..features = {'camera_scan': true};
+      await pump(tester);
+      await tester.runAsync(
+        BlocProvider.of<FeaturesCubit>(
+          tester.element(find.byType(PrinterDetailPage)),
+        ).load,
+      );
+      await tester.pump();
+
+      final camera = find.text("Scan with your phone's camera");
+      await scrollTo(tester, camera);
+      await tester.tap(camera);
+
+      verify(() => router.push<Object?>(AppRoutes.scanOn('printer-1')))
+          .called(1);
     });
 
     testWidgets('does not offer printing on a device that only scans', (

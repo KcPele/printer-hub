@@ -98,4 +98,8 @@ dependencies {
     // Reads the words in a scan on the phone. The model for Latin script
     // comes with the app, so nothing is downloaded or sent to be read.
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    // The phone's document camera: it finds a page, straightens it, and
+    // hands back a picture. It runs in Google Play services, so the app
+    // needs no camera permission for it.
+    implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
 }

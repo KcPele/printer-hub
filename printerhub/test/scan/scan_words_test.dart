@@ -75,6 +75,7 @@ void main() {
       'scan.connection_lost',
       'scan.storage',
       'scan.keep_interrupted',
+      'scan.camera',
       'escl.http_500',
     ];
 

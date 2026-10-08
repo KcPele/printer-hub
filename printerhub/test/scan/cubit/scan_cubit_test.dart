@@ -30,6 +30,7 @@ void main() {
       documentsRepository: backend.documentsKept,
       sharer: backend.sharer,
       textReader: backend.textReader,
+      camera: backend.camera,
       organizationId: _org,
       printer: on ?? printer,
       name: 'Scan today',
@@ -357,6 +358,125 @@ void main() {
       expect(cubit.state.name, 'Mine');
       expect(cubit.state.choices.source, 'adf');
       expect(files.any((file) => file.existsSync()), isFalse);
+    });
+  });
+
+  group('the phone’s camera', () {
+    const documents = 'POST /organizations/$_org/documents';
+
+    test('adds the pages it takes, and marks them as its own', () async {
+      backend.camera.pages = 2;
+      final cubit = build();
+
+      await cubit.useCamera();
+
+      expect(cubit.state.step, ScanStep.review);
+      expect(cubit.state.pages, hasLength(2));
+      expect(cubit.state.pages.every(cubit.state.fromCamera), isTrue);
+      expect(cubit.state.pages.first.mimeType, 'image/jpeg');
+      // No scanner ran, so there is no job to record.
+      expect(backend.sent('POST /organizations/$_org/jobs'), isEmpty);
+    });
+
+    test('adds to pages the scanner made, and tells them apart', () async {
+      final cubit = build();
+      await cubit.scan();
+
+      await cubit.useCamera();
+
+      final [scanned, taken] = cubit.state.pages;
+      expect(cubit.state.fromCamera(scanned), isFalse);
+      expect(cubit.state.fromCamera(taken), isTrue);
+    });
+
+    test('changes nothing when the person takes no page', () async {
+      backend.camera.pages = 0;
+      final cubit = build();
+
+      await cubit.useCamera();
+
+      expect(cubit.state.step, ScanStep.choosing);
+      expect(cubit.state.pages, isEmpty);
+      expect(cubit.state.failure, isNull);
+    });
+
+    test('says when the camera cannot be used', () async {
+      backend.camera.fails = true;
+      final cubit = build();
+
+      await cubit.useCamera();
+
+      expect(cubit.state.step, ScanStep.choosing);
+      expect(cubit.state.failure, 'scan.camera');
+    });
+
+    test('is opened once at a time, and not for an ID card', () async {
+      final cubit = build();
+      final first = cubit.useCamera();
+      await cubit.useCamera();
+      await first;
+      expect(backend.camera.opened, 1);
+
+      final card = build()..asCard(card: true);
+      await card.useCamera();
+      expect(backend.camera.opened, 1);
+    });
+
+    test('says nothing once the screen has gone', () async {
+      final cubit = build();
+      final taking = cubit.useCamera();
+      await cubit.close();
+
+      await taking;
+
+      expect(cubit.state.pages, isEmpty);
+
+      backend.camera.fails = true;
+      final other = build();
+      final failing = other.useCamera();
+      await other.close();
+      await failing;
+      expect(other.state.failure, isNull);
+    });
+
+    test('is kept as a camera scan, with no printer to its name', () async {
+      final cubit = build()..rename('Receipt');
+      await cubit.useCamera();
+      await cubit.save();
+
+      await cubit.keep();
+
+      final sent = backend.lastBody(documents);
+      expect(sent['source'], 'camera_scan');
+      expect(sent['source_printer_id'], isNull);
+      expect(sent['file_name'], 'Receipt.pdf');
+    });
+
+    test('with the scanner’s pages is still a camera scan, and names '
+        'the printer', () async {
+      final cubit = build();
+      await cubit.scan();
+      await cubit.useCamera();
+      await cubit.save();
+
+      await cubit.keep();
+
+      final sent = backend.lastBody(documents);
+      expect(sent['source'], 'camera_scan');
+      expect(sent['source_printer_id'], 'printer-1');
+    });
+
+    test('is the printer’s scan again once its pages are taken '
+        'out', () async {
+      final cubit = build();
+      await cubit.scan();
+      await cubit.useCamera();
+      cubit.remove(cubit.state.pages.last);
+      await cubit.save();
+
+      await cubit.keep();
+
+      expect(backend.lastBody(documents)['source'], 'printer_scan');
     });
   });
 

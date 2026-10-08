@@ -189,6 +189,9 @@ class TestBackend {
   /// The phone's text recognition.
   final FakeScanTextReader textReader = FakeScanTextReader();
 
+  /// The phone's document camera.
+  late final FakePageCamera camera = FakePageCamera(scans);
+
   /// The other apps on the phone, which can hand a file to this one.
   final FakeIncomingDocuments otherApps = FakeIncomingDocuments();
 

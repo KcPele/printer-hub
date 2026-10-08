@@ -102,6 +102,35 @@ class FakeIncomingDocuments implements IncomingDocuments {
   void open(PickedDocument document) => _documents.add(document);
 }
 
+/// Stands in for the phone's document camera: each use takes [pages]
+/// pictures, written to [directory].
+class FakePageCamera implements PageCamera {
+  new(this.directory);
+
+  final Directory directory;
+
+  @override
+  bool available = true;
+
+  /// How many pages the person takes. None is leaving without any.
+  int pages = 1;
+
+  /// True makes the camera fail to open.
+  bool fails = false;
+  int opened = 0;
+
+  @override
+  Future<List<File>> capture() async {
+    opened++;
+    if (fails) throw const FormatException('no camera');
+    return [
+      for (var page = 1; page <= pages; page++)
+        File('${directory.path}/camera-$opened-$page.jpg')
+          ..writeAsBytesSync(tinyJpeg),
+    ];
+  }
+}
+
 /// Stands in for the phone's text recognition: every page says [text].
 class FakeScanTextReader implements ScanTextReader {
   String text = 'Invoice 42';

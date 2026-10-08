@@ -15,6 +15,8 @@ import 'package:printerhub/printers/cubit/remove_printer_cubit.dart';
 import 'package:printerhub/printers/printer_words.dart';
 import 'package:printerhub/printers/widgets/pairing_code_sheet.dart';
 import 'package:printerhub/printers/widgets/printer_card.dart';
+import 'package:printerhub/scan/scan_output.dart';
+import 'package:printerhub/workspace/cubit/features_cubit.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 /// One printer: how it is doing, its supplies, what it can do, and how it
@@ -305,6 +307,17 @@ class PrinterDetailView extends StatelessWidget {
                   onPressed: () => context.push(AppRoutes.scanOn(printer.id)),
                   icon: const Icon(Icons.document_scanner_outlined),
                   label: Text(l10n.scanAction),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ] else if (context.read<PageCamera>().available &&
+                  context.select<FeaturesCubit, bool>(
+                    (features) => features.enabled('camera_scan'),
+                  )) ...[
+                // No scanner: the phone's camera scans in its place.
+                OutlinedButton.icon(
+                  onPressed: () => context.push(AppRoutes.scanOn(printer.id)),
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: Text(l10n.scanCameraAction),
                 ),
                 const SizedBox(height: AppSpacing.sm),
               ],

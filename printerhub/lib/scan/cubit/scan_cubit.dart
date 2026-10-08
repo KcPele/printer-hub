@@ -50,6 +50,7 @@ class ScanState extends Equatable {
     this.files = const [],
     this.kept = ScanKept.no,
     this.textRead,
+    this.cameraPages = const {},
   });
 
   final ScanStep step;
@@ -84,6 +85,13 @@ class ScanState extends Equatable {
   /// Whether the finished scan is in the workspace too.
   final ScanKept kept;
 
+  /// The pages that came from the phone's camera, not the printer's
+  /// scanner, by their file's path.
+  final Set<String> cameraPages;
+
+  /// True when [page] was taken with the phone's camera.
+  bool fromCamera(ScannedPage page) => cameraPages.contains(page.file.path);
+
   /// Whether the words of a kept scan were read and kept with it. Null
   /// when they were not asked for, false when the phone could not read
   /// them.
@@ -101,6 +109,7 @@ class ScanState extends Equatable {
     List<File> files = const [],
     ScanKept kept = ScanKept.no,
     bool? textRead,
+    Set<String>? cameraPages,
   }) {
     return ScanState(
       step: step ?? this.step,
@@ -114,6 +123,7 @@ class ScanState extends Equatable {
       files: files,
       kept: kept,
       textRead: textRead,
+      cameraPages: cameraPages ?? this.cameraPages,
     );
   }
 
@@ -130,6 +140,7 @@ class ScanState extends Equatable {
     [for (final file in files) file.path],
     kept,
     textRead,
+    cameraPages,
   ];
 }
 
@@ -143,6 +154,7 @@ class ScanCubit extends Cubit<ScanState> {
     required this._documentsRepository,
     required this._sharer,
     required this._textReader,
+    required this._camera,
     required this._organizationId,
     required this._printer,
     required String name,
@@ -157,6 +169,8 @@ class ScanCubit extends Cubit<ScanState> {
   final DocumentsRepository _documentsRepository;
   final ScanSharer _sharer;
   final ScanTextReader _textReader;
+  final PageCamera _camera;
+  bool _atCamera = false;
   final String _organizationId;
   final PrinterRead _printer;
   final Directory _directory;
@@ -322,6 +336,37 @@ class ScanCubit extends Cubit<ScanState> {
     );
   }
 
+  /// Takes pages with the phone's camera, and adds them to the ones
+  /// already there. For a printer with no scanner, and as another way
+  /// where there is one. They are kept as a camera scan, never as the
+  /// printer's.
+  Future<void> useCamera() async {
+    if (!_settled || state.card || _atCamera) return;
+    _atCamera = true;
+    try {
+      final taken = await _camera.capture();
+      if (isClosed || taken.isEmpty) return;
+      emit(
+        state._with(
+          step: ScanStep.review,
+          pages: [
+            ...state.pages,
+            for (final file in taken)
+              ScannedPage(file: file, mimeType: 'image/jpeg'),
+          ],
+          cameraPages: {
+            ...state.cameraPages,
+            for (final file in taken) file.path,
+          },
+        ),
+      );
+    } on Object {
+      if (!isClosed) emit(state._with(failure: 'scan.camera'));
+    } finally {
+      _atCamera = false;
+    }
+  }
+
   /// Stops the scanner. The pages that have arrived are kept.
   Future<void> cancel() async {
     await _scan?.cancel();
@@ -430,7 +475,15 @@ class ScanCubit extends Cubit<ScanState> {
                       : state.card
                       ? (state.pages.length + 1) ~/ 2
                       : state.pages.length,
-                  printerId: _printer.id,
+                  // A scan with a page from the camera is a camera scan,
+                  // and the printer's only when the printer made some of
+                  // it.
+                  source: state.pages.any(state.fromCamera)
+                      ? 'camera_scan'
+                      : 'printer_scan',
+                  printerId: state.pages.every(state.fromCamera)
+                      ? null
+                      : _printer.id,
                   text: text,
                 );
           _waiting.remove(file.path);

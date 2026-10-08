@@ -22,6 +22,7 @@ import 'package:printerhub/print/platform/file_picker_document_picker.dart';
 import 'package:printerhub/print/platform/printing_page_renderer.dart';
 import 'package:printerhub/printers/finders.dart';
 import 'package:printerhub/printers/widgets/qr_camera.dart';
+import 'package:printerhub/scan/platform/channel_page_camera.dart';
 import 'package:printerhub/scan/platform/channel_scan_text_reader.dart';
 import 'package:printerhub/scan/platform/share_plus_scan_sharer.dart';
 import 'package:printerhub/scan/scan_output.dart';
@@ -57,6 +58,7 @@ typedef AppDependencies = ({
   PrintDocuments documents,
   ScanSharer scanSharer,
   ScanTextReader scanTextReader,
+  PageCamera pageCamera,
   IncomingDocuments incoming,
   List<Organization>? keptOrganizations,
 });
@@ -124,6 +126,7 @@ Future<void> bootstrap(
       ),
       scanSharer: const SharePlusScanSharer(),
       scanTextReader: const ChannelScanTextReader(),
+      pageCamera: await ChannelPageCamera.find(),
       incoming: ChannelIncomingDocuments(),
       documents: const PrintDocuments(
         picker: FilePickerDocumentPicker(),

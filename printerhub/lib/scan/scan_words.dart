@@ -50,6 +50,7 @@ abstract final class ScanWords {
       'scan.connection_lost' => l10n.scanFailedConnectionLost,
       'scan.storage' => l10n.scanFailedStorage,
       'scan.keep_interrupted' => l10n.scanKeepInterrupted,
+      'scan.camera' => l10n.scanFailedCamera,
       _ => l10n.scanFailedRefused,
     };
   }

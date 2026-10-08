@@ -5,6 +5,9 @@ import android.net.Uri
 import android.os.Build
 import android.provider.OpenableColumns
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
+import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import io.flutter.embedding.android.FlutterActivity
@@ -20,12 +23,20 @@ import kotlin.concurrent.thread
  * A file can arrive before Flutter is listening, when it is what started the
  * app. Those wait here until Flutter asks with `listen`.
  *
- * It also reads the words in scanned pages, over `printerhub/scan_text`.
+ * It also reads the words in scanned pages, over `printerhub/scan_text`, and
+ * opens the phone's document camera, over `printerhub/page_camera`.
  */
 class MainActivity : FlutterActivity() {
+    private companion object {
+        const val CAMERA_REQUEST = 4162
+    }
+
     private var channel: MethodChannel? = null
     private val waiting = mutableListOf<String>()
     private var listening = false
+
+    /** The answer the Flutter side is waiting for while the camera is open. */
+    private var cameraAnswer: MethodChannel.Result? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -48,6 +59,18 @@ class MainActivity : FlutterActivity() {
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
+            "printerhub/page_camera",
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                // It is fetched by Play services the first time it is used.
+                "available" -> result.success(true)
+                "capture" -> openCamera(result)
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
             "printerhub/scan_text",
         ).setMethodCallHandler { call, result ->
             val paths = call.arguments as? List<*>
@@ -55,6 +78,82 @@ class MainActivity : FlutterActivity() {
                 readText(paths.filterIsInstance<String>(), result)
             } else {
                 result.notImplemented()
+            }
+        }
+    }
+
+    /**
+     * Opens the document camera that comes with Google Play services. It
+     * takes as many pages as the person likes; they come back in
+     * [onActivityResult].
+     */
+    private fun openCamera(result: MethodChannel.Result) {
+        if (cameraAnswer != null) {
+            result.error("page_camera.unavailable", null, null)
+            return
+        }
+        val options = GmsDocumentScannerOptions.Builder()
+            .setGalleryImportAllowed(true)
+            .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_JPEG)
+            .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
+            .build()
+        cameraAnswer = result
+        GmsDocumentScanning.getClient(options).getStartScanIntent(this)
+            .addOnSuccessListener { sender ->
+                try {
+                    startIntentSenderForResult(sender, CAMERA_REQUEST, null, 0, 0, 0)
+                } catch (error: Exception) {
+                    answerCamera { it.error("page_camera.failed", error.message, null) }
+                }
+            }
+            .addOnFailureListener { error ->
+                answerCamera { it.error("page_camera.failed", error.message, null) }
+            }
+    }
+
+    private fun answerCamera(with: (MethodChannel.Result) -> Unit) {
+        val answer = cameraAnswer ?: return
+        cameraAnswer = null
+        with(answer)
+    }
+
+    @Deprecated("FlutterActivity has no newer way to be told of a result.")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != CAMERA_REQUEST) return
+        val pages = if (resultCode == RESULT_OK) {
+            GmsDocumentScanningResult.fromActivityResultIntent(data)?.pages
+        } else {
+            null
+        }
+        if (pages == null) {
+            // Left without taking a page.
+            answerCamera { it.success(emptyList<String>()) }
+            return
+        }
+        // The pictures belong to Play services: the app takes its own copies.
+        thread {
+            val folder = File(cacheDir, "camera").apply { mkdirs() }
+            val stamp = System.currentTimeMillis()
+            val paths = try {
+                pages.mapIndexed { index, page ->
+                    val target = File(folder, "camera-$stamp-${index + 1}.jpg")
+                    contentResolver.openInputStream(page.imageUri)!!.use { input ->
+                        target.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    target.path
+                }
+            } catch (_: Exception) {
+                null
+            }
+            runOnUiThread {
+                answerCamera {
+                    if (paths == null) {
+                        it.error("page_camera.storage", null, null)
+                    } else {
+                        it.success(paths)
+                    }
+                }
             }
         }
     }

@@ -47,6 +47,7 @@ class ScanPage extends StatelessWidget {
         documentsRepository: context.read<DocumentsRepository>(),
         sharer: context.read<ScanSharer>(),
         textReader: context.read<ScanTextReader>(),
+        camera: context.read<PageCamera>(),
         organizationId: context.read<SessionCubit>().state.organization!.id,
         printer: printer,
         name: name,
@@ -66,6 +67,15 @@ class ScanView extends StatelessWidget {
     final step = context.select<ScanCubit, ScanStep>(
       (cubit) => cubit.state.step,
     );
+    // A printer that has not said what it can do is taken to scan.
+    final scans = printer.capabilities?.scan.supported ?? true;
+    // The phone's camera, where the phone has one and the workspace has
+    // it switched on.
+    final camera =
+        context.read<PageCamera>().available &&
+        context.select<FeaturesCubit, bool>(
+          (features) => features.enabled('camera_scan'),
+        );
 
     return PopScope(
       // A scan in progress is stopped or finished, not walked away from.
@@ -74,9 +84,13 @@ class ScanView extends StatelessWidget {
         appBar: AppBar(title: Text(context.l10n.scanTitle)),
         body: SafeArea(
           child: switch (step) {
-            ScanStep.choosing => _Choose(printer: printer),
+            ScanStep.choosing =>
+              scans
+                  ? _Choose(printer: printer, camera: camera)
+                  : _CameraOnly(camera: camera),
             ScanStep.scanning => const _Scanning(),
-            ScanStep.review || ScanStep.saving => const _Review(),
+            ScanStep.review ||
+            ScanStep.saving => _Review(scans: scans, camera: camera),
             ScanStep.saved => _Saved(
               printerId: (printer.capabilities?.print.supported ?? true)
                   ? printer.id
@@ -97,9 +111,12 @@ const EdgeInsets _padding = EdgeInsets.fromLTRB(
 );
 
 class _Choose extends StatelessWidget {
-  const new({required this.printer});
+  const new({required this.printer, required this.camera});
 
   final PrinterRead printer;
+
+  /// Whether the phone's camera is offered as another way.
+  final bool camera;
 
   @override
   Widget build(BuildContext context) {
@@ -135,6 +152,68 @@ class _Choose extends StatelessWidget {
             label: state.card ? l10n.scanCardFrontAction : l10n.scanAction,
             onPressed: context.read<ScanCubit>().scan,
           ),
+          // A card is scanned on the glass, where its size is known.
+          if (camera && !state.card) ...[
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: context.read<ScanCubit>().useCamera,
+              icon: const Icon(Icons.photo_camera_outlined),
+              label: Text(l10n.scanCamera),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The scan screen of a printer with no scanner: the phone's camera does
+/// the scanning, where there is one.
+class _CameraOnly extends StatelessWidget {
+  const new({required this.camera});
+
+  final bool camera;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final failure = context.select<ScanCubit, String?>(
+      (cubit) => cubit.state.failure,
+    );
+
+    return SingleChildScrollView(
+      padding: _padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Center(
+            child: AppIllustration(AppIllustrations.printer, height: 148),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Text(
+            l10n.scanNoScanner,
+            style: context.textTheme.titleLarge,
+            textAlign: TextAlign.center,
+          ),
+          if (camera) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              l10n.scanCameraInstead,
+              style: context.textTheme.bodyLarge?.copyWith(
+                color: context.colors.textMuted,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (failure != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              AppNotice(message: ScanWords.failure(l10n, failure)),
+            ],
+            const SizedBox(height: AppSpacing.xl),
+            AppSubmitButton(
+              label: l10n.scanCamera,
+              onPressed: context.read<ScanCubit>().useCamera,
+            ),
+          ],
         ],
       ),
     );
@@ -180,7 +259,13 @@ class _Scanning extends StatelessWidget {
 }
 
 class _Review extends StatelessWidget {
-  const new();
+  const new({required this.scans, required this.camera});
+
+  /// Whether the printer can scan more pages.
+  final bool scans;
+
+  /// Whether the phone's camera can add pages.
+  final bool camera;
 
   @override
   Widget build(BuildContext context) {
@@ -269,9 +354,22 @@ class _Review extends StatelessWidget {
                         ),
                         const SizedBox(width: AppSpacing.lg),
                         Expanded(
-                          child: Text(
-                            ScanWords.page(l10n, index, card: state.card),
-                            style: textTheme.titleMedium,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                ScanWords.page(l10n, index, card: state.card),
+                                style: textTheme.titleMedium,
+                              ),
+                              // Never passed off as the printer's scan.
+                              if (state.fromCamera(page))
+                                Text(
+                                  l10n.scanFromCamera,
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: context.colors.textMuted,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                         IconButton(
@@ -286,17 +384,26 @@ class _Review extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          OutlinedButton.icon(
-            onPressed: saving ? null : cubit.scan,
-            icon: const Icon(Icons.add),
-            label: Text(
-              state.awaitsBack
-                  ? l10n.scanCardBackAction
-                  : state.card
-                  ? l10n.scanCardAnother
-                  : l10n.scanMore,
+          if (scans)
+            OutlinedButton.icon(
+              onPressed: saving ? null : cubit.scan,
+              icon: const Icon(Icons.add),
+              label: Text(
+                state.awaitsBack
+                    ? l10n.scanCardBackAction
+                    : state.card
+                    ? l10n.scanCardAnother
+                    : l10n.scanMore,
+              ),
             ),
-          ),
+          if (camera && !state.card) ...[
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: saving ? null : cubit.useCamera,
+              icon: const Icon(Icons.photo_camera_outlined),
+              label: Text(l10n.scanCameraMore),
+            ),
+          ],
           const SizedBox(height: AppSpacing.sm),
           AppSubmitButton(
             label: l10n.scanSave,
