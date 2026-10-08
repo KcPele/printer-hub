@@ -2683,6 +2683,42 @@
     "@scanFailedInterrupted": {
         "description": "Why a scan failed: the app closed during it"
     },
+    "scanCard": "ID card",
+    "@scanCard": {
+        "description": "Switch in the scan options for scanning both sides of an ID card"
+    },
+    "scanCardBody": "Front and back, together on one page",
+    "@scanCardBody": {
+        "description": "Explains the ID card switch"
+    },
+    "scanCardPlace": "Lay the card face down in the corner of the glass that is marked, with its long edge along the top.",
+    "@scanCardPlace": {
+        "description": "Where to put an ID card before scanning it"
+    },
+    "scanCardFrontAction": "Scan the front",
+    "@scanCardFrontAction": {
+        "description": "Button that scans the first side of an ID card"
+    },
+    "scanCardTurn": "Turn the card over, lay it in the same corner, and scan the back.",
+    "@scanCardTurn": {
+        "description": "Shown after the front of an ID card has been scanned"
+    },
+    "scanCardBackAction": "Scan the back",
+    "@scanCardBackAction": {
+        "description": "Button that scans the second side of an ID card"
+    },
+    "scanCardAnother": "Scan another card",
+    "@scanCardAnother": {
+        "description": "Button that scans one more ID card after both sides of one are in"
+    },
+    "scanCardFront": "Front",
+    "@scanCardFront": {
+        "description": "Label of the scanned front of an ID card"
+    },
+    "scanCardBack": "Back",
+    "@scanCardBack": {
+        "description": "Label of the scanned back of an ID card"
+    },
     "scanPrint": "Print it",
     "@scanPrint": {
         "description": "Button that prints a finished scan"

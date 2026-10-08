@@ -18,6 +18,14 @@ void main() {
     expect(ScanWords.source(l10n, 'adf'), 'The feeder');
   });
 
+  test('a page is called by its number, or the side of the card it is', () {
+    expect(ScanWords.page(l10n, 0), 'Page 1');
+    expect(ScanWords.page(l10n, 2), 'Page 3');
+    expect(ScanWords.page(l10n, 0, card: true), 'Front');
+    expect(ScanWords.page(l10n, 1, card: true), 'Back');
+    expect(ScanWords.page(l10n, 2, card: true), 'Front');
+  });
+
   test('a resolution says what it is good for', () {
     expect(ScanWords.resolution(l10n, 75), 'Quick (75 dpi)');
     expect(ScanWords.resolution(l10n, 150), 'Quick (150 dpi)');

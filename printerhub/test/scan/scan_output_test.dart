@@ -80,6 +80,73 @@ void main() {
       expect(files.single.readAsBytesSync(), tinyJpeg);
     });
 
+    group('of an ID card', () {
+      /// What the PDF draws, page by page: the drawing instructions are
+      /// stored packed.
+      List<String> drawn(File pdf) {
+        final bytes = pdf.readAsBytesSync();
+        final text = String.fromCharCodes(bytes);
+        return [
+          for (final stream in RegExp(
+            r'(?<!end)stream\r?\n',
+          ).allMatches(text).map((start) => start.end))
+            ?() {
+              try {
+                final end = text.indexOf('endstream', stream);
+                return String.fromCharCodes(
+                  zlib.decode(bytes.sublist(stream, end)),
+                );
+              } on FormatException {
+                // A picture, not instructions.
+                return null;
+              }
+            }(),
+        ].where((page) => page.contains(' Do')).toList();
+      }
+
+      test('lays the front and the back on one sheet, each the size it '
+          'was scanned', () async {
+        final files = await assembleScan(
+          pages: [page('front.jpg'), page('back.jpg')],
+          name: 'Passport card',
+          format: 'application/pdf',
+          directory: directory,
+          card: true,
+        );
+
+        expect(files.map(nameOf), ['Passport card.pdf']);
+        final sheet = drawn(files.single).single;
+        expect(' Do'.allMatches(sheet), hasLength(2));
+        // The test picture is square, so it is as tall as the card's
+        // area: 60 mm, which is 170.08 points.
+        expect(
+          RegExp(r'170\.0\d+ 0 0 170\.0\d+').allMatches(sheet),
+          hasLength(2),
+        );
+        // On A4, which is 595.3 points wide.
+        expect(
+          String.fromCharCodes(files.single.readAsBytesSync()),
+          matches(RegExp(r'/MediaBox\s*\[\s*0 0 595\.2\d* 841\.8\d*')),
+        );
+      });
+
+      test('gives each card a sheet, and a front without its back the '
+          'top of one', () async {
+        final files = await assembleScan(
+          pages: [page('1.jpg'), page('2.jpg'), page('3.jpg')],
+          name: 'Cards',
+          format: 'application/pdf',
+          directory: directory,
+          card: true,
+        );
+
+        final sheets = drawn(files.single);
+        expect(sheets, hasLength(2));
+        expect(' Do'.allMatches(sheets.first), hasLength(2));
+        expect(' Do'.allMatches(sheets.last), hasLength(1));
+      });
+    });
+
     test('numbers several pictures', () async {
       final files = await assembleScan(
         pages: [page('1.jpg'), page('2.jpg')],

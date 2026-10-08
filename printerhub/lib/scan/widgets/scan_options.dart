@@ -23,6 +23,7 @@ class ScanOptions extends StatelessWidget {
     final choices = context.select<ScanCubit, ScanChoices>(
       (cubit) => cubit.state.choices,
     );
+    final card = context.select<ScanCubit, bool>((cubit) => cubit.state.card);
     final offers = printer.capabilities?.scan;
     final sources = [
       for (final source in offers?.sources ?? const <Never>[]) ?source.json,
@@ -40,7 +41,16 @@ class ScanOptions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (sources.length > 1) ...[
+        if (ScanCubit.takesCards(printer))
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.scanCard),
+            subtitle: Text(l10n.scanCardBody),
+            value: card,
+            onChanged: (on) => cubit.asCard(card: on),
+          ),
+        // A card is laid on the glass, and its two sides make one PDF.
+        if (sources.length > 1 && !card) ...[
           Text(l10n.scanSource, style: context.textTheme.bodyLarge),
           const SizedBox(height: AppSpacing.sm),
           SegmentedButton<String>(
@@ -66,7 +76,7 @@ class ScanOptions extends StatelessWidget {
               choices.copyWith(color: on ? 'color' : 'grayscale'),
             ),
           ),
-        if (choices.fromFeeder && (offers?.adfDuplex ?? false))
+        if (!card && choices.fromFeeder && (offers?.adfDuplex ?? false))
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(l10n.scanDuplex),
@@ -100,16 +110,19 @@ class ScanOptions extends StatelessWidget {
                 cubit.change(choices.copyWith(mediaSize: () => paper)),
           ),
         ],
-        gap,
-        _Choice<String>(
-          label: l10n.scanFormat,
-          value: choices.format,
-          options: {
-            'application/pdf': l10n.scanFormatPdf,
-            'image/jpeg': l10n.scanFormatPictures,
-          },
-          onChanged: (format) => cubit.change(choices.copyWith(format: format)),
-        ),
+        if (!card) ...[
+          gap,
+          _Choice<String>(
+            label: l10n.scanFormat,
+            value: choices.format,
+            options: {
+              'application/pdf': l10n.scanFormatPdf,
+              'image/jpeg': l10n.scanFormatPictures,
+            },
+            onChanged: (format) =>
+                cubit.change(choices.copyWith(format: format)),
+          ),
+        ],
       ],
     );
   }

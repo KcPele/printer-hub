@@ -80,6 +80,7 @@ The app asks the scanner for a JPEG a page, which every eSCL scanner the standar
 - A picture the PDF writer cannot read does not lose the scan: the pages are kept as pictures.
 - A scan that stops part way keeps the pages that arrived. A scan is never started a second time on another connection once the scanner has taken the job.
 - When a scanner answers "not ready" (409), the app asks `ScannerStatus` why, and says whether the feeder is empty, jammed, or open.
+- An ID card is two scans of one corner of the glass, 92 mm by 60 mm (`ScanPaper.card`): the card and a little around it. The two sides are laid on one sheet at that size, so a print matches the card. This relies on the scanner scanning only the area it is asked for, which eSCL requires and no hardware has confirmed yet. The simulator does not: it returns the same page whatever the area, so there the two sides come out as small pages. A scanner that returns the whole glass would print the card too small; that would be a fix in `assembleScan`, cutting the picture by its resolution.
 
 Known models that need more, from `sane-airscan` (`EsclQuirks.forModel`). The app goes by the name the scanner gives itself in `ScannerCapabilities`, which is what that list is keyed on:
 
@@ -116,7 +117,7 @@ Run these in order, and note the model and firmware beside each result.
 5. `dart run` the smoke script against it (to be written with A3): Get-Printer-Attributes, and record `document-format-supported`, `pwg-raster-document-*`, `urf-supported`, `uri-authentication-supported`, and `ipp-versions-supported`.
 6. Print a one-page PDF. Then two pages on both sides, long edge and short edge: the back is the right way up.
 7. Print the same pages as PWG Raster and as Apple Raster, on a printer that lists them.
-8. Scan from the glass, kept as a PDF and as a picture. Scan three sheets from the feeder, and both sides of them. Scan with the feeder empty. Note what `ScannerCapabilities` lists for `DocumentFormat`, and whether a JPEG scan from the feeder gives one page per request.
+8. Scan from the glass, kept as a PDF and as a picture. Scan three sheets from the feeder, and both sides of them. Scan with the feeder empty. Note what `ScannerCapabilities` lists for `DocumentFormat`, and whether a JPEG scan from the feeder gives one page per request. Scan an ID card with the ID card switch on, print the PDF at full size, and lay the card on the print: it should match, and the corner the app names should be the corner the scanner starts from.
 9. Switch on IPP authentication, add the printer again, and print.
 10. Switch on HTTPS-only, and repeat 1 and 6.
 11. On a phone: NFC tap, QR code, and Bluetooth sighting, none of which has run on hardware.

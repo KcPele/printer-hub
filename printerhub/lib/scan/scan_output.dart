@@ -21,6 +21,10 @@ class ScanPaper {
 
   static const ScanPaper a4 = ScanPaper('iso_a4_210x297mm', 210, 297);
 
+  /// The corner of the glass scanned for an ID card. The card is 85.6 mm
+  /// by 54 mm; the rest is for a card not laid exactly in the corner.
+  static const ScanPaper card = ScanPaper('iso_id-1_53.98x85.6mm', 92, 60);
+
   /// The sizes offered, the usual one first.
   static const List<ScanPaper> all = [
     a4,
@@ -61,12 +65,17 @@ String scanFileName(String name) {
 /// and when the scanner delivered PDFs itself or pictures no PDF can be
 /// made of, each page is a file of its own: `name.jpg`, or `name 1.jpg`
 /// and `name 2.jpg`.
+///
+/// With [card], the pages are the sides of ID cards, front then back.
+/// They are laid two to a sheet of [paper], one above the other, each the
+/// size it was scanned at, so a printed copy matches the card.
 Future<List<File>> assembleScan({
   required List<ScannedPage> pages,
   required String name,
   required String format,
   required Directory directory,
   ScanPaper paper = ScanPaper.a4,
+  bool card = false,
 }) async {
   final base = '${directory.path}/${scanFileName(name)}';
   final pictures = pages.every((page) => page.mimeType != 'application/pdf');
@@ -74,15 +83,30 @@ Future<List<File>> assembleScan({
   if (format == 'application/pdf' && pictures) {
     try {
       final document = pw.Document(title: name);
-      for (final page in pages) {
-        final picture = pw.MemoryImage(await page.file.readAsBytes());
+      final sheet = PdfPageFormat(
+        paper.widthMm * PdfPageFormat.mm,
+        paper.heightMm * PdfPageFormat.mm,
+      );
+      final pictures = [
+        for (final page in pages) pw.MemoryImage(await page.file.readAsBytes()),
+      ];
+      for (var first = 0; first < pictures.length; first += card ? 2 : 1) {
+        final picture = pictures[first];
+        final back = card ? pictures.elementAtOrNull(first + 1) : null;
         document.addPage(
           pw.Page(
-            pageFormat: PdfPageFormat(
-              paper.widthMm * PdfPageFormat.mm,
-              paper.heightMm * PdfPageFormat.mm,
-            ),
-            build: (_) => pw.Center(child: pw.Image(picture)),
+            pageFormat: sheet,
+            build: (_) => card
+                ? pw.Column(
+                    children: [
+                      pw.Expanded(child: _cardSide(picture)),
+                      // A front without its back keeps to the top half.
+                      pw.Expanded(
+                        child: back == null ? pw.SizedBox() : _cardSide(back),
+                      ),
+                    ],
+                  )
+                : pw.Center(child: pw.Image(picture)),
           ),
         );
       }
@@ -102,4 +126,16 @@ Future<List<File>> assembleScan({
         '.${page.mimeType == 'application/pdf' ? 'pdf' : 'jpg'}',
       ),
   ];
+}
+
+/// One side of a card, in the middle of its half of the sheet, at the size
+/// it was scanned.
+pw.Widget _cardSide(pw.ImageProvider picture) {
+  return pw.Center(
+    child: pw.SizedBox(
+      width: ScanPaper.card.widthMm * PdfPageFormat.mm,
+      height: ScanPaper.card.heightMm * PdfPageFormat.mm,
+      child: pw.Image(picture),
+    ),
+  );
 }

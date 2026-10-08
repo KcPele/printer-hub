@@ -8,6 +8,13 @@ abstract final class ScanWords {
     return source == 'adf' ? l10n.scanSourceFeeder : l10n.scanSourceGlass;
   }
 
+  /// What the page at [index] is called: its number, or for a card the
+  /// side it is.
+  static String page(AppLocalizations l10n, int index, {bool card = false}) {
+    if (!card) return l10n.scanPageNumber(index + 1);
+    return index.isEven ? l10n.scanCardFront : l10n.scanCardBack;
+  }
+
   /// A resolution by what it is good for, with its number.
   static String resolution(AppLocalizations l10n, int dpi) {
     return switch (dpi) {

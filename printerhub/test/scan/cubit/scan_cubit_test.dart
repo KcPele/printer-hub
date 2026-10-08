@@ -359,6 +359,114 @@ void main() {
     });
   });
 
+  group('an ID card', () {
+    test('is scanned from the corner of the glass, a side at a time, '
+        'whatever else was chosen', () async {
+      final cubit = build()
+        ..change(
+          const ScanChoices(
+            source: 'adf',
+            format: 'image/jpeg',
+            mediaSize: 'na_letter_8.5x11in',
+          ),
+        )
+        ..asCard(card: true);
+      expect(cubit.state.card, isTrue);
+
+      await cubit.scan();
+
+      final asked = backend.scansStarted.single;
+      expect(asked, contains('Platen'));
+      // 92 mm by 60 mm, in three-hundredths of an inch.
+      expect(asked, contains('<pwg:Width>1087</pwg:Width>'));
+      expect(asked, contains('<pwg:Height>709</pwg:Height>'));
+      final settings =
+          backend.lastBody('POST /organizations/$_org/jobs')['settings']
+              as Map<String, Object?>;
+      expect(settings['source'], 'platen');
+      expect(settings['format'], 'application/pdf');
+      expect(settings['media_size'], 'iso_id-1_53.98x85.6mm');
+      // What the person chose is still theirs.
+      expect(cubit.state.choices.mediaSize, 'na_letter_8.5x11in');
+    });
+
+    test('waits for its back after its front', () async {
+      final cubit = build()..asCard(card: true);
+      expect(cubit.state.awaitsBack, isFalse);
+
+      await cubit.scan();
+      expect(cubit.state.awaitsBack, isTrue);
+
+      await cubit.scan();
+      expect(cubit.state.awaitsBack, isFalse);
+      expect(cubit.state.pages, hasLength(2));
+    });
+
+    test('is one sheet of one PDF, and kept as one page', () async {
+      final cubit = build()
+        ..change(const ScanChoices(format: 'image/jpeg'))
+        ..asCard(card: true)
+        ..rename('Licence');
+      await cubit.scan();
+      await cubit.scan();
+
+      await cubit.save();
+
+      final file = cubit.state.files.single;
+      expect(file.path, endsWith('/Licence.pdf'));
+      expect(
+        RegExp(r'/Type\s*/Page\b')
+            .allMatches(String.fromCharCodes(file.readAsBytesSync())),
+        hasLength(1),
+      );
+
+      await cubit.keep();
+      expect(backend.documentList.single['page_count'], 1);
+    });
+
+    test('can be switched off again before the first side', () {
+      final cubit = build()
+        ..asCard(card: true)
+        ..asCard(card: false);
+
+      expect(cubit.state.card, isFalse);
+    });
+
+    test('is chosen before the first page, not after', () async {
+      final cubit = build();
+      await cubit.scan();
+
+      cubit.asCard(card: true);
+
+      expect(cubit.state.card, isFalse);
+    });
+
+    test('stays chosen when beginning again', () async {
+      final cubit = build()..asCard(card: true);
+      await cubit.scan();
+
+      cubit.startOver();
+
+      expect(cubit.state.card, isTrue);
+      expect(cubit.state.pages, isEmpty);
+    });
+
+    test('needs a glass to lay it on', () {
+      final feederOnly = scanner({
+        'sources': ['adf'],
+      });
+      final unknown = PrinterRead.fromJson(
+        {...printerBody(), 'capabilities': null}.cast(),
+      );
+
+      expect(ScanCubit.takesCards(printer), isTrue);
+      expect(ScanCubit.takesCards(unknown), isTrue);
+      expect(ScanCubit.takesCards(feederOnly), isFalse);
+      final cubit = build(on: feederOnly)..asCard(card: true);
+      expect(cubit.state.card, isFalse);
+    });
+  });
+
   group('save', () {
     test('puts the pages together as one PDF', () async {
       backend.scanPages = [tinyJpeg, tinyJpeg];

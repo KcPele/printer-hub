@@ -41,6 +41,7 @@ class ScanState extends Equatable {
   const new({
     this.step = ScanStep.choosing,
     this.choices = const ScanChoices(),
+    this.card = false,
     this.name = '',
     this.pages = const [],
     this.progress,
@@ -52,6 +53,13 @@ class ScanState extends Equatable {
 
   final ScanStep step;
   final ScanChoices choices;
+
+  /// True when an ID card is being scanned: its front, then its back,
+  /// from the glass, to be put on one sheet.
+  final bool card;
+
+  /// True when a card's front has been scanned and its back has not.
+  bool get awaitsBack => card && pages.length.isOdd;
 
   /// What the scan is called, and its file named after.
   final String name;
@@ -78,6 +86,7 @@ class ScanState extends Equatable {
   ScanState _with({
     ScanStep? step,
     ScanChoices? choices,
+    bool? card,
     String? name,
     List<ScannedPage>? pages,
     ScanProgress? progress,
@@ -89,6 +98,7 @@ class ScanState extends Equatable {
     return ScanState(
       step: step ?? this.step,
       choices: choices ?? this.choices,
+      card: card ?? this.card,
       name: name ?? this.name,
       pages: pages ?? this.pages,
       progress: progress,
@@ -103,6 +113,7 @@ class ScanState extends Equatable {
   List<Object?> get props => [
     step,
     choices,
+    card,
     name,
     pages,
     progress,
@@ -186,8 +197,39 @@ class ScanCubit extends Cubit<ScanState> {
     );
   }
 
+  /// True when [printer] can scan an ID card: it has a glass to lay one
+  /// on, or has not said what it has.
+  static bool takesCards(PrinterRead printer) {
+    final sources = [
+      for (final source
+          in printer.capabilities?.scan.sources ?? const <Never>[])
+        ?source.json,
+    ];
+    return sources.isEmpty || sources.contains('platen');
+  }
+
   bool get _settled =>
       state.step == ScanStep.choosing || state.step == ScanStep.review;
+
+  /// What the scanner is asked for. A card is always scanned from the
+  /// glass, one side at a time, and kept as a PDF. The paper chosen is the
+  /// sheet both sides go on, not the area scanned.
+  ScanChoices get _asked => state.card
+      ? state.choices.copyWith(
+          source: 'platen',
+          duplex: false,
+          format: 'application/pdf',
+          mediaSize: () => ScanPaper.card.name,
+        )
+      : state.choices;
+
+  /// Scans an ID card, or goes back to scanning documents. Chosen before
+  /// the first page, since the two are put together differently.
+  void asCard({required bool card}) {
+    if (state.step == ScanStep.choosing && takesCards(_printer)) {
+      emit(state._with(card: card));
+    }
+  }
 
   /// Changes how to scan.
   void change(ScanChoices choices) {
@@ -203,7 +245,7 @@ class ScanCubit extends Cubit<ScanState> {
   Future<void> scan() async {
     if (!_settled) return;
     final before = state.step;
-    final choices = state.choices;
+    final choices = _asked;
     emit(state._with(step: ScanStep.scanning));
 
     final Job job;
@@ -223,7 +265,9 @@ class ScanCubit extends Cubit<ScanState> {
       return;
     }
 
-    final paper = ScanPaper.named(choices.mediaSize);
+    final paper = state.card
+        ? ScanPaper.card
+        : ScanPaper.named(choices.mediaSize);
     final scan = _printersRepository.scan(
       printer: _printer,
       request: ScanRequest(
@@ -304,9 +348,10 @@ class ScanCubit extends Cubit<ScanState> {
       final files = await assembleScan(
         pages: state.pages,
         name: state.name,
-        format: state.choices.format,
+        format: _asked.format,
         directory: _directory,
         paper: ScanPaper.named(state.choices.mediaSize),
+        card: state.card,
       );
       if (!isClosed) emit(state._with(step: ScanStep.saved, files: files));
     } on Object {
@@ -347,8 +392,13 @@ class ScanCubit extends Cubit<ScanState> {
                   file: file,
                   name: Uri.decodeComponent(name),
                   mimeType: pdf ? 'application/pdf' : 'image/jpeg',
-                  // One PDF holds every page; otherwise a file is a page.
-                  pageCount: files.length == 1 ? state.pages.length : 1,
+                  // One PDF holds every page, or every two sides of a
+                  // card; otherwise a file is a page.
+                  pageCount: files.length > 1
+                      ? 1
+                      : state.card
+                      ? (state.pages.length + 1) ~/ 2
+                      : state.pages.length,
                   printerId: _printer.id,
                 );
           _waiting.remove(file.path);
@@ -384,7 +434,7 @@ class ScanCubit extends Cubit<ScanState> {
       return;
     }
     _delete([for (final page in state.pages) page.file, ...state.files]);
-    emit(ScanState(name: state.name, choices: state.choices));
+    emit(ScanState(name: state.name, choices: state.choices, card: state.card));
   }
 
   static void _delete(Iterable<File> files) {

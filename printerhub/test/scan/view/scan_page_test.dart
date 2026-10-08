@@ -342,6 +342,61 @@ void main() {
       expect(find.text('Page 2'), findsNothing);
     });
 
+    testWidgets('scans the two sides of an ID card onto one page', (
+      tester,
+    ) async {
+      await pump(tester);
+      expect(find.text('Lay the card face down'), findsNothing);
+
+      await press(tester, find.text('ID card'));
+      await tester.pumpAndSettle();
+
+      // A card goes on the glass, and comes out as one PDF.
+      expect(find.text('The feeder'), findsNothing);
+      expect(find.text('Keep it as'), findsNothing);
+      expect(find.text('Paper size'), findsOneWidget);
+      expect(find.textContaining('Lay the card face down'), findsOneWidget);
+
+      await scan(tester, button: 'Scan the front');
+      expect(find.text('Front'), findsOneWidget);
+      expect(find.textContaining('Turn the card over'), findsOneWidget);
+      expect(backend.scansStarted.single, contains('Platen'));
+
+      await scan(tester, button: 'Scan the back');
+      expect(find.text('Back'), findsOneWidget);
+      expect(find.textContaining('Turn the card over'), findsNothing);
+      expect(find.text('Scan another card'), findsOneWidget);
+
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+
+      expect(find.text('Your scan is ready'), findsOneWidget);
+      expect(cubitOf(tester).state.files.single.path, endsWith('.pdf'));
+    });
+
+    testWidgets('does not offer an ID card on a scanner with no glass', (
+      tester,
+    ) async {
+      final body = printerBody();
+      final capabilities = body['capabilities']! as Map<String, Object?>;
+      backend.printerList = [
+        {
+          ...body,
+          'capabilities': {
+            ...capabilities,
+            'scan': {
+              ...capabilities['scan']! as Map<String, Object?>,
+              'sources': ['adf'],
+            },
+          },
+        },
+      ];
+
+      await pump(tester);
+
+      expect(find.text('ID card'), findsNothing);
+    });
+
     testWidgets('names the scan, saves it, and shares it', (tester) async {
       await pump(tester);
       await scan(tester);

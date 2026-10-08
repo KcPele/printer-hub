@@ -116,6 +116,10 @@ class _Choose extends StatelessWidget {
           Text(l10n.scanOptionsTitle, style: context.textTheme.titleLarge),
           const SizedBox(height: AppSpacing.md),
           AppCard(child: ScanOptions(printer: printer)),
+          if (state.card) ...[
+            const SizedBox(height: AppSpacing.lg),
+            AppNotice(status: AppStatus.info, message: l10n.scanCardPlace),
+          ],
           if (state.failure != null) ...[
             const SizedBox(height: AppSpacing.lg),
             AppNotice(message: ScanWords.failure(l10n, state.failure)),
@@ -126,7 +130,7 @@ class _Choose extends StatelessWidget {
           ],
           const SizedBox(height: AppSpacing.xl),
           AppSubmitButton(
-            label: l10n.scanAction,
+            label: state.card ? l10n.scanCardFrontAction : l10n.scanAction,
             onPressed: context.read<ScanCubit>().scan,
           ),
         ],
@@ -214,6 +218,10 @@ class _Review extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             AppNotice(message: errorMessage(l10n, state.error)),
           ],
+          if (state.awaitsBack) ...[
+            const SizedBox(height: AppSpacing.sm),
+            AppNotice(status: AppStatus.info, message: l10n.scanCardTurn),
+          ],
           const SizedBox(height: AppSpacing.lg),
           Text(l10n.scanPagesTitle, style: textTheme.titleLarge),
           if (state.pages.length > 1) ...[
@@ -260,7 +268,7 @@ class _Review extends StatelessWidget {
                         const SizedBox(width: AppSpacing.lg),
                         Expanded(
                           child: Text(
-                            l10n.scanPageNumber(index + 1),
+                            ScanWords.page(l10n, index, card: state.card),
                             style: textTheme.titleMedium,
                           ),
                         ),
@@ -279,7 +287,13 @@ class _Review extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: saving ? null : cubit.scan,
             icon: const Icon(Icons.add),
-            label: Text(l10n.scanMore),
+            label: Text(
+              state.awaitsBack
+                  ? l10n.scanCardBackAction
+                  : state.card
+                  ? l10n.scanCardAnother
+                  : l10n.scanMore,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           AppSubmitButton(
