@@ -63,7 +63,6 @@ void main() {
 
   group('printing', () {
     final control = HttpClient();
-    tearDownAll(() => control.close(force: true));
 
     Future<Map<String, dynamic>> simulator(
       String method,
@@ -127,6 +126,12 @@ void main() {
           .progress
           .toList();
     }
+
+    // The simulator is left as it was found, for whoever uses it next.
+    tearDownAll(() async {
+      if (await up) await simulator('POST', '/sim/reset');
+      control.close(force: true);
+    });
 
     Future<List<dynamic>> jobs() async =>
         (await simulator('GET', '/sim/state'))['print_jobs'] as List<dynamic>;

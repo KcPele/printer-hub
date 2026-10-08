@@ -3,12 +3,14 @@ import 'package:auth_repository/auth_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jobs_repository/jobs_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printerhub/app/app.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
@@ -104,7 +106,9 @@ extension PumpApp on WidgetTester {
             value: api.organizations,
           ),
           RepositoryProvider<PrintersRepository>.value(value: api.printers),
+          RepositoryProvider<JobsRepository>.value(value: api.jobs),
           RepositoryProvider<PrinterFinders>.value(value: api.finders),
+          RepositoryProvider<PrintDocuments>.value(value: api.documents),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -138,7 +142,9 @@ extension PumpApp on WidgetTester {
         authRepository: backend.auth,
         organizationsRepository: backend.organizations,
         printersRepository: backend.printers,
+        jobsRepository: backend.jobs,
         finders: backend.finders,
+        documents: backend.documents,
         keptOrganizations: await backend.organizations.kept(),
       ),
     );

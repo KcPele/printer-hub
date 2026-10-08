@@ -4,11 +4,13 @@ import 'package:app_ui/app_ui.dart';
 import 'package:auth_repository/auth_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jobs_repository/jobs_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
@@ -20,7 +22,9 @@ class App extends StatelessWidget {
     required this.authRepository,
     required this.organizationsRepository,
     required this.printersRepository,
+    required this.jobsRepository,
     required this.finders,
+    required this.documents,
     this.keptOrganizations,
     super.key,
   });
@@ -29,9 +33,13 @@ class App extends StatelessWidget {
   final AuthRepository authRepository;
   final OrganizationsRepository organizationsRepository;
   final PrintersRepository printersRepository;
+  final JobsRepository jobsRepository;
 
   /// The ways this phone can find a printer.
   final PrinterFinders finders;
+
+  /// The ways this phone gets at documents to print.
+  final PrintDocuments documents;
 
   /// The workspace list from the last launch, read before the first frame.
   final List<Organization>? keptOrganizations;
@@ -44,7 +52,9 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: authRepository),
         RepositoryProvider.value(value: organizationsRepository),
         RepositoryProvider.value(value: printersRepository),
+        RepositoryProvider.value(value: jobsRepository),
         RepositoryProvider.value(value: finders),
+        RepositoryProvider.value(value: documents),
       ],
       child: MultiBlocProvider(
         providers: [

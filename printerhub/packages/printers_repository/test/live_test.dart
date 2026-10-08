@@ -52,6 +52,7 @@ void main() {
       final repository = PrintersRepository(
         client: client,
         probe: DeviceProbe(http: http),
+        runner: PrintRunner(http: http),
         store: InMemorySecureStore(),
       );
       final password = 'live-${newIdempotencyKey()}';

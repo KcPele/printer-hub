@@ -5,13 +5,17 @@ import 'package:api_client/testing.dart';
 import 'package:auth_repository/auth_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
+import 'package:jobs_repository/jobs_repository.dart';
 import 'package:local_store/local_store.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:printer_discovery/testing.dart';
 import 'package:printer_protocols/printer_protocols.dart';
 import 'package:printer_protocols/testing.dart';
+import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/finders.dart';
 import 'package:printers_repository/printers_repository.dart';
+
+import 'fake_documents.dart';
 
 /// A pretend PrinterHub API with the real client and repositories on top,
 /// so a test exercises everything from the screen down to the request.
@@ -44,8 +48,17 @@ class TestBackend {
     printers = PrintersRepository(
       client: client,
       probe: DeviceProbe(http: device),
+      // Followed without sitting through a print. The pause is short but
+      // real: with none, a job that stays on the printer would spin without
+      // ever letting a test's clock move on.
+      runner: PrintRunner(
+        http: device,
+        pause: (_) => Future<void>.delayed(const Duration(milliseconds: 10)),
+      ),
       store: store,
     );
+    jobs = JobsRepository(client: client, store: store);
+    documents = PrintDocuments(picker: picker, renderer: renderer);
     finders = PrinterFinders(
       network: nearby,
       nfc: nfc,
@@ -67,6 +80,28 @@ class TestBackend {
   late final AuthRepository auth;
   late final OrganizationsRepository organizations;
   late final PrintersRepository printers;
+  late final JobsRepository jobs;
+
+  /// The phone's file browser and its PDF and image code.
+  final FakeDocumentPicker picker = FakeDocumentPicker();
+  final FakePageRenderer renderer = FakePageRenderer();
+  late PrintDocuments documents;
+
+  /// The jobs the backend has on record, newest first, and what happened
+  /// to each, by job id.
+  List<Map<String, Object?>> jobList = [];
+  final Map<String, List<Map<String, dynamic>>> jobEvents = {};
+
+  /// What the plugged-in printer was sent to print, with each request's
+  /// attributes.
+  final List<IppDecoded> printed = [];
+
+  /// The state the printer reports for a job it is asked about: 9 is
+  /// completed, 5 printing, 6 stopped, 7 cancelled, 8 given up on.
+  int printerJobState = 9;
+
+  /// The IPP status the printer answers Validate-Job with, when not OK.
+  int? printerRefuses;
 
   /// The local network. Nothing answers on it until [plugInPrinter].
   late final FakePrinterHttp device;
@@ -216,6 +251,7 @@ class TestBackend {
     List<String> stateReasons = const ['none'],
     Map<String, int> tonerLevels = const {'black': 82, 'cyan': 8},
     PrinterCredentials? signIn,
+    List<String> formats = const ['application/pdf', 'image/pwg-raster'],
   }) {
     device.device = (request) {
       if (request.uri.path.endsWith('ScannerStatus')) {
@@ -230,10 +266,37 @@ class TestBackend {
           headers: {'www-authenticate': 'Digest realm="Printer", nonce="n1"'},
         );
       }
+      final asked = decodeIpp(request.body);
+      final jobReply = _answerPrintJob(asked);
+      if (jobReply != null) return jobReply;
       return FakeAnswer.ipp(
         ippResponse(
           groups: [
             IppGroup(IppGroupTag.printer, [
+              IppAttribute.all(
+                'document-format-supported',
+                IppValueTag.mimeMediaType,
+                formats,
+              ),
+              IppAttribute.all(
+                'pwg-raster-document-type-supported',
+                IppValueTag.keyword,
+                const ['sgray_8', 'srgb_8'],
+              ),
+              IppAttribute.single(
+                'pwg-raster-document-resolution-supported',
+                IppValueTag.resolution,
+                const IppResolution(300, 300),
+              ),
+              IppAttribute.all('media-supported', IppValueTag.keyword, const [
+                'iso_a4_210x297mm',
+                'na_letter_8.5x11in',
+              ]),
+              IppAttribute.single(
+                'copies-supported',
+                IppValueTag.rangeOfInteger,
+                const IppRange(1, 999),
+              ),
               IppAttribute.single(
                 'printer-make-and-model',
                 IppValueTag.text,
@@ -272,6 +335,58 @@ class TestBackend {
         ),
       );
     };
+  }
+
+  /// The printer's answer to an operation on a job, or null for a question
+  /// about the printer itself.
+  FakeAnswer? _answerPrintJob(IppDecoded asked) {
+    IppGroup job({String? name}) => IppGroup(IppGroupTag.job, [
+      IppAttribute.single('job-id', IppValueTag.integer, 1),
+      IppAttribute.single(
+        'job-state',
+        IppValueTag.enumeration,
+        printerJobState,
+      ),
+      if (name != null) IppAttribute.single('job-name', IppValueTag.name, name),
+      if (printerJobState == 6)
+        IppAttribute.single(
+          'job-state-reasons',
+          IppValueTag.keyword,
+          'media-empty-error',
+        ),
+    ]);
+
+    switch (asked.message.code) {
+      case IppOperation.getPrinterAttributes:
+        return null;
+      case IppOperation.validateJob:
+        return FakeAnswer.ipp(
+          ippResponse(status: printerRefuses ?? IppStatus.ok),
+        );
+      case IppOperation.printJob:
+        printed.add(asked);
+        return FakeAnswer.ipp(ippResponse(groups: [job()]));
+      case IppOperation.cancelJob:
+        printerJobState = 7;
+        return FakeAnswer.ipp(ippResponse());
+      case IppOperation.getJobs:
+        return FakeAnswer.ipp(
+          ippResponse(
+            groups: [
+              for (final sent in printed)
+                job(
+                  name:
+                      sent.message
+                              .group(IppGroupTag.operation)!['job-name']!
+                              .first!
+                          as String,
+                ),
+            ],
+          ),
+        );
+      default:
+        return FakeAnswer.ipp(ippResponse(groups: [job()]));
+    }
   }
 
   /// Whether [request] is signed the way [expected] would sign it.
@@ -412,6 +527,8 @@ class TestBackend {
           ? FakeResponse.problem(404, 'connection.not_found')
           : FakeResponse(200, {...secrets, 'extra': <String, String>{}});
     }
+    final jobRoute = _jobRoute.firstMatch(key);
+    if (jobRoute != null) return _answerJobs(jobRoute, body);
     final connectionRoute = _connectionRoute.firstMatch(key);
     if (connectionRoute != null) {
       return _answerConnections(connectionRoute, body);
@@ -434,6 +551,109 @@ class TestBackend {
     '^(GET|POST|PUT|PATCH|DELETE) /organizations/([^/]+)/printers'
     r'(?:/([^/]+))?(/status|/pairing-tokens|/capabilities)?$',
   );
+
+  static final RegExp _jobRoute = RegExp(
+    '^(GET|POST) /organizations/[^/]+/jobs'
+    r'(?:/([^/]+))?(/events|/cancel|/retry)?$',
+  );
+
+  /// The job history: recording a job and what happens to it, and reading
+  /// it back.
+  FakeResponse _answerJobs(RegExpMatch route, Map<String, dynamic> body) {
+    final method = route.group(1)!;
+    final jobId = route.group(2);
+    final action = route.group(3);
+
+    Map<String, Object?> record(Map<String, dynamic> create) {
+      final settings = create['settings'] as Map<String, dynamic>?;
+      final job = jobBody(
+        id: create['id'] as String,
+        title: create['title'] as String?,
+        printerId: create['printer_id'] as String,
+        copies: settings?['copies'] as int? ?? 1,
+        pageCount: create['page_count'] as int?,
+      );
+      jobList = [job, ...jobList];
+      jobEvents[job['id']! as String] = [];
+      return job;
+    }
+
+    Map<String, Object?> apply(String id, Map<String, dynamic> event) {
+      final index = jobList.indexWhere((job) => job['id'] == id);
+      jobEvents[id]!.add(event);
+      final changed = {
+        ...jobList[index],
+        'status': event['status'],
+        if (event['error_code'] != null) 'error_code': event['error_code'],
+        if (event['error_message'] != null)
+          'error_message': event['error_message'],
+        if (event['connection_id'] != null)
+          'connection_id': event['connection_id'],
+      };
+      jobList = [...jobList]..[index] = changed;
+      return changed;
+    }
+
+    if (jobId == null) {
+      if (method == 'POST') return FakeResponse(201, record(body));
+      return FakeResponse(200, {'items': jobList, 'next_cursor': null});
+    }
+    if (jobId == 'batch') {
+      return FakeResponse(200, {
+        'results': [
+          for (final item
+              in (body['items'] as List<dynamic>).cast<Map<String, dynamic>>())
+            {
+              'idempotency_key': item['idempotency_key'],
+              'outcome': 'created',
+              'job': () {
+                final job = record(item['job'] as Map<String, dynamic>);
+                var latest = job;
+                for (final event
+                    in (item['events'] as List<dynamic>? ?? [])
+                        .cast<Map<String, dynamic>>()) {
+                  latest = apply(job['id']! as String, event);
+                }
+                return latest;
+              }(),
+              'error': null,
+            },
+        ],
+      });
+    }
+
+    final index = jobList.indexWhere((job) => job['id'] == jobId);
+    if (index < 0) return FakeResponse.problem(404, 'job.not_found');
+    switch (action) {
+      case '/events' when method == 'POST':
+        return FakeResponse(200, apply(jobId, body));
+      case '/events':
+        return FakeResponse(200, [
+          for (final (number, event) in jobEvents[jobId]!.indexed)
+            {
+              'id': 'event-$number',
+              'status': event['status'],
+              'connection_id': event['connection_id'],
+              'connection_type': event['connection_id'] == null ? null : 'ipp',
+              'error_code': event['error_code'],
+              'error_message': event['error_message'],
+              'reported_by_user_id': null,
+              'detail': <String, Object?>{},
+              'occurred_at': event['occurred_at'] ?? '2026-10-07T10:00:00Z',
+              'created_at': '2026-10-07T10:00:00Z',
+            },
+        ]);
+      case '/cancel':
+        return FakeResponse(200, apply(jobId, {'status': 'cancelled'}));
+      case '/retry':
+        return FakeResponse(
+          201,
+          record({...jobList[index], 'id': 'retry-of-$jobId'}),
+        );
+      default:
+        return FakeResponse(200, jobList[index]);
+    }
+  }
 
   static final RegExp _connectionRoute = RegExp(
     '^(GET|POST|PUT|PATCH|DELETE) /organizations/[^/]+/printers/([^/]+)'

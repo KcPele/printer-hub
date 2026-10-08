@@ -1,0 +1,304 @@
+import 'package:api_client/api_client.dart';
+import 'package:bloc/bloc.dart';
+import 'package:equatable/equatable.dart';
+import 'package:jobs_repository/jobs_repository.dart';
+import 'package:printerhub/print/documents.dart';
+import 'package:printers_repository/printers_repository.dart';
+
+enum PrintStep {
+  /// Nothing chosen yet.
+  choosing,
+
+  /// Reading the chosen file.
+  reading,
+
+  /// A document and how to print it.
+  ready,
+
+  /// On its way to the printer, or on it.
+  printing,
+
+  /// Over, one way or another.
+  finished,
+}
+
+/// Why a chosen file cannot be printed.
+enum PrintProblem {
+  /// Not a PDF or a picture.
+  unsupportedFile,
+
+  /// It could not be read as what it claims to be.
+  unreadableFile,
+}
+
+class PrintState extends Equatable {
+  const new({
+    this.step = PrintStep.choosing,
+    this.document,
+    this.preview,
+    this.choices = const PrintChoices(),
+    this.progress,
+    this.problem,
+    this.error,
+    this.handedToSystem = false,
+  });
+
+  final PrintStep step;
+  final PickedDocument? document;
+  final DocumentPreview? preview;
+  final PrintChoices choices;
+
+  /// Where the print has got to, from [PrintStep.printing] on.
+  final PrintProgress? progress;
+  final PrintProblem? problem;
+
+  /// Why the backend would not record the job. Pass it to `errorMessage`.
+  final ApiException? error;
+
+  /// True when the document went to the phone's own print dialog.
+  final bool handedToSystem;
+
+  /// True when the phone's own print dialog can be offered instead: it
+  /// takes a PDF, and is worth offering when the printer cannot take the
+  /// document from the app.
+  bool get canUseSystemPrint =>
+      step == PrintStep.finished &&
+      !handedToSystem &&
+      progress?.errorCode == 'print.format_not_supported' &&
+      document?.mimeType == 'application/pdf';
+
+  PrintState _with({
+    PrintStep? step,
+    PrintChoices? choices,
+    PrintProgress? progress,
+    ApiException? error,
+    bool handedToSystem = false,
+  }) {
+    return PrintState(
+      step: step ?? this.step,
+      document: document,
+      preview: preview,
+      choices: choices ?? this.choices,
+      progress: progress,
+      error: error,
+      handedToSystem: handedToSystem,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    step,
+    document,
+    preview,
+    choices,
+    progress,
+    problem,
+    error,
+    handedToSystem,
+  ];
+}
+
+/// Prints a document on one printer: choose the file, choose how, send it,
+/// and follow it, keeping the job's record as it goes.
+class PrintCubit extends Cubit<PrintState> {
+  new({
+    required this._printersRepository,
+    required this._jobsRepository,
+    required this._documents,
+    required this._organizationId,
+    required this._printer,
+  }) : super(const PrintState());
+
+  final PrintersRepository _printersRepository;
+  final JobsRepository _jobsRepository;
+  final PrintDocuments _documents;
+  final String _organizationId;
+  final PrinterRead _printer;
+
+  PrinterPrint? _print;
+  bool _choosing = false;
+
+  /// Lets the person choose a file, and reads it.
+  Future<void> choose() async {
+    if (_choosing || state.step == PrintStep.printing) return;
+    _choosing = true;
+    try {
+      final document = await _documents.picker.pick();
+      if (document == null || isClosed) return;
+      if (document.mimeType == null) {
+        emit(const PrintState(problem: PrintProblem.unsupportedFile));
+        return;
+      }
+
+      // The choices made so far carry over to the new file.
+      final choices = state.choices;
+      emit(
+        PrintState(
+          step: PrintStep.reading,
+          document: document,
+          choices: choices,
+        ),
+      );
+      try {
+        final preview = await _documents.renderer.preview(document);
+        emit(
+          PrintState(
+            step: PrintStep.ready,
+            document: document,
+            preview: preview,
+            choices: choices,
+          ),
+        );
+      } on Object {
+        emit(const PrintState(problem: PrintProblem.unreadableFile));
+      }
+    } finally {
+      _choosing = false;
+    }
+  }
+
+  /// Changes how the document is to be printed.
+  void change(PrintChoices choices) {
+    if (state.step == PrintStep.ready) emit(state._with(choices: choices));
+  }
+
+  /// Sends the document to the printer and follows it to the end.
+  Future<void> print() async {
+    final document = state.document;
+    final preview = state.preview;
+    if (state.step != PrintStep.ready || document == null || preview == null) {
+      return;
+    }
+    emit(state._with(step: PrintStep.printing));
+
+    final Job job;
+    try {
+      job = await _jobsRepository.startPrint(
+        organizationId: _organizationId,
+        printerId: _printer.id,
+        title: document.name,
+        choices: state.choices,
+        pageCount: preview.pageCount,
+        connectionId: _printer.connections.firstOrNull?.id,
+      );
+    } on ApiException catch (error) {
+      emit(state._with(step: PrintStep.ready, error: error));
+      return;
+    }
+
+    final choices = state.choices;
+    final print = await _printersRepository.print(
+      organizationId: _organizationId,
+      printer: _printer,
+      document: PrintDocument(
+        name: document.name,
+        mimeType: document.mimeType!,
+        length: document.length,
+        open: document.open,
+        pageCount: preview.pageCount,
+        rasterise: (page) => _documents.renderer.rasterise(document, page),
+      ),
+      request: PrintRequest(
+        copies: choices.copies,
+        sides: choices.sides,
+        color: choices.color,
+        media: choices.mediaSize,
+        tray: choices.tray,
+        mediaType: choices.mediaType,
+        quality: choices.quality,
+        pageRanges: choices.pageRanges,
+        orientation: choices.orientation,
+        collate: choices.collate,
+      ),
+      // Short enough to sit beside the name on the printer's panel.
+      reference: job.id.substring(0, 8),
+    );
+    _print = print;
+
+    // The record is kept in order, but the screen does not wait on it: a
+    // slow API must not hold back what the printer is doing.
+    var records = Future<void>.value();
+    String? recorded;
+    PrintProgress? last;
+    await for (final progress in print.progress) {
+      last = progress;
+      if (!isClosed) emit(state._with(progress: progress));
+
+      final update = _record(progress, print, preview.pageCount);
+      // Each connection tried is recorded; a repeat of the same is not.
+      final key = '${update?.status} ${update?.connectionId}';
+      if (update != null && key != recorded) {
+        recorded = key;
+        records = records.then(
+          (_) => _jobsRepository.report(_organizationId, job.id, update),
+        );
+      }
+    }
+    await records;
+    _print = null;
+    if (!isClosed) {
+      emit(state._with(step: PrintStep.finished, progress: last));
+    }
+  }
+
+  /// Stops the print, on the printer when it already has the job.
+  Future<void> cancel() async {
+    await _print?.cancel();
+  }
+
+  /// Goes back to the document, to print it again or differently.
+  void again() {
+    if (state.step == PrintStep.finished) {
+      emit(state._with(step: PrintStep.ready));
+    }
+  }
+
+  /// Hands the document to the phone's own print dialog.
+  Future<void> useSystemPrint() async {
+    final document = state.document;
+    if (!state.canUseSystemPrint || document == null) return;
+    final sent = await _documents.renderer.systemPrint(document);
+    if (!isClosed) {
+      emit(state._with(progress: state.progress, handedToSystem: sent));
+    }
+  }
+
+  /// What to tell the backend about a step, or null for a step that
+  /// changes nothing in the job's record.
+  static JobUpdate? _record(
+    PrintProgress progress,
+    PrinterPrint print,
+    int pageCount,
+  ) {
+    final connectionId = print.connectionIdOf(progress.connection);
+    return switch (progress.stage) {
+      PrintStage.connecting => JobUpdate(
+        status: 'processing',
+        connectionId: connectionId,
+      ),
+      PrintStage.printing => JobUpdate(
+        status: 'printing',
+        connectionId: connectionId,
+        printerJobRef: '${progress.printerJobId}',
+      ),
+      PrintStage.completed => JobUpdate(
+        status: 'completed',
+        connectionId: connectionId,
+        pageCount: pageCount,
+      ),
+      PrintStage.cancelled => JobUpdate(
+        status: 'cancelled',
+        connectionId: connectionId,
+      ),
+      PrintStage.failed || PrintStage.unknown => JobUpdate(
+        status: 'failed',
+        connectionId: connectionId,
+        errorCode: progress.errorCode,
+        errorMessage: progress.errorMessage,
+      ),
+      PrintStage.preparing ||
+      PrintStage.sending ||
+      PrintStage.attention => null,
+    };
+  }
+}

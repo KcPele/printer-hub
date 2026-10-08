@@ -14,12 +14,18 @@ import 'package:printers_repository/src/printer_family.dart';
 /// printers. What a printer is doing comes from the device itself, over the
 /// local network, and is reported back for the others to see.
 class PrintersRepository {
-  new({required this._client, required this._probe, required this._store});
+  new({
+    required this._client,
+    required this._probe,
+    required this._runner,
+    required this._store,
+  });
 
   static const int _pageSize = 100;
 
   final PrinterHubClient _client;
   final DeviceProbe _probe;
+  final PrintRunner _runner;
   final SecureStore _store;
 
   static String _cacheKey(String organizationId) => 'printers.$organizationId';
@@ -327,6 +333,35 @@ class PrintersRepository {
     }
   }
 
+  /// Prints [document] on [printer], over the local network.
+  ///
+  /// The printer's connections are tried in the order saved. [reference]
+  /// is a short code unique to this print, by which the job is found on
+  /// the printer again should the connection drop.
+  Future<PrinterPrint> print({
+    required String organizationId,
+    required PrinterRead printer,
+    required PrintDocument document,
+    required PrintRequest request,
+    required String reference,
+  }) async {
+    final saved = {
+      for (final connection in printer.connections)
+        ?connectionFromApi(connection): connection.id,
+    };
+    final run = _runner.start(
+      connections: saved.keys.toList(),
+      document: document,
+      request: request,
+      reference: reference,
+      credentials: await credentialsFor(
+        organizationId: organizationId,
+        printer: printer,
+      ),
+    );
+    return PrinterPrint._(run, saved);
+  }
+
   /// One printer, as the backend has it now.
   Future<PrinterRead> get({
     required String organizationId,
@@ -550,4 +585,22 @@ class PrintersRepository {
       return null;
     }
   }
+}
+
+/// A print in progress on one of the workspace's printers.
+class PrinterPrint {
+  new _(this._run, this._connectionIds);
+
+  final PrintRun _run;
+  final Map<DeviceConnection, String> _connectionIds;
+
+  /// Each step of the print, ending with one that is final.
+  Stream<PrintProgress> get progress => _run.progress;
+
+  /// Stops the print, on the printer when it already has the job.
+  Future<void> cancel() => _run.cancel();
+
+  /// Which saved connection [connection] is, for the job's record.
+  String? connectionIdOf(DeviceConnection? connection) =>
+      _connectionIds[connection];
 }

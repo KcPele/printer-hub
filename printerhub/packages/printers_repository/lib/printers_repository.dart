@@ -10,7 +10,7 @@ export 'package:api_client/api_client.dart'
         PrinterStatus;
 export 'package:connection_engine/connection_engine.dart';
 export 'package:printer_protocols/printer_protocols.dart'
-    show PrinterCredentials;
+    show PrinterCredentials, RasterDocument, rasterPageFromRgba;
 
 export 'src/api_mapping.dart';
 export 'src/printer_family.dart';

@@ -38,7 +38,7 @@ For raster, pages are drawn at 300 dpi when the printer offers it, otherwise the
 
 **The back of a duplex sheet** has to be delivered the way the printer's paper path turns it. The printer says which in `pwg-raster-document-sheet-back` (`normal`, `flipped`, `rotated`, `manual-tumble`), or for Apple Raster in the `DM1` to `DM4` codes of `urf-supported` (`DM1` normal, `DM2` flipped, `DM3` rotated, `DM4` manual-tumble). The encoder turns back sides accordingly; callers pass every page upright.
 
-Still to build: drawing PDF pages to pixels on the phone (milestone A3), and the hand-off to the system print dialog.
+On the phone, pages are drawn by `PrintingPageRenderer` (`printerhub/lib/print/platform/`), a page at a time, and the same class hands a document to the system print dialog.
 
 ### Other things printers insist on
 

@@ -7,6 +7,7 @@ import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/catalogue/catalogue.dart';
 import 'package:printerhub/gallery/gallery.dart';
 import 'package:printerhub/home/home.dart';
+import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/settings/settings.dart';
@@ -31,6 +32,9 @@ abstract final class AppRoutes {
 
   /// The page of one printer.
   static String printer(String id) => '/printers/$id';
+
+  /// Printing a document on one printer.
+  static String printOn(String id) => '/printers/$id/print';
 
   /// The ways one printer is reached.
   static String printerConnections(String id) => '/printers/$id/connections';
@@ -165,6 +169,12 @@ GoRouter createAppRouter({
                       printerId: state.pathParameters['printerId']!,
                     ),
                     routes: [
+                      GoRoute(
+                        path: 'print',
+                        builder: (context, state) => PrintPage(
+                          printerId: state.pathParameters['printerId']!,
+                        ),
+                      ),
                       GoRoute(
                         path: 'connections',
                         builder: (context, state) => PrinterConnectionsPage(

@@ -9,7 +9,9 @@ Future<void> main() async {
       authRepository: dependencies.authRepository,
       organizationsRepository: dependencies.organizationsRepository,
       printersRepository: dependencies.printersRepository,
+      jobsRepository: dependencies.jobsRepository,
       finders: dependencies.finders,
+      documents: dependencies.documents,
       keptOrganizations: dependencies.keptOrganizations,
     ),
   );

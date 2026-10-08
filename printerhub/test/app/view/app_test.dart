@@ -9,6 +9,7 @@ import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/catalogue/catalogue.dart';
 import 'package:printerhub/gallery/gallery.dart';
 import 'package:printerhub/home/home.dart';
+import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/settings/settings.dart';
@@ -224,6 +225,33 @@ void main() {
 
         expect(find.byType(PrinterConnectionsPage), findsOneWidget);
         expect(find.text('Printing · 192.168.1.40'), findsOneWidget);
+      });
+
+      testWidgets('opens printing from a printer’s page', (tester) async {
+        backend.printerList = [printerBody()];
+        await pump(tester);
+        await openArea(tester, 'Printers');
+        await tester.tap(find.text('Front desk'));
+        await tester.pumpAndSettle();
+
+        final print = find.widgetWithText(FilledButton, 'Print');
+        await tester.scrollUntilVisible(
+          print,
+          200,
+          scrollable: find
+              .descendant(
+                of: find.byType(PrinterDetailPage),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.ensureVisible(print);
+        await tester.pumpAndSettle();
+        await tester.tap(print);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PrintPage), findsOneWidget);
+        expect(find.text('What would you like to print?'), findsOneWidget);
       });
 
       testWidgets('opens the catalogue from Add a printer', (tester) async {

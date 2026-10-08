@@ -913,6 +913,269 @@
     "@printerRecheckNoAnswer": {
         "description": "Shown when the printer could not be probed again"
     },
+    "printAction": "Print",
+    "@printAction": {
+        "description": "Button that opens the print flow, and that sends the document"
+    },
+    "printTitle": "Print",
+    "@printTitle": {
+        "description": "Title of the print screen"
+    },
+    "printChooseTitle": "What would you like to print?",
+    "@printChooseTitle": {
+        "description": "Heading before a file is chosen"
+    },
+    "printChooseBody": "Choose a PDF or a picture from your phone.",
+    "@printChooseBody": {
+        "description": "Under the choose-a-file heading"
+    },
+    "printChooseAction": "Choose a file",
+    "@printChooseAction": {
+        "description": "Button that opens the file browser"
+    },
+    "printChooseAnother": "Choose another file",
+    "@printChooseAnother": {
+        "description": "Button that replaces the chosen file"
+    },
+    "printUnsupportedFile": "PrinterHub prints PDFs and pictures (JPEG and PNG). Choose one of those.",
+    "@printUnsupportedFile": {
+        "description": "Shown when the chosen file is another kind"
+    },
+    "printUnreadableFile": "That file could not be read. It may be damaged, or protected with a password.",
+    "@printUnreadableFile": {
+        "description": "Shown when the chosen file cannot be opened"
+    },
+    "printReading": "Reading the document…",
+    "@printReading": {
+        "description": "Shown while the chosen file is read"
+    },
+    "printOptionsTitle": "How to print it",
+    "@printOptionsTitle": {
+        "description": "Heading over the print options"
+    },
+    "printCopies": "Copies",
+    "@printCopies": {
+        "description": "Label of the copies stepper"
+    },
+    "printColor": "Colour",
+    "@printColor": {
+        "description": "Label of the colour switch"
+    },
+    "printColorBody": "Off prints in black and white",
+    "@printColorBody": {
+        "description": "Under the colour switch"
+    },
+    "printSides": "Sides",
+    "@printSides": {
+        "description": "Label of the two-sided choice"
+    },
+    "printSidesOne": "One side",
+    "@printSidesOne": {
+        "description": "Print on one side of the sheet"
+    },
+    "printSidesLong": "Both sides",
+    "@printSidesLong": {
+        "description": "Print on both sides, bound on the long edge"
+    },
+    "printSidesShort": "Both sides, flipped up",
+    "@printSidesShort": {
+        "description": "Print on both sides, bound on the short edge"
+    },
+    "printPaper": "Paper size",
+    "@printPaper": {
+        "description": "Label of the paper size choice"
+    },
+    "printTray": "Tray",
+    "@printTray": {
+        "description": "Label of the tray choice"
+    },
+    "printAutomatic": "Let the printer choose",
+    "@printAutomatic": {
+        "description": "The choice that leaves a setting to the printer"
+    },
+    "printTrayBypass": "Bypass tray",
+    "@printTrayBypass": {
+        "description": "The manual feed tray"
+    },
+    "printTrayMain": "Main tray",
+    "@printTrayMain": {
+        "description": "The main paper tray"
+    },
+    "printQuality": "Quality",
+    "@printQuality": {
+        "description": "Label of the quality choice"
+    },
+    "printQualityDraft": "Draft",
+    "@printQualityDraft": {
+        "description": "Fast, light printing"
+    },
+    "printQualityNormal": "Normal",
+    "@printQualityNormal": {
+        "description": "Everyday print quality"
+    },
+    "printQualityHigh": "Best",
+    "@printQualityHigh": {
+        "description": "The highest print quality"
+    },
+    "printPages": "Pages",
+    "@printPages": {
+        "description": "Label of the page range field"
+    },
+    "printPagesHint": "All, or for example 1-3, 5",
+    "@printPagesHint": {
+        "description": "Hint in the page range field"
+    },
+    "printPagesInvalid": "Use page numbers and ranges, such as 1-3, 5.",
+    "@printPagesInvalid": {
+        "description": "Shown when the page range cannot be understood"
+    },
+    "printStageConnecting": "Reaching the printer…",
+    "@printStageConnecting": {
+        "description": "Shown while the printer is asked what it takes"
+    },
+    "printStagePreparing": "Getting the document ready…",
+    "@printStagePreparing": {
+        "description": "Shown while the document is prepared"
+    },
+    "printStageSending": "Sending to the printer…",
+    "@printStageSending": {
+        "description": "Shown while the document is sent"
+    },
+    "printStagePrinting": "Printing…",
+    "@printStagePrinting": {
+        "description": "Shown once the printer has the job"
+    },
+    "printStageAttention": "The printer has stopped",
+    "@printStageAttention": {
+        "description": "Shown when the printer needs attention mid-job"
+    },
+    "printFellBack": "The usual connection did not answer, so another is being used.",
+    "@printFellBack": {
+        "description": "Shown when the print moved to another connection"
+    },
+    "printCancel": "Cancel printing",
+    "@printCancel": {
+        "description": "Button that cancels the print"
+    },
+    "printDoneTitle": "Printed",
+    "@printDoneTitle": {
+        "description": "Heading when the print completed"
+    },
+    "printDoneBody": "Your document is waiting at the printer.",
+    "@printDoneBody": {
+        "description": "Under the printed heading"
+    },
+    "printCancelledTitle": "Cancelled",
+    "@printCancelledTitle": {
+        "description": "Heading when the print was cancelled"
+    },
+    "printCancelledBody": "Nothing more will be printed.",
+    "@printCancelledBody": {
+        "description": "Under the cancelled heading"
+    },
+    "printFailedTitle": "Not printed",
+    "@printFailedTitle": {
+        "description": "Heading when the print failed"
+    },
+    "printUnknownTitle": "Check the printer",
+    "@printUnknownTitle": {
+        "description": "Heading when it is not known whether the document arrived"
+    },
+    "printLeftTitle": "Still printing",
+    "@printLeftTitle": {
+        "description": "Heading when the job is left on the printer"
+    },
+    "printLeftBody": "The printer has the document. PrinterHub has stopped watching it.",
+    "@printLeftBody": {
+        "description": "Under the still-printing heading"
+    },
+    "printSystemTitle": "Sent to your phone's print dialog",
+    "@printSystemTitle": {
+        "description": "Heading after the system print dialog took the document"
+    },
+    "printSystemBody": "From there your phone prints it. PrinterHub does not follow it.",
+    "@printSystemBody": {
+        "description": "Under the system print heading"
+    },
+    "printFailedUnreachable": "The printer did not answer. Check that it is on, and that your phone is on the same network.",
+    "@printFailedUnreachable": {
+        "description": "Why a print failed"
+    },
+    "printFailedNeedsPassword": "The printer asks for a user name and password. Set them under How it connects.",
+    "@printFailedNeedsPassword": {
+        "description": "Why a print failed"
+    },
+    "printFailedNotAvailable": "Printing is not switched on at the printer's address.",
+    "@printFailedNotAvailable": {
+        "description": "Why a print failed"
+    },
+    "printFailedNoConnection": "This printer has no connection for printing.",
+    "@printFailedNoConnection": {
+        "description": "Why a print failed"
+    },
+    "printFailedFormat": "This printer cannot take this document from PrinterHub.",
+    "@printFailedFormat": {
+        "description": "Why a print failed"
+    },
+    "printFailedConnectionLost": "The connection to the printer was lost before the document arrived.",
+    "@printFailedConnectionLost": {
+        "description": "Why a print failed"
+    },
+    "printFailedUnknown": "The connection dropped as the document was sent. Look at the printer before printing again, so it is not printed twice.",
+    "@printFailedUnknown": {
+        "description": "Why a print's outcome is unknown"
+    },
+    "printFailedAborted": "The printer gave up on the job.",
+    "@printFailedAborted": {
+        "description": "Why a print failed"
+    },
+    "printFailedRefused": "The printer refused the job.",
+    "@printFailedRefused": {
+        "description": "Why a print failed"
+    },
+    "printAgain": "Print again",
+    "@printAgain": {
+        "description": "Button that returns to the document to print it again"
+    },
+    "printTryAgain": "Try again",
+    "@printTryAgain": {
+        "description": "Button that returns to the document after a failure"
+    },
+    "printUseSystem": "Use your phone's print dialog",
+    "@printUseSystem": {
+        "description": "Button that hands the document to the system print dialog"
+    },
+    "printDone": "Done",
+    "@printDone": {
+        "description": "Button that leaves the print screen"
+    },
+    "printPageCount": "{count, plural, =1{1 page} other{{count} pages}}",
+    "@printPageCount": {
+        "description": "How many pages the chosen document has",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "printTrayNumber": "Tray {number}",
+    "@printTrayNumber": {
+        "description": "A numbered paper tray",
+        "placeholders": {
+            "number": {
+                "type": "String"
+            }
+        }
+    },
+    "printFailedRefusedWhy": "The printer refused the job: {reason}",
+    "@printFailedRefusedWhy": {
+        "description": "Why a print failed, with the printer's own words",
+        "placeholders": {
+            "reason": {
+                "type": "String"
+            }
+        }
+    },
     "printerPasswordTitle": "This printer asks who is printing",
     "@printerPasswordTitle": {
         "description": "Heading of the step that asks for a printer's user name and password"

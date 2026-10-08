@@ -293,11 +293,24 @@ class PrinterDetailView extends StatelessWidget {
                   ),
                 ),
               const SizedBox(height: AppSpacing.xl),
-              AppSubmitButton(
-                label: l10n.printerCheck,
-                loading: checking,
-                onPressed: () =>
-                    context.read<PrintersCubit>().checkStatus(printer),
+              if (printer.capabilities?.print.supported ?? true) ...[
+                AppSubmitButton(
+                  label: l10n.printAction,
+                  onPressed: () => context.push(AppRoutes.printOn(printer.id)),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
+              OutlinedButton.icon(
+                onPressed: checking
+                    ? null
+                    : () => context.read<PrintersCubit>().checkStatus(printer),
+                icon: checking
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh),
+                label: Text(l10n.printerCheck),
               ),
               const SizedBox(height: AppSpacing.sm),
               OutlinedButton.icon(

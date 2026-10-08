@@ -91,6 +91,7 @@ void main() {
     repository = PrintersRepository(
       client: client,
       probe: DeviceProbe(http: device),
+      runner: PrintRunner(http: device, pause: (_) async {}),
       store: store,
     );
   });
@@ -1010,6 +1011,101 @@ void main() {
       );
       expect(kept!.password, 'new');
       expect(api.requests, isEmpty);
+    });
+  });
+
+  group('print', () {
+    final document = PrintDocument(
+      name: 'Report.pdf',
+      mimeType: 'application/pdf',
+      length: 4,
+      open: () => Stream.value([37, 80, 68, 70]),
+    );
+
+    /// A printer that reads PDF and finishes a job as soon as it is asked.
+    FakeAnswer printer(SentRequest request) {
+      final operation = decodeIpp(request.body).message.code;
+      return FakeAnswer.ipp(
+        ippResponse(
+          groups: [
+            if (operation == IppOperation.getPrinterAttributes)
+              IppGroup(IppGroupTag.printer, [
+                IppAttribute.single(
+                  'document-format-supported',
+                  IppValueTag.mimeMediaType,
+                  'application/pdf',
+                ),
+              ])
+            else
+              IppGroup(IppGroupTag.job, [
+                IppAttribute.single('job-id', IppValueTag.integer, 3),
+                IppAttribute.single('job-state', IppValueTag.enumeration, 9),
+              ]),
+          ],
+        ),
+      );
+    }
+
+    test('prints over the saved connections, and names the one used', () async {
+      device.device = printer;
+      final saved = PrinterRead.fromJson(printerBody().cast());
+
+      final print = await repository.print(
+        organizationId: _org,
+        printer: saved,
+        document: document,
+        request: const PrintRequest(),
+        reference: 'ab12',
+      );
+      final steps = await print.progress.toList();
+
+      expect(steps.last.stage, PrintStage.completed);
+      expect(print.connectionIdOf(steps.last.connection), 'connection-ipp-1');
+      expect(print.connectionIdOf(null), isNull);
+      // The scanning connection is not a way to print.
+      expect(device.requests.map((r) => r.uri.port).toSet(), {631});
+    });
+
+    test('signs in with the password kept for the printer', () async {
+      device.device = (request) => request.headers['Authorization'] == null
+          ? const FakeAnswer(
+              401,
+              headers: {'www-authenticate': 'Digest realm="x", nonce="n"'},
+            )
+          : printer(request);
+      api.handler = (_) async => const FakeResponse(200, {
+        'username': 'ada',
+        'password': 'pw',
+        'extra': <String, String>{},
+      });
+
+      final print = await repository.print(
+        organizationId: _org,
+        printer: PrinterRead.fromJson(
+          printerBody(connections: [connectionBody(hasCredentials: true)])
+              .cast(),
+        ),
+        document: document,
+        request: const PrintRequest(),
+        reference: 'ab12',
+      );
+
+      expect((await print.progress.toList()).last.stage, PrintStage.completed);
+    });
+
+    test('can be cancelled', () async {
+      device.device = printer;
+
+      final print = await repository.print(
+        organizationId: _org,
+        printer: PrinterRead.fromJson(printerBody().cast()),
+        document: document,
+        request: const PrintRequest(),
+        reference: 'ab12',
+      );
+      await print.cancel();
+
+      expect((await print.progress.toList()).last.stage, PrintStage.cancelled);
     });
   });
 

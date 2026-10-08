@@ -6,6 +6,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:auth_repository/auth_repository.dart';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/widgets.dart';
+import 'package:jobs_repository/jobs_repository.dart';
 import 'package:local_store/local_store.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
@@ -13,6 +14,9 @@ import 'package:printer_discovery/printer_discovery.dart';
 import 'package:printer_protocols/printer_protocols.dart';
 import 'package:printerhub/app/config/app_config.dart';
 import 'package:printerhub/app/device/phone_details_reader.dart';
+import 'package:printerhub/print/documents.dart';
+import 'package:printerhub/print/platform/file_picker_document_picker.dart';
+import 'package:printerhub/print/platform/printing_page_renderer.dart';
 import 'package:printerhub/printers/finders.dart';
 import 'package:printerhub/printers/widgets/qr_camera.dart';
 import 'package:printers_repository/printers_repository.dart';
@@ -39,7 +43,9 @@ typedef AppDependencies = ({
   AuthRepository authRepository,
   OrganizationsRepository organizationsRepository,
   PrintersRepository printersRepository,
+  JobsRepository jobsRepository,
   PrinterFinders finders,
+  PrintDocuments documents,
   List<Organization>? keptOrganizations,
 });
 
@@ -78,14 +84,14 @@ Future<void> bootstrap(
   );
   // Printers sign their own certificates. Each one is trusted the first
   // time it is seen and refused if it later changes.
+  final printerHttp = IoPrinterHttp(
+    connectTimeout: const Duration(seconds: 3),
+    certificateCheck: CertificateTrust().check,
+  );
   final printersRepository = PrintersRepository(
     client: client,
-    probe: DeviceProbe(
-      http: IoPrinterHttp(
-        connectTimeout: const Duration(seconds: 3),
-        certificateCheck: CertificateTrust().check,
-      ),
-    ),
+    probe: DeviceProbe(http: printerHttp),
+    runner: PrintRunner(http: printerHttp),
     store: secureStore,
   );
   await authRepository.restore();
@@ -96,6 +102,11 @@ Future<void> bootstrap(
       authRepository: authRepository,
       organizationsRepository: organizationsRepository,
       printersRepository: printersRepository,
+      jobsRepository: JobsRepository(client: client, store: secureStore),
+      documents: const PrintDocuments(
+        picker: FilePickerDocumentPicker(),
+        renderer: PrintingPageRenderer(),
+      ),
       finders: PrinterFinders(
         network: const BonsoirNetworkDiscovery(),
         nfc: const PluginNfcReader(),

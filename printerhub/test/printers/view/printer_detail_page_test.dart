@@ -84,6 +84,39 @@ void main() {
       expect(find.textContaining('Working'), findsNWidgets(2));
     });
 
+    testWidgets('opens printing', (tester) async {
+      await pump(tester);
+
+      await scrollTo(tester, find.widgetWithText(FilledButton, 'Print'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Print'));
+
+      verify(() => router.push<Object?>(AppRoutes.printOn('printer-1')))
+          .called(1);
+    });
+
+    testWidgets('does not offer printing on a device that only scans', (
+      tester,
+    ) async {
+      final scanner = printerBody();
+      backend.printerList = [
+        {
+          ...scanner,
+          'capabilities': {
+            ...scanner['capabilities']! as Map<String, Object?>,
+            'print': {
+              ...(scanner['capabilities']! as Map<String, Object?>)['print']!
+                  as Map<String, Object?>,
+              'supported': false,
+            },
+          },
+        },
+      ];
+      await pump(tester);
+
+      await scrollTo(tester, find.text('Check status'));
+      expect(find.widgetWithText(FilledButton, 'Print'), findsNothing);
+    });
+
     testWidgets('opens the ways the printer is reached', (tester) async {
       await pump(tester);
 
