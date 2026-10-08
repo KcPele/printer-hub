@@ -75,8 +75,10 @@ A change is done when `make app-check` passes: formatting, `very_good_analysis` 
 - **Never assume what a printer takes or how it behaves.** A document's format comes from `choosePrintFormat`, never a hard-coded `application/pdf`. A new quirk of a real device goes into `printer_protocols` with a test, a matching knob in `backend/simulator` when it can be simulated, and a line in `docs/printer-compatibility.md` saying where it was learned.
 - **A print is one call**, `PrintersRepository.print`, started by `PrintCubit`. The cubit records the job with `JobsRepository` before the first byte is sent and reports each step after; a report never holds the screen back and never fails a print. What a print stage or failure code says to a person is in `lib/print/print_words.dart`.
 - **The job history refreshes itself.** `JobsRepository.changes` fires when a job begins or ends, and `ActivityCubit` reads again. What a job's status, kind, and failure say is in `lib/activity/job_words.dart`.
+- **Anything the app creates before the API hears of it gets its id from `newRecordId`**, never a random one: the API lists records by id, newest first.
+- **Settings from anywhere but the options on screen are fitted to the printer first**, with `PrintCubit.fitted`: a saved preset or an old job may ask for a tray this printer does not have.
 - **The file picker and the page renderer are plugins**, kept in `lib/print/platform/` behind `DocumentPicker` and `PageRenderer`, excluded from coverage, with stand-ins in `test/helpers/fake_documents.dart`.
-- **Three kinds of test reach further than unit tests**, and skip themselves when what they need is not running: `make app-simulator-test` (protocols and probe against the simulator), `make app-smoke` (the API client against a local backend), `make app-live-test` (adding the simulated printer through a real backend).
+- **Three kinds of test reach further than unit tests**, and skip themselves when what they need is not running: `make app-simulator-test` (protocols and probe against the simulator), `make app-smoke` (the API client against a local backend), `make app-live-test` (adding the simulated printer, recording jobs, and saving presets through a real backend). Run it after changing a repository: it is what catches an app and a backend that disagree.
 
 ## Working in `backend/`
 

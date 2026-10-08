@@ -291,6 +291,48 @@ Map<String, Object?> profileBody({
   'updated_at': '2026-10-07T10:00:00Z',
 };
 
+/// A `PresetRead` body: a print preset of the signed-in user's own.
+Map<String, Object?> presetBody({
+  String id = 'preset-1',
+  String name = 'Handouts',
+  String scope = 'personal',
+  String? printerId,
+  bool isDefault = false,
+  int copies = 1,
+  String duplex = 'two_sided_long_edge',
+  String colorMode = 'auto',
+  String? tray,
+  String? mediaSize,
+  String? quality,
+}) => {
+  'id': id,
+  'organization_id': 'org-1',
+  'owner_user_id': scope == 'personal' ? 'user-1' : null,
+  'scope': scope,
+  'name': name,
+  'printer_id': printerId,
+  'is_default': isDefault,
+  'type': 'print',
+  'settings': {
+    'copies': copies,
+    'color_mode': colorMode,
+    'duplex': duplex,
+    'page_ranges': null,
+    'media_size': mediaSize,
+    'media_type': null,
+    'tray': tray,
+    'orientation': 'auto',
+    'scaling': 'fit',
+    'scale_percent': null,
+    'collate': true,
+    'quality': quality,
+    'finishing': <String>[],
+    'secure_print': false,
+  },
+  'created_at': '2026-10-07T10:00:00Z',
+  'updated_at': '2026-10-07T10:00:00Z',
+};
+
 /// A `JobRead` body: a print job.
 Map<String, Object?> jobBody({
   String id = 'job-1',

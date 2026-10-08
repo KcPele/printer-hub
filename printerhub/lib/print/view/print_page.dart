@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -5,10 +7,12 @@ import 'package:jobs_repository/jobs_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/print/cubit/presets_cubit.dart';
 import 'package:printerhub/print/cubit/print_cubit.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/print/print_words.dart';
 import 'package:printerhub/print/widgets/print_options.dart';
+import 'package:printerhub/print/widgets/print_presets.dart';
 import 'package:printerhub/printers/cubit/printers_cubit.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printers_repository/printers_repository.dart';
@@ -34,16 +38,42 @@ class PrintPage extends StatelessWidget {
       );
     }
 
-    return BlocProvider(
-      create: (context) => PrintCubit(
-        printersRepository: context.read<PrintersRepository>(),
-        jobsRepository: context.read<JobsRepository>(),
-        documents: context.read<PrintDocuments>(),
-        organizationId: context.read<SessionCubit>().state.organization!.id,
-        printer: printer,
-        retryOf: retryOf,
+    final organizationId = context.read<SessionCubit>().state.organization!.id;
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => PrintCubit(
+            printersRepository: context.read<PrintersRepository>(),
+            jobsRepository: context.read<JobsRepository>(),
+            documents: context.read<PrintDocuments>(),
+            organizationId: organizationId,
+            printer: printer,
+            retryOf: retryOf,
+          ),
+        ),
+        BlocProvider(
+          // Read at once, so the settings a print starts from are in
+          // place by the time a file is chosen.
+          lazy: false,
+          create: (context) {
+            final cubit = PresetsCubit(
+              presetsRepository: context.read<PresetsRepository>(),
+              organizationId: organizationId,
+              printerId: printer.id,
+            );
+            unawaited(cubit.load());
+            return cubit;
+          },
+        ),
+      ],
+      child: BlocListener<PresetsCubit, PresetsState>(
+        listenWhen: (previous, current) => !previous.loaded && current.loaded,
+        listener: (context, _) {
+          final usual = context.read<PresetsCubit>().standard?.print;
+          if (usual != null) context.read<PrintCubit>().startFrom(usual);
+        },
+        child: PrintView(printer: printer),
       ),
-      child: PrintView(printer: printer),
     );
   }
 }
@@ -222,7 +252,9 @@ class _ReadyState extends State<_Ready> {
             ),
             const SizedBox(height: AppSpacing.xl),
             Text(l10n.printOptionsTitle, style: textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
+            const PrintPresets(),
+            const SizedBox(height: AppSpacing.sm),
             AppCard(
               child: PrintOptions(
                 printer: widget.printer,

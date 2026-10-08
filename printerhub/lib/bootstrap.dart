@@ -44,6 +44,7 @@ typedef AppDependencies = ({
   OrganizationsRepository organizationsRepository,
   PrintersRepository printersRepository,
   JobsRepository jobsRepository,
+  PresetsRepository presetsRepository,
   PrinterFinders finders,
   PrintDocuments documents,
   List<Organization>? keptOrganizations,
@@ -103,6 +104,7 @@ Future<void> bootstrap(
       organizationsRepository: organizationsRepository,
       printersRepository: printersRepository,
       jobsRepository: JobsRepository(client: client, store: secureStore),
+      presetsRepository: PresetsRepository(client: client),
       documents: const PrintDocuments(
         picker: FilePickerDocumentPicker(),
         renderer: PrintingPageRenderer(),

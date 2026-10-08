@@ -4,3 +4,4 @@ library;
 
 export 'src/jobs_repository.dart';
 export 'src/models.dart';
+export 'src/presets_repository.dart';

@@ -115,7 +115,12 @@ class PrintCubit extends Cubit<PrintState> {
                title: retryOf.title,
                choices: retryOf.print ?? const PrintChoices(),
              ),
-       super(PrintState(choices: retryOf?.print ?? const PrintChoices()));
+       _touched = retryOf != null,
+       super(
+         PrintState(
+           choices: fitted(retryOf?.print ?? const PrintChoices(), _printer),
+         ),
+       );
 
   final PrintersRepository _printersRepository;
   final JobsRepository _jobsRepository;
@@ -125,6 +130,36 @@ class PrintCubit extends Cubit<PrintState> {
 
   PrinterPrint? _print;
   bool _choosing = false;
+
+  /// True once the choices are someone's own, and no longer to be replaced
+  /// by what a print usually starts from.
+  bool _touched;
+
+  /// [choices] with anything [printer] does not offer left to the printer.
+  /// Saved settings and old jobs may ask for a tray this printer lacks.
+  static PrintChoices fitted(PrintChoices choices, PrinterRead printer) {
+    final offers = printer.capabilities?.print;
+    if (offers == null) return choices;
+    bool offered(String? value, Iterable<String?> options) =>
+        value != null && options.contains(value);
+
+    return choices.copyWith(
+      copies: choices.copies.clamp(1, offers.maxCopies ?? 99),
+      color: offers.color || choices.color == 'monochrome' ? null : 'auto',
+      sides: offered(choices.sides, offers.duplexModes.map((mode) => mode.json))
+          ? null
+          : 'one_sided',
+      mediaSize: offered(choices.mediaSize, offers.mediaSizes)
+          ? null
+          : () => null,
+      tray: offered(choices.tray, offers.trays.map((tray) => tray.id))
+          ? null
+          : () => null,
+      quality: offered(choices.quality, offers.qualityModes)
+          ? null
+          : () => null,
+    );
+  }
 
   /// The job that failed or was cancelled, which printing the same
   /// document the same way is another try of.
@@ -181,7 +216,45 @@ class PrintCubit extends Cubit<PrintState> {
 
   /// Changes how the document is to be printed.
   void change(PrintChoices choices) {
-    if (state.step == PrintStep.ready) emit(state._with(choices: choices));
+    if (state.step != PrintStep.ready) return;
+    _touched = true;
+    emit(state._with(choices: choices));
+  }
+
+  /// Takes saved settings in place of the choices so far, as far as this
+  /// printer offers them. Which pages to print stays as it was.
+  void use(PrintChoices saved) {
+    if (state.step == PrintStep.printing || state.step == PrintStep.finished) {
+      return;
+    }
+    _touched = true;
+    _take(saved);
+  }
+
+  /// Takes what a print usually starts from, unless choices were already
+  /// made.
+  void startFrom(PrintChoices usual) {
+    if (_touched ||
+        state.step == PrintStep.printing ||
+        state.step == PrintStep.finished) {
+      return;
+    }
+    _take(usual);
+  }
+
+  void _take(PrintChoices choices) {
+    emit(
+      PrintState(
+        step: state.step,
+        document: state.document,
+        preview: state.preview,
+        problem: state.problem,
+        choices: fitted(
+          choices.copyWith(pageRanges: () => state.choices.pageRanges),
+          _printer,
+        ),
+      ),
+    );
   }
 
   /// Sends the document to the printer and follows it to the end.

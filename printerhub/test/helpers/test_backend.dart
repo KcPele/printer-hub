@@ -58,6 +58,7 @@ class TestBackend {
       store: store,
     );
     jobs = JobsRepository(client: client, store: store);
+    presets = PresetsRepository(client: client);
     documents = PrintDocuments(picker: picker, renderer: renderer);
     finders = PrinterFinders(
       network: nearby,
@@ -81,6 +82,7 @@ class TestBackend {
   late final OrganizationsRepository organizations;
   late final PrintersRepository printers;
   late final JobsRepository jobs;
+  late final PresetsRepository presets;
 
   /// The phone's file browser and its PDF and image code.
   final FakeDocumentPicker picker = FakeDocumentPicker();
@@ -94,6 +96,10 @@ class TestBackend {
 
   /// How many jobs the history gives at a time.
   int jobPageSize = 20;
+
+  /// The saved settings the backend has, the signed-in user's own and the
+  /// workspace's.
+  List<Map<String, Object?>> presetList = [];
 
   /// What the plugged-in printer was sent to print, with each request's
   /// attributes.
@@ -530,6 +536,8 @@ class TestBackend {
           ? FakeResponse.problem(404, 'connection.not_found')
           : FakeResponse(200, {...secrets, 'extra': <String, String>{}});
     }
+    final presetRoute = _presetRoute.firstMatch(key);
+    if (presetRoute != null) return _answerPresets(presetRoute, body);
     final jobRoute = _jobRoute.firstMatch(key);
     if (jobRoute != null) {
       return _answerJobs(jobRoute, body, request.uri.queryParametersAll);
@@ -556,6 +564,80 @@ class TestBackend {
     '^(GET|POST|PUT|PATCH|DELETE) /organizations/([^/]+)/printers'
     r'(?:/([^/]+))?(/status|/pairing-tokens|/capabilities)?$',
   );
+
+  static final RegExp _presetRoute = RegExp(
+    r'^(GET|POST|PATCH|DELETE) /organizations/[^/]+/presets(?:/([^/]+))?$',
+  );
+
+  /// Saved settings: listing, saving, changing, and deleting them. One
+  /// preset at most is the default, as on the backend.
+  FakeResponse _answerPresets(RegExpMatch route, Map<String, dynamic> body) {
+    final method = route.group(1)!;
+    final presetId = route.group(2);
+
+    void onlyDefault(Map<String, Object?> preset) {
+      if (preset['is_default'] != true) return;
+      presetList = [
+        for (final other in presetList)
+          if (other['id'] == preset['id'])
+            other
+          else
+            {...other, 'is_default': false},
+      ];
+    }
+
+    if (presetId == null) {
+      if (method == 'GET') {
+        return FakeResponse(
+          200,
+          [...presetList]..sort(
+            (a, b) => (a['name']! as String).compareTo(b['name']! as String),
+          ),
+        );
+      }
+      final settings = body['settings'] as Map<String, dynamic>? ?? const {};
+      final created = presetBody(
+        id: 'preset-${presetList.length + 1}',
+        name: body['name'] as String,
+        scope: body['scope'] as String,
+        printerId: body['printer_id'] as String?,
+        isDefault: body['is_default'] as bool,
+        copies: settings['copies'] as int? ?? 1,
+        duplex: settings['duplex'] as String? ?? 'one_sided',
+        colorMode: settings['color_mode'] as String? ?? 'auto',
+        tray: settings['tray'] as String?,
+        mediaSize: settings['media_size'] as String?,
+        quality: settings['quality'] as String?,
+      );
+      presetList = [...presetList, created];
+      onlyDefault(created);
+      return FakeResponse(201, created);
+    }
+
+    final index = presetList.indexWhere((preset) => preset['id'] == presetId);
+    if (index < 0) return FakeResponse.problem(404, 'preset.not_found');
+    switch (method) {
+      case 'DELETE':
+        presetList = [...presetList]..removeAt(index);
+        return const FakeResponse(204);
+      case 'PATCH':
+        final changed = {
+          ...presetList[index],
+          if (body['name'] != null) 'name': body['name'],
+          if (body['is_default'] != null) 'is_default': body['is_default'],
+          if (body['settings'] != null)
+            'settings': {
+              ...presetList[index]['settings']! as Map<String, Object?>,
+              ...body['settings'] as Map<String, dynamic>,
+            },
+        };
+        presetList = [...presetList]..[index] = changed;
+        onlyDefault(changed);
+        return FakeResponse(200, changed);
+      default:
+        return FakeResponse(200, presetList[index]);
+    }
+  }
 
   static final RegExp _jobRoute = RegExp(
     '^(GET|POST) /organizations/[^/]+/jobs'

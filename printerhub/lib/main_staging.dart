@@ -10,6 +10,7 @@ Future<void> main() async {
       organizationsRepository: dependencies.organizationsRepository,
       printersRepository: dependencies.printersRepository,
       jobsRepository: dependencies.jobsRepository,
+      presetsRepository: dependencies.presetsRepository,
       finders: dependencies.finders,
       documents: dependencies.documents,
       keptOrganizations: dependencies.keptOrganizations,

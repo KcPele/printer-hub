@@ -23,6 +23,7 @@ class App extends StatelessWidget {
     required this.organizationsRepository,
     required this.printersRepository,
     required this.jobsRepository,
+    required this.presetsRepository,
     required this.finders,
     required this.documents,
     this.keptOrganizations,
@@ -34,6 +35,7 @@ class App extends StatelessWidget {
   final OrganizationsRepository organizationsRepository;
   final PrintersRepository printersRepository;
   final JobsRepository jobsRepository;
+  final PresetsRepository presetsRepository;
 
   /// The ways this phone can find a printer.
   final PrinterFinders finders;
@@ -53,6 +55,7 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: organizationsRepository),
         RepositoryProvider.value(value: printersRepository),
         RepositoryProvider.value(value: jobsRepository),
+        RepositoryProvider.value(value: presetsRepository),
         RepositoryProvider.value(value: finders),
         RepositoryProvider.value(value: documents),
       ],

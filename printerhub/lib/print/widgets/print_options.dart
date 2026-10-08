@@ -187,6 +187,9 @@ class _Choice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String?>(
+      // The field keeps what it began with, so saved settings taking the
+      // place of the choices need a field of their own.
+      key: ValueKey(value),
       initialValue: options.containsKey(value) ? value : options.keys.first,
       isExpanded: true,
       decoration: InputDecoration(labelText: label),

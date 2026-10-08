@@ -1796,5 +1796,69 @@
     "jobOnPhoneOnly": "On this phone only",
     "@jobOnPhoneOnly": {
         "description": "Tag on a job the backend has not been told about yet"
+    },
+    "presetsTitle": "Saved settings",
+    "@presetsTitle": {
+        "description": "Heading of the saved print settings"
+    },
+    "presetSave": "Save these settings",
+    "@presetSave": {
+        "description": "Button that saves the current print choices under a name"
+    },
+    "presetManage": "Manage",
+    "@presetManage": {
+        "description": "Button that opens the list of saved settings to change them"
+    },
+    "presetNameLabel": "Name",
+    "@presetNameLabel": {
+        "description": "Label of the field that names saved settings"
+    },
+    "presetStandard": "Start every print on this printer with these",
+    "@presetStandard": {
+        "description": "Switch that makes saved settings the default"
+    },
+    "presetShare": "Share with the workspace",
+    "@presetShare": {
+        "description": "Switch that makes saved settings available to everyone in the workspace"
+    },
+    "presetSaveConfirm": "Save",
+    "@presetSaveConfirm": {
+        "description": "Button that confirms saving settings"
+    },
+    "presetCancel": "Cancel",
+    "@presetCancel": {
+        "description": "Button that closes a saved-settings dialog without doing anything"
+    },
+    "presetGone": "Those settings are no longer saved.",
+    "@presetGone": {
+        "description": "Shown when a preset was deleted by someone else"
+    },
+    "presetShared": "Shared with your workspace",
+    "@presetShared": {
+        "description": "Says a preset belongs to the whole workspace"
+    },
+    "presetStartsWith": "Every print starts with this",
+    "@presetStartsWith": {
+        "description": "Says a preset is the default"
+    },
+    "presetRename": "Rename",
+    "@presetRename": {
+        "description": "Menu entry and dialog title for renaming saved settings"
+    },
+    "presetMakeStandard": "Start every print with this",
+    "@presetMakeStandard": {
+        "description": "Menu entry that makes a preset the default"
+    },
+    "presetStopStandard": "Stop starting with this",
+    "@presetStopStandard": {
+        "description": "Menu entry that stops a preset being the default"
+    },
+    "presetReplace": "Replace with the settings chosen now",
+    "@presetReplace": {
+        "description": "Menu entry that overwrites a preset with the current choices"
+    },
+    "presetDelete": "Delete",
+    "@presetDelete": {
+        "description": "Menu entry that deletes saved settings"
     }
 }

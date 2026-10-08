@@ -481,6 +481,327 @@ void main() {
       expect(find.text('Still printing'), findsOneWidget);
       expect(find.text('Print again'), findsOneWidget);
     });
+    group('saved settings', () {
+      Text copies(WidgetTester tester) => tester.widget<Text>(
+        find.descendant(
+          of: find.byType(PrintOptions),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Text && int.tryParse(widget.data ?? '') != null,
+          ),
+        ),
+      );
+
+      final nameField = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      );
+
+      Future<void> open(WidgetTester tester) async {
+        await pump(tester);
+        await chooseFile(tester);
+      }
+
+      Future<void> manage(WidgetTester tester, String preset) async {
+        await press(tester, 'Manage');
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.descendant(
+            of: find.widgetWithText(ListTile, preset),
+            matching: find.byTooltip('Show menu'),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('offers to save the choices, with none saved yet', (
+        tester,
+      ) async {
+        await open(tester);
+
+        expect(find.text('Save these settings'), findsOneWidget);
+        expect(find.byType(ActionChip), findsNothing);
+        expect(find.text('Manage'), findsNothing);
+      });
+
+      testWidgets('starts from the settings marked for it', (tester) async {
+        backend.presetList = [presetBody(isDefault: true, copies: 2)];
+
+        await open(tester);
+
+        expect(copies(tester).data, '2');
+        expect(find.text('Both sides'), findsOneWidget);
+      });
+
+      testWidgets('uses saved settings when they are tapped', (tester) async {
+        backend.presetList = [
+          presetBody(copies: 4, tray: 'tray-1'),
+          presetBody(id: 'preset-2', name: 'Letterhead', copies: 6),
+        ];
+        await open(tester);
+        expect(copies(tester).data, '1');
+
+        await press(tester, 'Handouts');
+        await tester.pumpAndSettle();
+
+        expect(copies(tester).data, '4');
+        expect(find.text('Tray 1'), findsOneWidget);
+      });
+
+      testWidgets('says when saved settings have since been deleted', (
+        tester,
+      ) async {
+        backend.presetList = [presetBody()];
+        await open(tester);
+        backend.presetList = [];
+
+        await press(tester, 'Handouts');
+        await tester.pumpAndSettle();
+
+        expect(find.text('Those settings are no longer saved.'), findsOne);
+        expect(find.byType(ActionChip), findsNothing);
+      });
+
+      testWidgets('saves the choices under a name', (tester) async {
+        await open(tester);
+        await tester.tap(find.byTooltip('+'));
+        await tester.pump();
+
+        await press(tester, 'Save these settings');
+        await tester.pumpAndSettle();
+        // Nothing to save under until there is a name.
+        expect(
+          tester
+              .widget<TextButton>(find.widgetWithText(TextButton, 'Save'))
+              .onPressed,
+          isNull,
+        );
+        await tester.enterText(nameField, ' Two up ');
+        await tester.pump();
+        await tester.tap(find.textContaining('Start every print'));
+        await tester.tap(find.text('Share with the workspace'));
+        await tester.pump();
+        await tester.tap(find.widgetWithText(TextButton, 'Save'));
+        await tester.pumpAndSettle();
+
+        final saved = backend.presetList.single;
+        expect(saved['name'], 'Two up');
+        expect(saved['is_default'], isTrue);
+        expect(saved['scope'], 'organization');
+        expect(saved['printer_id'], 'printer-1');
+        expect((saved['settings']! as Map)['copies'], 2);
+        expect(find.widgetWithText(ActionChip, 'Two up'), findsOneWidget);
+        expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+      });
+
+      testWidgets('saves nothing when the dialog is closed', (tester) async {
+        await open(tester);
+
+        await press(tester, 'Save these settings');
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        expect(backend.presetList, isEmpty);
+      });
+
+      testWidgets('says why settings could not be saved', (tester) async {
+        backend.fail(
+          'POST /organizations/$_org/presets',
+          403,
+          'permission.denied',
+          detail: 'Your role does not allow this action.',
+        );
+        await open(tester);
+
+        await press(tester, 'Save these settings');
+        await tester.pumpAndSettle();
+        await tester.enterText(nameField, 'Mine');
+        await tester.pump();
+        await tester.tap(find.widgetWithText(TextButton, 'Save'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Your role does not allow this action.'), findsOne);
+      });
+
+      testWidgets('renames saved settings', (tester) async {
+        backend.presetList = [presetBody()];
+        await open(tester);
+
+        await manage(tester, 'Handouts');
+        await tester.tap(find.text('Rename'));
+        await tester.pumpAndSettle();
+        // Only the name is asked for.
+        expect(find.textContaining('Start every print'), findsNothing);
+        await tester.enterText(nameField, 'Minutes');
+        await tester.pump();
+        await tester.tap(find.widgetWithText(TextButton, 'Save'));
+        await tester.pumpAndSettle();
+
+        expect(backend.presetList.single['name'], 'Minutes');
+        expect(find.widgetWithText(ListTile, 'Minutes'), findsOneWidget);
+      });
+
+      testWidgets('leaves the name alone when renaming is given up', (
+        tester,
+      ) async {
+        backend.presetList = [presetBody()];
+        await open(tester);
+
+        await manage(tester, 'Handouts');
+        await tester.tap(find.text('Rename'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        expect(backend.presetList.single['name'], 'Handouts');
+      });
+
+      testWidgets('marks settings to start from, and unmarks them', (
+        tester,
+      ) async {
+        backend.presetList = [
+          presetBody(),
+          presetBody(
+            id: 'preset-2',
+            name: 'Letterhead',
+            scope: 'organization',
+            isDefault: true,
+          ),
+        ];
+        await open(tester);
+
+        await manage(tester, 'Handouts');
+        await tester.tap(find.text('Start every print with this'));
+        await tester.pumpAndSettle();
+
+        expect(backend.presetList.first['is_default'], isTrue);
+        expect(find.text('Every print starts with this'), findsOneWidget);
+        expect(find.text('Shared with your workspace'), findsOneWidget);
+
+        await tester.tap(
+          find.descendant(
+            of: find.widgetWithText(ListTile, 'Handouts'),
+            matching: find.byTooltip('Show menu'),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Stop starting with this'));
+        await tester.pumpAndSettle();
+
+        expect(backend.presetList.first['is_default'], isFalse);
+      });
+
+      testWidgets('says what a shared preset that prints start with is', (
+        tester,
+      ) async {
+        backend.presetList = [
+          presetBody(scope: 'organization', isDefault: true),
+        ];
+        await open(tester);
+
+        await press(tester, 'Manage');
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Shared with your workspace\nEvery print starts with this'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('replaces saved settings with the ones chosen now', (
+        tester,
+      ) async {
+        backend.presetList = [presetBody(duplex: 'one_sided')];
+        await open(tester);
+        await tester.tap(find.byTooltip('+'));
+        await tester.pump();
+        await tester.tap(find.byTooltip('+'));
+        await tester.pump();
+
+        await manage(tester, 'Handouts');
+        await tester.tap(find.text('Replace with the settings chosen now'));
+        await tester.pumpAndSettle();
+
+        expect((backend.presetList.single['settings']! as Map)['copies'], 3);
+      });
+
+      testWidgets('deletes saved settings', (tester) async {
+        backend.presetList = [presetBody()];
+        await open(tester);
+
+        await manage(tester, 'Handouts');
+        await tester.tap(find.text('Delete'));
+        await tester.pumpAndSettle();
+
+        expect(backend.presetList, isEmpty);
+        expect(find.widgetWithText(ListTile, 'Handouts'), findsNothing);
+      });
+
+      testWidgets('says in the list why a change could not be made', (
+        tester,
+      ) async {
+        backend
+          ..presetList = [presetBody()]
+          ..fail(
+            'DELETE /organizations/$_org/presets/preset-1',
+            403,
+            'permission.denied',
+            detail: 'Your role does not allow this action.',
+          );
+        await open(tester);
+
+        await manage(tester, 'Handouts');
+        await tester.tap(find.text('Delete'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Your role does not allow this action.'),
+          findsWidgets,
+        );
+        expect(find.widgetWithText(ListTile, 'Handouts'), findsOneWidget);
+      });
+
+      testWidgets('lets someone who is not an admin change only their own', (
+        tester,
+      ) async {
+        backend
+          ..workspaces = [organizationBody(role: 'user')]
+          ..presetList = [
+            presetBody(),
+            presetBody(
+              id: 'preset-2',
+              name: 'Letterhead',
+              scope: 'organization',
+            ),
+          ];
+        await tester.runAsync(backend.organizations.list);
+        await open(tester);
+
+        await press(tester, 'Save these settings');
+        await tester.pumpAndSettle();
+        expect(find.text('Share with the workspace'), findsNothing);
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        await press(tester, 'Manage');
+        await tester.pumpAndSettle();
+        expect(
+          find.descendant(
+            of: find.widgetWithText(ListTile, 'Handouts'),
+            matching: find.byTooltip('Show menu'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.widgetWithText(ListTile, 'Letterhead'),
+            matching: find.byTooltip('Show menu'),
+          ),
+          findsNothing,
+        );
+      });
+    });
   });
 }
 

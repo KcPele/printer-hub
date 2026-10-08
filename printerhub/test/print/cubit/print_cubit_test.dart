@@ -299,6 +299,145 @@ void main() {
     });
   });
 
+  group('saved settings', () {
+    test('are fitted to what the printer offers', () {
+      const saved = PrintChoices(
+        copies: 5000,
+        color: 'color',
+        sides: 'two_sided_short_edge',
+        mediaSize: 'iso_a3_297x420mm',
+        tray: 'tray-9',
+        quality: 'photo',
+      );
+
+      final fitted = PrintCubit.fitted(saved, printer);
+
+      expect(fitted.copies, 999);
+      expect(fitted.color, 'color');
+      expect(fitted.sides, 'one_sided');
+      expect(fitted.mediaSize, isNull);
+      expect(fitted.tray, isNull);
+      expect(fitted.quality, isNull);
+    });
+
+    test('keep everything the printer does offer', () {
+      const saved = PrintChoices(
+        copies: 2,
+        color: 'monochrome',
+        sides: 'two_sided_long_edge',
+        mediaSize: 'iso_a4_210x297mm',
+        tray: 'tray-1',
+        quality: 'draft',
+      );
+
+      expect(PrintCubit.fitted(saved, printer), saved);
+    });
+
+    test('lose colour on a printer without it, and are left alone on one '
+        'that has not said what it offers', () {
+      final body = printerBody();
+      final capabilities = body['capabilities']! as Map<String, Object?>;
+      final mono = PrinterRead.fromJson(
+        {
+          ...body,
+          'capabilities': {
+            ...capabilities,
+            'print': {
+              ...capabilities['print']! as Map<String, Object?>,
+              'color': false,
+              'max_copies': null,
+            },
+          },
+        }.cast(),
+      );
+      final unknown = PrinterRead.fromJson(
+        {...body, 'capabilities': null}.cast(),
+      );
+      const saved = PrintChoices(copies: 150, color: 'color', tray: 'tray-9');
+
+      expect(PrintCubit.fitted(saved, mono).color, 'auto');
+      expect(PrintCubit.fitted(saved, mono).copies, 99);
+      expect(
+        PrintCubit.fitted(const PrintChoices(color: 'monochrome'), mono).color,
+        'monochrome',
+      );
+      expect(PrintCubit.fitted(saved, unknown), saved);
+    });
+
+    test('take the place of the choices, but not of which pages', () async {
+      final cubit = build();
+      addTearDown(cubit.close);
+      await cubit.choose();
+      cubit
+        ..change(const PrintChoices(pageRanges: '1'))
+        ..use(const PrintChoices(copies: 4, tray: 'tray-9'));
+
+      expect(cubit.state.choices.copies, 4);
+      expect(cubit.state.choices.tray, isNull);
+      expect(cubit.state.choices.pageRanges, '1');
+      expect(cubit.state.document, isNotNull);
+      expect(cubit.state.step, PrintStep.ready);
+    });
+
+    test('are what a print starts from, until choices are made', () async {
+      final cubit = build();
+      addTearDown(cubit.close);
+
+      cubit.startFrom(const PrintChoices(copies: 2));
+      expect(cubit.state.choices.copies, 2);
+
+      await cubit.choose();
+      cubit
+        ..change(const PrintChoices(copies: 3))
+        ..startFrom(const PrintChoices(copies: 2));
+      expect(cubit.state.choices.copies, 3);
+    });
+
+    test('are not what a print starts from once some were used', () {
+      final cubit = build();
+      addTearDown(cubit.close);
+
+      cubit
+        ..use(const PrintChoices(copies: 6))
+        ..startFrom(const PrintChoices(copies: 2));
+
+      expect(cubit.state.choices.copies, 6);
+    });
+
+    test('change nothing once a print is over', () async {
+      final cubit = build();
+      addTearDown(cubit.close);
+      await cubit.choose();
+      await cubit.print();
+
+      cubit
+        ..startFrom(const PrintChoices(copies: 2))
+        ..use(const PrintChoices(copies: 6));
+
+      expect(cubit.state.step, PrintStep.finished);
+      expect(cubit.state.choices.copies, 1);
+    });
+
+    test('change nothing while a print is on its way', () async {
+      backend.printerJobState = 5;
+      final cubit = build();
+      addTearDown(cubit.close);
+      await cubit.choose();
+      final printing = cubit.print();
+      await cubit.stream.firstWhere(
+        (state) => state.progress?.stage == PrintStage.printing,
+      );
+
+      cubit
+        ..startFrom(const PrintChoices(copies: 2))
+        ..use(const PrintChoices(copies: 6));
+      expect(cubit.state.choices.copies, 1);
+
+      await cubit.cancel();
+      await printing;
+    });
+  });
+
   group('trying again', () {
     Future<PrintCubit> failedOnce() async {
       backend.printerRefuses = IppStatus.clientErrorNotPossible;
