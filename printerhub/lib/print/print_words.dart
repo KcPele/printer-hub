@@ -75,10 +75,22 @@ abstract final class PrintWords {
     ];
   }
 
-  /// Why a print did not finish, from its error code.
+  /// Why a print did not finish.
   static String failure(AppLocalizations l10n, PrintProgress? progress) {
-    final code = progress?.errorCode ?? '';
-    final said = progress?.errorMessage;
+    return failureOf(
+      l10n,
+      code: progress?.errorCode,
+      said: progress?.errorMessage,
+    );
+  }
+
+  /// Why a print did not finish, from the error code its record keeps and
+  /// what the printer [said].
+  static String failureOf(
+    AppLocalizations l10n, {
+    required String? code,
+    String? said,
+  }) {
     return switch (code) {
       'print.unreachable' => l10n.printFailedUnreachable,
       'print.needs_password' => l10n.printFailedNeedsPassword,

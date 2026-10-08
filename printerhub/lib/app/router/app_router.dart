@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
+import 'package:jobs_repository/jobs_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printerhub/account/account.dart';
 import 'package:printerhub/activity/activity.dart';
@@ -39,6 +40,9 @@ abstract final class AppRoutes {
   /// The ways one printer is reached.
   static String printerConnections(String id) => '/printers/$id/connections';
   static const String activity = '/activity';
+
+  /// One job from the history.
+  static String job(String id) => '/activity/$id';
   static const String settings = '/settings';
   static const String profile = '/settings/profile';
   static const String changePassword = '/settings/password';
@@ -173,6 +177,7 @@ GoRouter createAppRouter({
                         path: 'print',
                         builder: (context, state) => PrintPage(
                           printerId: state.pathParameters['printerId']!,
+                          retryOf: state.extra as Job?,
                         ),
                       ),
                       GoRoute(
@@ -192,6 +197,15 @@ GoRouter createAppRouter({
               GoRoute(
                 path: AppRoutes.activity,
                 builder: (context, state) => const ActivityPage(),
+                routes: [
+                  GoRoute(
+                    path: ':jobId',
+                    builder: (context, state) => JobPage(
+                      jobId: state.pathParameters['jobId']!,
+                      known: state.extra as Job?,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -107,7 +107,15 @@ class PrintCubit extends Cubit<PrintState> {
     required this._documents,
     required this._organizationId,
     required this._printer,
-  }) : super(const PrintState());
+    Job? retryOf,
+  }) : _retry = retryOf == null
+           ? null
+           : (
+               jobId: retryOf.id,
+               title: retryOf.title,
+               choices: retryOf.print ?? const PrintChoices(),
+             ),
+       super(PrintState(choices: retryOf?.print ?? const PrintChoices()));
 
   final PrintersRepository _printersRepository;
   final JobsRepository _jobsRepository;
@@ -118,6 +126,10 @@ class PrintCubit extends Cubit<PrintState> {
   PrinterPrint? _print;
   bool _choosing = false;
 
+  /// The job that failed or was cancelled, which printing the same
+  /// document the same way is another try of.
+  ({String jobId, String? title, PrintChoices choices})? _retry;
+
   /// Lets the person choose a file, and reads it.
   Future<void> choose() async {
     if (_choosing || state.step == PrintStep.printing) return;
@@ -126,7 +138,12 @@ class PrintCubit extends Cubit<PrintState> {
       final document = await _documents.picker.pick();
       if (document == null || isClosed) return;
       if (document.mimeType == null) {
-        emit(const PrintState(problem: PrintProblem.unsupportedFile));
+        emit(
+          PrintState(
+            problem: PrintProblem.unsupportedFile,
+            choices: state.choices,
+          ),
+        );
         return;
       }
 
@@ -150,7 +167,12 @@ class PrintCubit extends Cubit<PrintState> {
           ),
         );
       } on Object {
-        emit(const PrintState(problem: PrintProblem.unreadableFile));
+        emit(
+          PrintState(
+            problem: PrintProblem.unreadableFile,
+            choices: state.choices,
+          ),
+        );
       }
     } finally {
       _choosing = false;
@@ -171,22 +193,24 @@ class PrintCubit extends Cubit<PrintState> {
     }
     emit(state._with(step: PrintStep.printing));
 
+    final choices = state.choices;
     final Job job;
     try {
-      job = await _jobsRepository.startPrint(
-        organizationId: _organizationId,
-        printerId: _printer.id,
-        title: document.name,
-        choices: state.choices,
-        pageCount: preview.pageCount,
-        connectionId: _printer.connections.firstOrNull?.id,
-      );
+      job =
+          await _tryAgain(document, choices) ??
+          await _jobsRepository.startPrint(
+            organizationId: _organizationId,
+            printerId: _printer.id,
+            title: document.name,
+            choices: choices,
+            pageCount: preview.pageCount,
+            connectionId: _printer.connections.firstOrNull?.id,
+          );
     } on ApiException catch (error) {
       emit(state._with(step: PrintStep.ready, error: error));
       return;
     }
 
-    final choices = state.choices;
     final print = await _printersRepository.print(
       organizationId: _organizationId,
       printer: _printer,
@@ -236,8 +260,36 @@ class PrintCubit extends Cubit<PrintState> {
     }
     await records;
     _print = null;
+    _retry = switch (last?.stage) {
+      PrintStage.failed || PrintStage.unknown || PrintStage.cancelled => (
+        jobId: job.id,
+        title: document.name,
+        choices: choices,
+      ),
+      _ => null,
+    };
     if (!isClosed) {
       emit(state._with(step: PrintStep.finished, progress: last));
+    }
+  }
+
+  /// Records this print as another try of the one that failed, when it is
+  /// the same document printed the same way. Null when it is not, or when
+  /// the backend cannot record it so: it is then a job of its own.
+  Future<Job?> _tryAgain(PickedDocument document, PrintChoices choices) async {
+    final retry = _retry;
+    if (retry == null ||
+        retry.title != document.name ||
+        retry.choices != choices) {
+      return null;
+    }
+    try {
+      return await _jobsRepository.retry(
+        organizationId: _organizationId,
+        jobId: retry.jobId,
+      );
+    } on ApiException {
+      return null;
     }
   }
 

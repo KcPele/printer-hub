@@ -304,6 +304,7 @@ Map<String, Object?> jobBody({
   String? errorCode,
   String? errorMessage,
   int? pageCount,
+  String? retryOf,
   String submittedAt = '2026-10-07T10:00:00Z',
 }) => {
   'id': id,
@@ -320,7 +321,7 @@ Map<String, Object?> jobBody({
   'connection_id': null,
   'connection_type': connectionType,
   'fallback_occurred': fallbackOccurred,
-  'retry_of_job_id': null,
+  'retry_of_job_id': retryOf,
   'printer_job_ref': null,
   'error_code': errorCode,
   'error_message': errorMessage,

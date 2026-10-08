@@ -53,7 +53,7 @@ MockGoRouter recordingRouter() {
   final router = MockGoRouter();
   when(() => router.push<Object?>(any(), extra: any(named: 'extra')))
       .thenAnswer((_) async => null);
-  when(() => router.go(any())).thenReturn(null);
+  when(() => router.go(any(), extra: any(named: 'extra'))).thenReturn(null);
   when(router.pop).thenReturn(null);
   return router;
 }

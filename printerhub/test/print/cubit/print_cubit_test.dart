@@ -299,6 +299,116 @@ void main() {
     });
   });
 
+  group('trying again', () {
+    Future<PrintCubit> failedOnce() async {
+      backend.printerRefuses = IppStatus.clientErrorNotPossible;
+      final cubit = build();
+      addTearDown(cubit.close);
+      await cubit.choose();
+      await cubit.print();
+      backend.printerRefuses = null;
+      cubit.again();
+      return cubit;
+    }
+
+    test('the same document the same way is another try of the job that '
+        'failed', () async {
+      final cubit = await failedOnce();
+      final failed = backend.jobList.single['id'];
+
+      await cubit.print();
+
+      expect(cubit.state.progress!.stage, PrintStage.completed);
+      expect(backend.jobList, hasLength(2));
+      expect(backend.jobList.first['retry_of_job_id'], failed);
+      expect(backend.jobList.first['status'], 'completed');
+      expect(backend.printed, hasLength(1));
+    });
+
+    test('printed another way, it is a job of its own', () async {
+      final cubit = await failedOnce();
+      cubit.change(const PrintChoices(copies: 2));
+
+      await cubit.print();
+
+      expect(backend.jobList, hasLength(2));
+      expect(backend.jobList.first['retry_of_job_id'], isNull);
+    });
+
+    test('another document is a job of its own', () async {
+      final cubit = await failedOnce();
+      backend.picker.next = pickedPdf(name: 'Other.pdf');
+      await cubit.choose();
+
+      await cubit.print();
+
+      expect(backend.jobList.first['title'], 'Other.pdf');
+      expect(backend.jobList.first['retry_of_job_id'], isNull);
+    });
+
+    test('is its own job when it cannot be recorded as a try', () async {
+      final cubit = await failedOnce();
+      backend.fail(
+        'POST /organizations/$_org/jobs/${backend.jobList.single['id']}/retry',
+        409,
+        'job.not_retryable',
+      );
+
+      await cubit.print();
+
+      expect(cubit.state.progress!.stage, PrintStage.completed);
+      expect(backend.jobList, hasLength(2));
+      expect(backend.jobList.first['retry_of_job_id'], isNull);
+    });
+
+    test('a print that worked is not tried again: the next is new', () async {
+      final cubit = build();
+      addTearDown(cubit.close);
+      await cubit.choose();
+      await cubit.print();
+      cubit.again();
+
+      await cubit.print();
+
+      expect(backend.jobList, hasLength(2));
+      expect(backend.jobList.first['retry_of_job_id'], isNull);
+    });
+
+    test('starts from a job in the history, with its choices', () async {
+      backend.jobList = [jobBody(status: 'failed', copies: 3)];
+      final cubit = PrintCubit(
+        printersRepository: backend.printers,
+        jobsRepository: backend.jobs,
+        documents: backend.documents,
+        organizationId: _org,
+        printer: printer,
+        retryOf: Job.fromJson(backend.jobList.single.cast()),
+      );
+      addTearDown(cubit.close);
+      expect(cubit.state.choices.copies, 3);
+
+      await cubit.choose();
+      await cubit.print();
+
+      expect(backend.jobList.first['retry_of_job_id'], 'job-1');
+      expect(backend.jobList.first['status'], 'completed');
+    });
+
+    test('starts from a scan in the history with nothing chosen', () {
+      final cubit = PrintCubit(
+        printersRepository: backend.printers,
+        jobsRepository: backend.jobs,
+        documents: backend.documents,
+        organizationId: _org,
+        printer: printer,
+        retryOf: Job.fromJson(jobBody(type: 'scan').cast()),
+      );
+      addTearDown(cubit.close);
+
+      expect(cubit.state.choices, const PrintChoices());
+    });
+  });
+
   group('afterwards', () {
     test('goes back to the document to print it again', () async {
       final cubit = build();

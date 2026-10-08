@@ -1,5 +1,6 @@
 import 'package:api_client/testing.dart';
 import 'package:app_ui/app_ui.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
@@ -252,6 +253,31 @@ void main() {
 
         expect(find.byType(PrintPage), findsOneWidget);
         expect(find.text('What would you like to print?'), findsOneWidget);
+      });
+
+      testWidgets('opens a job from Activity, and prints it again', (
+        tester,
+      ) async {
+        backend
+          ..printerList = [printerBody()]
+          ..jobList = [jobBody(status: 'failed', copies: 3)]
+          ..jobEvents['job-1'] = [];
+        await pump(tester);
+        await openArea(tester, 'Activity');
+
+        await tester.tap(find.text('Report.pdf'));
+        await tester.pumpAndSettle();
+        expect(find.byType(JobPage), findsOneWidget);
+
+        await tester.tap(find.text('Print it again'));
+        await tester.pumpAndSettle();
+
+        // In the Printers area, on that printer, with the job's choices.
+        expect(find.byType(PrintPage), findsOneWidget);
+        final cubit = BlocProvider.of<PrintCubit>(
+          tester.element(find.byType(PrintView)),
+        );
+        expect(cubit.state.choices.copies, 3);
       });
 
       testWidgets('opens the catalogue from Add a printer', (tester) async {

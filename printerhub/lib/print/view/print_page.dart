@@ -15,9 +15,12 @@ import 'package:printers_repository/printers_repository.dart';
 
 /// Prints a document on one printer: choose it, say how, and follow it.
 class PrintPage extends StatelessWidget {
-  const new({required this.printerId, super.key});
+  const new({required this.printerId, this.retryOf, super.key});
 
   final String printerId;
+
+  /// The failed or cancelled job this print is another try of.
+  final Job? retryOf;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +41,7 @@ class PrintPage extends StatelessWidget {
         documents: context.read<PrintDocuments>(),
         organizationId: context.read<SessionCubit>().state.organization!.id,
         printer: printer,
+        retryOf: retryOf,
       ),
       child: PrintView(printer: printer),
     );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:api_client/api_client.dart';
@@ -19,6 +20,11 @@ class JobsRepository {
   final PrinterHubClient _client;
   final SecureStore _store;
   final DateTime Function() _now;
+  final StreamController<void> _changes = StreamController<void>.broadcast();
+
+  /// Fires when the history is no longer what it was: a job began or
+  /// ended, or what was waiting has been sent.
+  Stream<void> get changes => _changes.stream;
 
   static String _outboxKey(String organizationId) =>
       'jobs.outbox.$organizationId';
@@ -66,8 +72,10 @@ class JobsRepository {
       // The backend has it: nothing is left to send.
       outbox.remove(entry);
       await _write(organizationId, outbox);
+      _changes.add(null);
       return Job.fromApi(recorded);
     } on ApiUnreachable {
+      _changes.add(null);
       return entry.asJob();
     } on ApiProblem {
       // The backend will not have this job. It is not kept to be sent
@@ -87,6 +95,18 @@ class JobsRepository {
     JobUpdate update,
   ) async {
     final event = update.toApi(_now().toUtc());
+    try {
+      await _report(organizationId, jobId, event);
+    } finally {
+      if (Job.finished.contains(update.status)) _changes.add(null);
+    }
+  }
+
+  Future<void> _report(
+    String organizationId,
+    String jobId,
+    JobEventCreate event,
+  ) async {
     final outbox = await _read(organizationId);
     final entry = outbox.where((entry) => entry.id == jobId).firstOrNull;
 
@@ -183,8 +203,10 @@ class JobsRepository {
     }
 
     // A job that is on the backend with nothing waiting is done with.
+    final before = outbox.length;
     outbox.removeWhere((entry) => entry.registered && entry.events.isEmpty);
     await _write(organizationId, outbox);
+    if (outbox.length != before) _changes.add(null);
     return outbox.length;
   }
 
@@ -248,11 +270,13 @@ class JobsRepository {
     required String organizationId,
     required String jobId,
   }) async {
-    return Job.fromApi(
+    final job = Job.fromApi(
       await apiCall(
         () => _client.api.jobs.cancelJob(orgId: organizationId, jobId: jobId),
       ),
     );
+    _changes.add(null);
+    return job;
   }
 
   /// Records a new job with the settings of one that failed or was
@@ -261,7 +285,7 @@ class JobsRepository {
     required String organizationId,
     required String jobId,
   }) async {
-    return Job.fromApi(
+    final job = Job.fromApi(
       await apiCall(
         () => _client.api.jobs.retryJob(
           orgId: organizationId,
@@ -270,6 +294,8 @@ class JobsRepository {
         ),
       ),
     );
+    _changes.add(null);
+    return job;
   }
 
   /// Forgets what is waiting. Call when the user signs out.

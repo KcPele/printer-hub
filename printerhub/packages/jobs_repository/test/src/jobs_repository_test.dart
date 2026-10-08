@@ -466,6 +466,68 @@ void main() {
     });
   });
 
+  group('changes', () {
+    late int changes;
+
+    setUp(() {
+      changes = 0;
+      final watching = repository.changes.listen((_) => changes++);
+      addTearDown(watching.cancel);
+    });
+
+    test('a job starting is one, online or off', () async {
+      await start();
+      await pumpEventQueue();
+      expect(changes, 1);
+
+      offline = true;
+      await start();
+      await pumpEventQueue();
+      expect(changes, 2);
+    });
+
+    test('a job ending is one; a step on the way is not', () async {
+      await repository.report(
+        _org,
+        'job-1',
+        const JobUpdate(status: 'printing'),
+      );
+      await pumpEventQueue();
+      expect(changes, 0);
+
+      await repository.report(
+        _org,
+        'job-1',
+        const JobUpdate(status: 'completed'),
+      );
+      await pumpEventQueue();
+      expect(changes, 1);
+    });
+
+    test('what was waiting being sent is one', () async {
+      offline = true;
+      await start();
+      await pumpEventQueue();
+      changes = 0;
+
+      await repository.sync(_org);
+      await pumpEventQueue();
+      expect(changes, 0);
+
+      offline = false;
+      await repository.sync(_org);
+      await pumpEventQueue();
+      expect(changes, 1);
+    });
+
+    test('cancelling and retrying are each one', () async {
+      await repository.cancel(organizationId: _org, jobId: 'job-1');
+      await repository.retry(organizationId: _org, jobId: 'job-1');
+      await pumpEventQueue();
+      expect(changes, 2);
+    });
+  });
+
   test('clear forgets what is waiting', () async {
     offline = true;
     await start();

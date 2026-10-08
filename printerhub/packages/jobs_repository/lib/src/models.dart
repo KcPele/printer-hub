@@ -128,6 +128,7 @@ class Job extends Equatable {
     this.errorCode,
     this.errorMessage,
     this.completedAt,
+    this.retryOfJobId,
     this.print,
     this.waitingToSync = false,
   });
@@ -153,6 +154,7 @@ class Job extends Equatable {
       errorCode: json['error_code'] as String?,
       errorMessage: json['error_message'] as String?,
       completedAt: completed == null ? null : DateTime.parse(completed),
+      retryOfJobId: json['retry_of_job_id'] as String?,
       print: kind == 'print' && settings is Map<String, dynamic>
           ? PrintChoices.fromJson(settings)
           : null,
@@ -184,16 +186,20 @@ class Job extends Equatable {
   final String? errorMessage;
   final DateTime? completedAt;
 
+  /// The failed or cancelled job this one is another try of.
+  final String? retryOfJobId;
+
   /// How it was to be printed. Null for a scan or a copy.
   final PrintChoices? print;
 
   /// True for a job the backend has not been told about yet.
   final bool waitingToSync;
 
-  static const Set<String> _finished = {'completed', 'failed', 'cancelled'};
+  /// The statuses a job does not leave.
+  static const Set<String> finished = {'completed', 'failed', 'cancelled'};
 
   /// True once the job will not change again.
-  bool get isFinished => _finished.contains(status);
+  bool get isFinished => finished.contains(status);
 
   /// True when the job can be run again as a new job.
   bool get canRetry => status == 'failed' || status == 'cancelled';
@@ -212,6 +218,7 @@ class Job extends Equatable {
     errorCode,
     errorMessage,
     completedAt,
+    retryOfJobId,
     print,
     waitingToSync,
   ];

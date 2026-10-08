@@ -1619,5 +1619,182 @@
                 "type": "String"
             }
         }
+    },
+    "activityFilterAll": "All",
+    "@activityFilterAll": {
+        "description": "Filter that shows every job"
+    },
+    "activityFilterActive": "In progress",
+    "@activityFilterActive": {
+        "description": "Filter that shows jobs still running"
+    },
+    "activityFilterDone": "Done",
+    "@activityFilterDone": {
+        "description": "Filter that shows completed jobs"
+    },
+    "activityFilterProblems": "Problems",
+    "@activityFilterProblems": {
+        "description": "Filter that shows failed and cancelled jobs"
+    },
+    "activityNoMatch": "Nothing like that here.",
+    "@activityNoMatch": {
+        "description": "Shown when the chosen filter matches no job"
+    },
+    "activityFailedTitle": "Your activity could not be read",
+    "@activityFailedTitle": {
+        "description": "Heading when the job history failed to load"
+    },
+    "activityMore": "Show earlier",
+    "@activityMore": {
+        "description": "Button that loads older jobs"
+    },
+    "jobKindPrint": "Print",
+    "@jobKindPrint": {
+        "description": "Title of a print job's page"
+    },
+    "jobKindScan": "Scan",
+    "@jobKindScan": {
+        "description": "Title of a scan job's page"
+    },
+    "jobKindCopy": "Copy",
+    "@jobKindCopy": {
+        "description": "Title of a copy job's page"
+    },
+    "jobUntitledPrint": "A print",
+    "@jobUntitledPrint": {
+        "description": "Name of a print job that has no title"
+    },
+    "jobUntitledScan": "A scan",
+    "@jobUntitledScan": {
+        "description": "Name of a scan job that has no title"
+    },
+    "jobUntitledCopy": "A copy",
+    "@jobUntitledCopy": {
+        "description": "Name of a copy job that has no title"
+    },
+    "jobStatusQueued": "Waiting",
+    "@jobStatusQueued": {
+        "description": "Status of a job not started yet"
+    },
+    "jobStatusProcessing": "Getting ready",
+    "@jobStatusProcessing": {
+        "description": "Status of a job being prepared or sent"
+    },
+    "jobStatusPrinting": "Printing",
+    "@jobStatusPrinting": {
+        "description": "Status of a job on the printer"
+    },
+    "jobStatusScanning": "Scanning",
+    "@jobStatusScanning": {
+        "description": "Status of a job on the scanner"
+    },
+    "jobStatusCompleted": "Done",
+    "@jobStatusCompleted": {
+        "description": "Status of a finished job"
+    },
+    "jobStatusFailed": "Failed",
+    "@jobStatusFailed": {
+        "description": "Status of a failed job"
+    },
+    "jobStatusCancelled": "Cancelled",
+    "@jobStatusCancelled": {
+        "description": "Status of a cancelled job"
+    },
+    "jobRemovedPrinter": "A printer that was removed",
+    "@jobRemovedPrinter": {
+        "description": "Used in place of the name of a printer no longer in the workspace"
+    },
+    "jobSectionAsked": "What was asked for",
+    "@jobSectionAsked": {
+        "description": "Heading above a job's settings"
+    },
+    "jobSectionHistory": "What happened",
+    "@jobSectionHistory": {
+        "description": "Heading above a job's events"
+    },
+    "jobPrinter": "Printer",
+    "@jobPrinter": {
+        "description": "Label of the printer a job ran on"
+    },
+    "jobStarted": "Started",
+    "@jobStarted": {
+        "description": "Label of when a job was submitted"
+    },
+    "jobFallback": "The first way to reach the printer did not work, so another was used.",
+    "@jobFallback": {
+        "description": "Shown on a job that moved to another connection"
+    },
+    "jobRetryOf": "This was another try of an earlier job.",
+    "@jobRetryOf": {
+        "description": "Shown on a job that retried a failed one"
+    },
+    "jobNotSent": "This is only on your phone so far. It is added to your workspace when the phone is back online.",
+    "@jobNotSent": {
+        "description": "Shown on a job the backend has not been told about"
+    },
+    "jobFailedTitle": "This job could not be read",
+    "@jobFailedTitle": {
+        "description": "Heading when a job failed to load"
+    },
+    "jobCancel": "Mark as cancelled",
+    "@jobCancel": {
+        "description": "Button that marks an unfinished job cancelled"
+    },
+    "jobCancelNote": "Use this for a job that is no longer running. It does not stop the printer: do that on its panel.",
+    "@jobCancelNote": {
+        "description": "Explains the mark-as-cancelled button"
+    },
+    "jobCancelled": "Marked as cancelled",
+    "@jobCancelled": {
+        "description": "Shown after a job was marked cancelled"
+    },
+    "jobPrintAgain": "Print it again",
+    "@jobPrintAgain": {
+        "description": "Button that opens the print screen to retry a job"
+    },
+    "jobColorOn": "In colour",
+    "@jobColorOn": {
+        "description": "A job's colour setting when colour"
+    },
+    "jobColorOff": "Black and white",
+    "@jobColorOff": {
+        "description": "A job's colour setting when monochrome"
+    },
+    "jobWhen": "{date} at {time}",
+    "@jobWhen": {
+        "description": "A date and a time of day",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            },
+            "time": {
+                "type": "String"
+            }
+        }
+    },
+    "jobCopies": "{count, plural, =1{1 copy} other{{count} copies}}",
+    "@jobCopies": {
+        "description": "How many copies a job asked for",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "jobRowDetail": "{printer} · {when}",
+    "@jobRowDetail": {
+        "description": "Second line of a job in the list: its printer and when it started",
+        "placeholders": {
+            "printer": {
+                "type": "String"
+            },
+            "when": {
+                "type": "String"
+            }
+        }
+    },
+    "jobOnPhoneOnly": "On this phone only",
+    "@jobOnPhoneOnly": {
+        "description": "Tag on a job the backend has not been told about yet"
     }
 }

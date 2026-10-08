@@ -92,6 +92,9 @@ class TestBackend {
   List<Map<String, Object?>> jobList = [];
   final Map<String, List<Map<String, dynamic>>> jobEvents = {};
 
+  /// How many jobs the history gives at a time.
+  int jobPageSize = 20;
+
   /// What the plugged-in printer was sent to print, with each request's
   /// attributes.
   final List<IppDecoded> printed = [];
@@ -528,7 +531,9 @@ class TestBackend {
           : FakeResponse(200, {...secrets, 'extra': <String, String>{}});
     }
     final jobRoute = _jobRoute.firstMatch(key);
-    if (jobRoute != null) return _answerJobs(jobRoute, body);
+    if (jobRoute != null) {
+      return _answerJobs(jobRoute, body, request.uri.queryParametersAll);
+    }
     final connectionRoute = _connectionRoute.firstMatch(key);
     if (connectionRoute != null) {
       return _answerConnections(connectionRoute, body);
@@ -559,12 +564,19 @@ class TestBackend {
 
   /// The job history: recording a job and what happens to it, and reading
   /// it back.
-  FakeResponse _answerJobs(RegExpMatch route, Map<String, dynamic> body) {
+  FakeResponse _answerJobs(
+    RegExpMatch route,
+    Map<String, dynamic> body,
+    Map<String, List<String>> query,
+  ) {
     final method = route.group(1)!;
     final jobId = route.group(2);
     final action = route.group(3);
 
-    Map<String, Object?> record(Map<String, dynamic> create) {
+    Map<String, Object?> record(
+      Map<String, dynamic> create, {
+      String? retryOf,
+    }) {
       final settings = create['settings'] as Map<String, dynamic>?;
       final job = jobBody(
         id: create['id'] as String,
@@ -572,6 +584,7 @@ class TestBackend {
         printerId: create['printer_id'] as String,
         copies: settings?['copies'] as int? ?? 1,
         pageCount: create['page_count'] as int?,
+        retryOf: retryOf,
       );
       jobList = [job, ...jobList];
       jobEvents[job['id']! as String] = [];
@@ -596,7 +609,18 @@ class TestBackend {
 
     if (jobId == null) {
       if (method == 'POST') return FakeResponse(201, record(body));
-      return FakeResponse(200, {'items': jobList, 'next_cursor': null});
+      final wanted = query['status'] ?? const [];
+      final matching = [
+        for (final job in jobList)
+          if (wanted.isEmpty || wanted.contains(job['status'])) job,
+      ];
+      // The cursor is how many jobs came before.
+      final from = int.parse(query['cursor']?.single ?? '0');
+      final to = from + jobPageSize;
+      return FakeResponse(200, {
+        'items': matching.skip(from).take(jobPageSize).toList(),
+        'next_cursor': to < matching.length ? '$to' : null,
+      });
     }
     if (jobId == 'batch') {
       return FakeResponse(200, {
@@ -646,9 +670,12 @@ class TestBackend {
       case '/cancel':
         return FakeResponse(200, apply(jobId, {'status': 'cancelled'}));
       case '/retry':
+        if (!const {'failed', 'cancelled'}.contains(jobList[index]['status'])) {
+          return FakeResponse.problem(409, 'job.not_retryable');
+        }
         return FakeResponse(
           201,
-          record({...jobList[index], 'id': 'retry-of-$jobId'}),
+          record({...jobList[index], 'id': 'retry-of-$jobId'}, retryOf: jobId),
         );
       default:
         return FakeResponse(200, jobList[index]);
