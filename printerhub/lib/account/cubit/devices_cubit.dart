@@ -83,6 +83,21 @@ class DevicesCubit extends Cubit<DevicesState> {
     });
   }
 
+  /// Gives a device a name of the person's own.
+  Future<void> rename(UserDevice device, String name) {
+    return _change(device.id, () async {
+      final renamed = await _authRepository.renameDevice(device.id, name);
+      return DevicesState(
+        status: DevicesStatus.ready,
+        sessions: state.sessions,
+        devices: [
+          for (final item in state.devices)
+            if (item.id == device.id) renamed else item,
+        ],
+      );
+    });
+  }
+
   /// Forgets a device, which stops its notifications.
   Future<void> forget(UserDevice device) {
     return _change(device.id, () async {

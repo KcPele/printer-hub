@@ -219,7 +219,7 @@ class AuthRepository {
           body: DeviceRegister(
             installationId: id,
             platform: DevicePlatform.fromJson(phone.platform),
-            name: phone.name,
+            // No name: that is the person's to give, and is kept.
             model: phone.model,
             osVersion: phone.osVersion,
             appVersion: phone.appVersion,
@@ -242,6 +242,18 @@ class AuthRepository {
       for (final device in devices)
         UserDevice.fromApi(device, installationId: id),
     ];
+  }
+
+  /// Gives a device a name of the person's own, such as "Work phone".
+  /// Nothing else about it changes.
+  Future<UserDevice> renameDevice(String id, String name) async {
+    final device = await apiCall(
+      () => _client.api.devices.updateDevice(
+        deviceId: id,
+        body: DeviceUpdate(name: name),
+      ),
+    );
+    return UserDevice.fromApi(device, installationId: await installationId());
   }
 
   /// Forgets a device: it stops receiving notifications.

@@ -194,6 +194,43 @@ void main() {
       expect(backend.sessionList, hasLength(1));
     });
 
+    testWidgets('names a phone', (tester) async {
+      await open(tester);
+      expect(find.textContaining('Tap one to give it a name'), findsOneWidget);
+
+      await tester.tap(find.text('Pixel 8'));
+      await tester.pumpAndSettle();
+      // Nothing to save until there is a name.
+      expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, 'Save'))
+            .onPressed,
+        isNull,
+      );
+      await tester.enterText(find.byType(TextField), 'Work phone');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(TextButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Work phone'), findsOneWidget);
+      expect(find.text('Pixel 8'), findsNothing);
+      expect(backend.deviceList.last['name'], 'Work phone');
+    });
+
+    testWidgets('leaves a phone as it was when naming it is given up', (
+      tester,
+    ) async {
+      await open(tester);
+
+      await tester.tap(find.text('Pixel 8'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pixel 8'), findsOneWidget);
+      expect(backend.deviceList.last['name'], isNull);
+    });
+
     testWidgets('forgets a phone', (tester) async {
       await open(tester);
 

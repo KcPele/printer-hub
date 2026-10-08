@@ -31,6 +31,16 @@ class DevicesPage extends StatelessWidget {
 class DevicesView extends StatelessWidget {
   const new({super.key});
 
+  /// Asks what a phone should be called, and names it.
+  Future<void> _rename(BuildContext context, UserDevice device) async {
+    final cubit = context.read<DevicesCubit>();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => _RenameDialog(name: device.name ?? ''),
+    );
+    if (name != null) await cubit.rename(device, name);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -92,7 +102,10 @@ class DevicesView extends StatelessWidget {
                 ),
                 if (state.devices.isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xl),
-                  _Heading(l10n.devicesPhones, l10n.devicesPhonesBody),
+                  _Heading(
+                    l10n.devicesPhones,
+                    '${l10n.devicesPhonesBody} ${l10n.devicesRenameHint}',
+                  ),
                   AppCard(
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.xs,
@@ -116,6 +129,7 @@ class DevicesView extends StatelessWidget {
                             action: l10n.devicesForget,
                             busy: state.busyId == device.id,
                             onAction: () => cubit.forget(device),
+                            onTap: () => _rename(context, device),
                           ),
                       ],
                     ),
@@ -175,6 +189,7 @@ class _Row extends StatelessWidget {
     required this.action,
     required this.busy,
     required this.onAction,
+    this.onTap,
   });
 
   final IconData icon;
@@ -185,9 +200,13 @@ class _Row extends StatelessWidget {
   final bool busy;
   final VoidCallback onAction;
 
+  /// What tapping the row itself does, when it does anything.
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      onTap: busy ? null : onTap,
       leading: Icon(icon),
       title: Text(title),
       subtitle: Text(subtitle),
@@ -202,6 +221,58 @@ class _Row extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : TextButton(onPressed: onAction, child: Text(action)),
+    );
+  }
+}
+
+/// Asks what a phone should be called.
+class _RenameDialog extends StatefulWidget {
+  const new({required this.name});
+
+  final String name;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final TextEditingController _name = TextEditingController(
+    text: widget.name,
+  );
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final name = _name.text.trim();
+
+    return AlertDialog(
+      title: Text(l10n.devicesRename),
+      content: TextField(
+        controller: _name,
+        autofocus: true,
+        maxLength: 200,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: InputDecoration(labelText: l10n.devicesRenameLabel),
+        onChanged: (_) => setState(() {}),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.devicesRenameCancel),
+        ),
+        TextButton(
+          onPressed: name.isEmpty || name == widget.name
+              ? null
+              : () => Navigator.of(context).pop(name),
+          child: Text(l10n.devicesRenameSave),
+        ),
+      ],
     );
   }
 }

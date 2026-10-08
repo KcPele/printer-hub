@@ -17,8 +17,6 @@ Future<PhoneDetails> readPhoneDetails() async {
     final phone = await plugin.iosInfo;
     return PhoneDetails(
       platform: 'ios',
-      // "iPhone" unless Apple has granted the app the owner's name for it.
-      name: phone.name,
       model: phone.modelName,
       osVersion: '${phone.systemName} ${phone.systemVersion}',
       appVersion: appVersion,

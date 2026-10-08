@@ -96,7 +96,6 @@ class UserSession extends Equatable {
 class PhoneDetails extends Equatable {
   const new({
     required this.platform,
-    this.name,
     this.model,
     this.osVersion,
     this.appVersion,
@@ -105,16 +104,13 @@ class PhoneDetails extends Equatable {
   /// `ios` or `android`.
   final String platform;
 
-  /// The name its owner gave it, when the system lets an app read that.
-  final String? name;
-
   /// Such as `iPhone 15 Pro` or `Pixel 8`.
   final String? model;
   final String? osVersion;
   final String? appVersion;
 
   @override
-  List<Object?> get props => [platform, name, model, osVersion, appVersion];
+  List<Object?> get props => [platform, model, osVersion, appVersion];
 }
 
 /// A phone or tablet the account has been used on.
@@ -150,6 +146,8 @@ class UserDevice extends Equatable {
   /// `ios`, `android`, or `web`.
   final String platform;
   final DateTime lastSeenAt;
+
+  /// The name its owner gave it in the app. Null until they give one.
   final String? name;
   final String? model;
   final String? osVersion;
@@ -161,9 +159,9 @@ class UserDevice extends Equatable {
   /// True for the device the app is running on.
   final bool isThisDevice;
 
-  /// The best thing to call it: its model, else its name, else its
-  /// platform.
-  String get label => model ?? name ?? platform;
+  /// The best thing to call it: the name its owner gave it, else its
+  /// model, else its platform.
+  String get label => name ?? model ?? platform;
 
   @override
   List<Object?> get props => [

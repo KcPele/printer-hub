@@ -603,6 +603,16 @@ class TestBackend {
           'POST /account/delete':
         return const FakeResponse(204);
     }
+    final renamed = _deviceRoute.firstMatch(key);
+    if (renamed != null) {
+      final index = deviceList.indexWhere(
+        (device) => device['id'] == renamed.group(1),
+      );
+      if (index < 0) return FakeResponse.problem(404, 'device.not_found');
+      final device = {...deviceList[index], ...body};
+      deviceList = [...deviceList]..[index] = device;
+      return FakeResponse(200, device);
+    }
     final removal = _removalRoute.firstMatch(key);
     if (removal != null) {
       final id = removal.group(2);
@@ -656,6 +666,8 @@ class TestBackend {
 
     return FakeResponse.problem(404, 'not_found', detail: 'No route for $key');
   }
+
+  static final RegExp _deviceRoute = RegExp(r'^PATCH /devices/([^/]+)$');
 
   static final RegExp _removalRoute = RegExp(
     r'^DELETE /(auth/sessions|devices)/([^/]+)$',

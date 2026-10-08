@@ -109,6 +109,23 @@ void main() {
   );
 
   blocTest<DevicesCubit, DevicesState>(
+    'names a phone, in its place in the list',
+    build: build,
+    act: (cubit) async {
+      await cubit.load();
+      await cubit.rename(cubit.state.devices.last, 'Work phone');
+    },
+    skip: 3,
+    expect: () => [
+      ready().having((s) => s.devices.map((x) => x.label), 'devices', [
+        isNot('Work phone'),
+        'Work phone',
+      ]),
+    ],
+    verify: (_) => expect(backend.deviceList.last['name'], 'Work phone'),
+  );
+
+  blocTest<DevicesCubit, DevicesState>(
     'keeps the list and says why when a change is refused',
     build: build,
     act: (cubit) async {

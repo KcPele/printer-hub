@@ -427,7 +427,6 @@ void main() {
   group('this phone', () {
     const phone = PhoneDetails(
       platform: 'ios',
-      name: 'iPhone',
       model: 'iPhone 15 Pro',
       osVersion: '18.1',
       appVersion: '1.0.0 (1)',
@@ -441,7 +440,7 @@ void main() {
       'id': id,
       'installation_id': installationId,
       'platform': 'ios',
-      'name': 'iPhone',
+      'name': null,
       'model': 'iPhone 15 Pro',
       'os_version': '18.1',
       'app_version': '1.0.0 (1)',
@@ -508,6 +507,9 @@ void main() {
 
       final sent = bodyOf(registrations().single);
       expect(sent['installation_id'], await withPhone.installationId());
+      // A name is the person's to give: registering sends none, so the
+      // one they gave is kept.
+      expect(sent, isNot(contains('name')));
       expect(sent['platform'], 'ios');
       expect(sent['model'], 'iPhone 15 Pro');
       expect(sent['os_version'], '18.1');
@@ -575,6 +577,26 @@ void main() {
 
     test('a device is called by the best name it has', () {
       final seen = DateTime.utc(2026);
+      // The name its owner gave it comes before what it is.
+      expect(
+        UserDevice(
+          id: '1',
+          platform: 'android',
+          lastSeenAt: seen,
+          name: 'Work phone',
+          model: 'Pixel 8',
+        ).label,
+        'Work phone',
+      );
+      expect(
+        UserDevice(
+          id: '1',
+          platform: 'android',
+          lastSeenAt: seen,
+          model: 'Pixel 8',
+        ).label,
+        'Pixel 8',
+      );
       expect(
         UserDevice(id: '1', platform: 'android', lastSeenAt: seen).label,
         'android',
@@ -588,6 +610,33 @@ void main() {
         ).label,
         "Ada's phone",
       );
+    });
+
+    test('names a device, and changes nothing else about it', () async {
+      network.handler = (_) async => const FakeResponse(200, {
+        'id': 'device-2',
+        'installation_id': 'another-install',
+        'platform': 'android',
+        'name': 'Work phone',
+        'model': 'Pixel 8',
+        'os_version': 'Android 15',
+        'app_version': '1.0.0 (1)',
+        'push_provider': 'fcm',
+        'push_enabled': true,
+        'last_seen_at': '2026-10-07T10:00:00Z',
+        'created_at': '2026-10-01T10:00:00Z',
+      });
+
+      final named = await withPhone.renameDevice('device-2', 'Work phone');
+
+      final request = network.requests.single;
+      expect(request.method, 'PATCH');
+      expect(request.path, '/api/v1/devices/device-2');
+      // The name alone: sending the push fields empty would stop push.
+      expect(request.data, {'name': 'Work phone'});
+      expect(named.label, 'Work phone');
+      expect(named.pushEnabled, isTrue);
+      expect(named.isThisDevice, isFalse);
     });
 
     test('removes a device', () async {

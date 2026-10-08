@@ -2654,5 +2654,25 @@
     "logActionOrganizationUpdated": "Changed the workspace",
     "@logActionOrganizationUpdated": {
         "description": "Logged action"
+    },
+    "devicesRenameHint": "Tap one to give it a name of your own.",
+    "@devicesRenameHint": {
+        "description": "Says a device in the list can be renamed"
+    },
+    "devicesRename": "Name this phone",
+    "@devicesRename": {
+        "description": "Title of the dialog that names a device"
+    },
+    "devicesRenameLabel": "Name",
+    "@devicesRenameLabel": {
+        "description": "Label of the device name field"
+    },
+    "devicesRenameSave": "Save",
+    "@devicesRenameSave": {
+        "description": "Button that saves a device's name"
+    },
+    "devicesRenameCancel": "Cancel",
+    "@devicesRenameCancel": {
+        "description": "Button that closes the device name dialog"
     }
 }
