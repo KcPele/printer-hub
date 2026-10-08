@@ -24,11 +24,17 @@ RUN npm install
 # Copy configuration and source files
 COPY frontend/tsconfig.json frontend/tsr.config.json frontend/vite.config.ts frontend/biome.json ./
 COPY frontend/src ./src
+# Icons, the share image, robots.txt, and the sitemap, served as they are.
+COPY frontend/public ./public
 
 # Where the admin console finds the API. Left unset, a production build
 # talks to the live backend.
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
+# The site's own address, for its canonical link and share image. Left
+# unset, https://printerhub.kcpele.com.
+ARG VITE_SITE_URL
+ENV VITE_SITE_URL=${VITE_SITE_URL}
 
 # Build the application using TanStack Start & Nitro
 RUN npm run build

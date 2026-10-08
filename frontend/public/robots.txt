@@ -1,0 +1,7 @@
+# The landing page is for everyone. The admin console is kept out of search
+# results by the X-Robots-Tag header it is served with, which a crawler can
+# only see if it is allowed to ask: so nothing is disallowed here.
+User-agent: *
+Allow: /
+
+Sitemap: https://printerhub.kcpele.com/sitemap.xml

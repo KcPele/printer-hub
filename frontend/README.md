@@ -26,6 +26,14 @@ uv run python -m scripts.promote_superuser you@example.com
 - **The Docker image is built from the repository root** for that reason: `docker build -f frontend/Dockerfile .`
 - **The sign-in is kept in the tab's session storage.** Closing the tab signs out. Nothing under `/admin` is rendered on the server.
 
+## What search engines and link previews see
+
+- **The landing page is rendered on the server**, so its text, its one `h1`, and its head are in the first answer.
+- **`src/lib/site.ts`** holds the site's address, title, and description. `src/routes/index.tsx` turns them into the canonical link, the Open Graph and Twitter tags, and the structured data (the site, the organization, and the app). It claims nothing the page does not say: no price, rating, or store link until there is one. Add the store links there when the app is published.
+- **`public/`** has the icons, `og-image.png` (the picture a shared link shows, 1200 by 630), `robots.txt`, `sitemap.xml`, and the web manifest. The icons and the share image are drawn from the phone app's mark by `tool/brand.py`.
+- **The admin console is served with `X-Robots-Tag: noindex, nofollow`** (`vite.config.ts`). It is not disallowed in `robots.txt`, because a crawler that may not ask never sees that header.
+- A new public page is added to `public/sitemap.xml` and given its own title, description, and canonical link in its route's `head`.
+
 ---
 
 What follows came with the project template.

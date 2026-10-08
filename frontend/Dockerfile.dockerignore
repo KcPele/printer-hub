@@ -7,4 +7,5 @@
 !frontend/vite.config.ts
 !frontend/biome.json
 !frontend/src
+!frontend/public
 !packages/api-client/src

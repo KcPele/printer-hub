@@ -17,7 +17,15 @@ const config = defineConfig({
 	},
 	plugins: [
 		devtools(),
-		nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+		nitro({
+			rollupConfig: { external: [/^@sentry\//] },
+			// The admin console is drawn in the browser, so a tag in its page
+			// would never reach a search engine. The answer itself says it.
+			routeRules: {
+				"/admin": { headers: { "X-Robots-Tag": "noindex, nofollow" } },
+				"/admin/**": { headers: { "X-Robots-Tag": "noindex, nofollow" } },
+			},
+		}),
 		tailwindcss(),
 		tanstackStart(),
 		viteReact(),

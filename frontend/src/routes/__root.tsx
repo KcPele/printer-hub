@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE } from "../lib/site";
 import appCss from "../styles.css?url";
 
 interface MyRouterContext {
@@ -23,16 +24,20 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				name: "viewport",
 				content: "width=device-width, initial-scale=1",
 			},
-			{
-				title: "PrinterHub — Mobile Printing, Scanning & Copying",
-			},
-			{
-				name: "description",
-				content:
-					"PrinterHub finds the printers around you, works out what each one can do, and picks a connection that works. Printing, scanning and copying take one tap, not a networking lesson.",
-			},
+			// A page says its own title and description; these are for one
+			// that does not.
+			{ title: SITE_TITLE },
+			{ name: "description", content: SITE_DESCRIPTION },
+			{ name: "application-name", content: SITE_NAME },
+			{ name: "apple-mobile-web-app-title", content: SITE_NAME },
+			{ name: "theme-color", content: "#46D7B7" },
+			{ property: "og:site_name", content: SITE_NAME },
 		],
 		links: [
+			{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+			{ rel: "icon", href: "/favicon.ico", sizes: "48x48" },
+			{ rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+			{ rel: "manifest", href: "/site.webmanifest" },
 			{
 				rel: "preconnect",
 				href: "https://fonts.googleapis.com",
