@@ -424,4 +424,179 @@ void main() {
       UserSession(id: '1', isCurrent: true, lastUsedAt: lastUsed),
     );
   });
+  group('this phone', () {
+    const phone = PhoneDetails(
+      platform: 'ios',
+      name: 'iPhone',
+      model: 'iPhone 15 Pro',
+      osVersion: '18.1',
+      appVersion: '1.0.0 (1)',
+    );
+
+    Map<String, Object?> deviceBody({
+      String id = 'device-1',
+      String installationId = 'install-1',
+      bool pushEnabled = false,
+    }) => {
+      'id': id,
+      'installation_id': installationId,
+      'platform': 'ios',
+      'name': 'iPhone',
+      'model': 'iPhone 15 Pro',
+      'os_version': '18.1',
+      'app_version': '1.0.0 (1)',
+      'push_provider': pushEnabled ? 'fcm' : null,
+      'push_enabled': pushEnabled,
+      'last_seen_at': '2026-10-07T10:00:00Z',
+      'created_at': '2026-10-01T10:00:00Z',
+    };
+
+    late AuthRepository withPhone;
+
+    /// Answers sign-in, the account, and device registration.
+    void serve() {
+      network.handler = (request) async {
+        if (request.path.endsWith('/devices')) {
+          return request.method == 'POST'
+              ? FakeResponse(
+                  200,
+                  deviceBody(
+                    installationId:
+                        bodyOf(request)['installation_id'] as String,
+                    pushEnabled: bodyOf(request)['push_token'] != null,
+                  ),
+                )
+              : FakeResponse(200, [
+                  deviceBody(installationId: store.values['installation.id']!),
+                  deviceBody(id: 'device-2', installationId: 'another-phone'),
+                ]);
+        }
+        if (request.path.endsWith('/auth/login')) {
+          return FakeResponse(200, _auth());
+        }
+        return FakeResponse(200, userBody());
+      };
+    }
+
+    setUp(() {
+      withPhone = AuthRepository(
+        client: client,
+        store: store,
+        describePhone: () async => phone,
+      );
+      addTearDown(withPhone.close);
+      serve();
+    });
+
+    List<RequestOptions> registrations() => [
+      for (final request in network.requests)
+        if (request.path.endsWith('/devices') && request.method == 'POST')
+          request,
+    ];
+
+    test('has one identifier, made once and kept through sign-out', () async {
+      final id = await withPhone.installationId();
+
+      expect(id, hasLength(36));
+      expect(await withPhone.installationId(), id);
+      await withPhone.signOut();
+      expect(await withPhone.installationId(), id);
+    });
+
+    test('is registered when someone signs in', () async {
+      await withPhone.signIn(email: 'ada@example.com', password: 'pw');
+
+      final sent = bodyOf(registrations().single);
+      expect(sent['installation_id'], await withPhone.installationId());
+      expect(sent['platform'], 'ios');
+      expect(sent['model'], 'iPhone 15 Pro');
+      expect(sent['os_version'], '18.1');
+      expect(sent['app_version'], '1.0.0 (1)');
+      expect(sent.containsKey('push_token'), isFalse);
+      expect(sent.containsKey('push_provider'), isFalse);
+    });
+
+    test('is registered again each time the app opens', () async {
+      await signedInBefore();
+      await withPhone.restore();
+
+      await withPhone.refresh();
+
+      expect(registrations(), hasLength(1));
+    });
+
+    test('is not registered by a repository that cannot describe it', () async {
+      await repository.signIn(email: 'ada@example.com', password: 'pw');
+
+      expect(await repository.registerDevice(), isNull);
+      expect(registrations(), isEmpty);
+    });
+
+    test('says where its notifications go', () async {
+      final device = await withPhone.registerDevice(pushToken: 'fcm-token');
+
+      final sent = bodyOf(registrations().single);
+      expect(sent['push_token'], 'fcm-token');
+      expect(sent['push_provider'], 'fcm');
+      expect(device!.pushEnabled, isTrue);
+      expect(device.isThisDevice, isTrue);
+    });
+
+    test('a failed registration does not stop a sign-in', () async {
+      network.handler = (request) async => request.path.endsWith('/devices')
+          ? throw const FormatException('offline')
+          : FakeResponse(200, _auth());
+
+      final user = await withPhone.signIn(
+        email: 'ada@example.com',
+        password: 'pw',
+      );
+
+      expect(user.email, 'ada@example.com');
+      expect(await withPhone.registerDevice(), isNull);
+    });
+
+    test('lists the devices, marking this one', () async {
+      await withPhone.installationId();
+
+      final devices = await withPhone.devices();
+
+      expect(devices.map((device) => device.isThisDevice), [true, false]);
+      expect(devices.first.label, 'iPhone 15 Pro');
+      expect(devices.first.platform, 'ios');
+      expect(devices.first.lastSeenAt, DateTime.utc(2026, 10, 7, 10));
+      expect(devices.first, isNot(devices.last));
+      // Built at run time, so equality is by value and not by identity.
+      PhoneDetails described(String model) =>
+          PhoneDetails(platform: 'ios', model: model);
+      expect(described('iPhone 15'), described('iPhone 15'));
+      expect(described('iPhone 15'), isNot(described('iPhone 16')));
+    });
+
+    test('a device is called by the best name it has', () {
+      final seen = DateTime.utc(2026);
+      expect(
+        UserDevice(id: '1', platform: 'android', lastSeenAt: seen).label,
+        'android',
+      );
+      expect(
+        UserDevice(
+          id: '1',
+          platform: 'android',
+          lastSeenAt: seen,
+          name: "Ada's phone",
+        ).label,
+        "Ada's phone",
+      );
+    });
+
+    test('removes a device', () async {
+      network.handler = (_) async => const FakeResponse(204);
+
+      await withPhone.removeDevice('device-2');
+
+      expect(network.requests.single.method, 'DELETE');
+      expect(network.requests.single.path, '/api/v1/devices/device-2');
+    });
+  });
 }

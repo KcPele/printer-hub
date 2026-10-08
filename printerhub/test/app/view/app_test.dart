@@ -3,6 +3,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:printerhub/account/account.dart';
 import 'package:printerhub/activity/activity.dart';
 import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/gallery/gallery.dart';
@@ -177,12 +178,49 @@ void main() {
         expect(find.byType(HomePage), findsOneWidget);
       });
 
+      /// Opens an entry of Settings, which may be further down the list
+      /// than the screen is tall.
+      Future<void> openEntry(WidgetTester tester, String title) async {
+        await tester.scrollUntilVisible(
+          find.text(title),
+          200,
+          scrollable: find
+              .descendant(
+                of: find.byType(SettingsPage),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.ensureVisible(find.text(title));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(title));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('opens each account screen from Settings', (tester) async {
+        await pump(tester);
+        await openArea(tester, 'Settings');
+
+        for (final (entry, page) in [
+          ('Ada', ProfilePage),
+          ('Change password', ChangePasswordPage),
+          ('Devices and sessions', DevicesPage),
+          ('Delete account', DeleteAccountPage),
+        ]) {
+          await openEntry(tester, entry);
+          expect(find.byType(page), findsOneWidget, reason: entry);
+
+          await tester.pageBack();
+          await tester.pumpAndSettle();
+          expect(find.byType(SettingsPage), findsOneWidget);
+        }
+      });
+
       testWidgets('changes theme in Settings and keeps it', (tester) async {
         final preferences = await pump(tester);
 
         await openArea(tester, 'Settings');
-        await tester.tap(find.text('Theme'));
-        await tester.pumpAndSettle();
+        await openEntry(tester, 'Theme');
         expect(find.byType(ThemePage), findsOneWidget);
 
         await tester.tap(find.text('Indigo'));
@@ -204,9 +242,7 @@ void main() {
         (tester) async {
           await pump(tester);
           await openArea(tester, 'Settings');
-          await tester.scrollUntilVisible(find.text('Design gallery'), 200);
-          await tester.tap(find.text('Design gallery'));
-          await tester.pumpAndSettle();
+          await openEntry(tester, 'Design gallery');
           expect(find.byType(GalleryPage), findsOneWidget);
 
           await openArea(tester, 'Settings');
@@ -221,8 +257,7 @@ void main() {
       ) async {
         await pump(tester);
         await openArea(tester, 'Settings');
-        await tester.tap(find.text('Theme'));
-        await tester.pumpAndSettle();
+        await openEntry(tester, 'Theme');
 
         await openArea(tester, 'Home');
         await openArea(tester, 'Settings');

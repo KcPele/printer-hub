@@ -12,6 +12,7 @@ import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printer_discovery/printer_discovery.dart';
 import 'package:printer_protocols/printer_protocols.dart';
 import 'package:printerhub/app/config/app_config.dart';
+import 'package:printerhub/app/device/phone_details_reader.dart';
 import 'package:printerhub/printers/finders.dart';
 import 'package:printerhub/printers/widgets/qr_camera.dart';
 import 'package:printers_repository/printers_repository.dart';
@@ -66,7 +67,11 @@ Future<void> bootstrap(
     baseUrl: config.apiBaseUrl,
     tokenStore: const SecureTokenStore(secureStore),
   );
-  final authRepository = AuthRepository(client: client, store: secureStore);
+  final authRepository = AuthRepository(
+    client: client,
+    store: secureStore,
+    describePhone: readPhoneDetails,
+  );
   final organizationsRepository = OrganizationsRepository(
     client: client,
     store: secureStore,

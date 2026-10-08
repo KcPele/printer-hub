@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:preferences_repository/preferences_repository.dart';
+import 'package:printerhub/account/account.dart';
 import 'package:printerhub/activity/activity.dart';
 import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/gallery/gallery.dart';
@@ -30,6 +31,10 @@ abstract final class AppRoutes {
   static String printer(String id) => '/printers/$id';
   static const String activity = '/activity';
   static const String settings = '/settings';
+  static const String profile = '/settings/profile';
+  static const String changePassword = '/settings/password';
+  static const String devices = '/settings/devices';
+  static const String deleteAccount = '/settings/delete-account';
   static const String theme = '/settings/theme';
   static const String gallery = '/settings/gallery';
 
@@ -169,6 +174,22 @@ GoRouter createAppRouter({
                 path: AppRoutes.settings,
                 builder: (context, state) => const SettingsPage(),
                 routes: [
+                  GoRoute(
+                    path: 'profile',
+                    builder: (context, state) => const ProfilePage(),
+                  ),
+                  GoRoute(
+                    path: 'password',
+                    builder: (context, state) => const ChangePasswordPage(),
+                  ),
+                  GoRoute(
+                    path: 'devices',
+                    builder: (context, state) => const DevicesPage(),
+                  ),
+                  GoRoute(
+                    path: 'delete-account',
+                    builder: (context, state) => const DeleteAccountPage(),
+                  ),
                   GoRoute(
                     path: 'theme',
                     builder: (context, state) => const ThemePage(),

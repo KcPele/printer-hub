@@ -27,7 +27,16 @@ class TestBackend {
       tokenStore: SecureTokenStore(store),
       httpClientAdapter: network,
     );
-    auth = AuthRepository(client: client, store: store);
+    auth = AuthRepository(
+      client: client,
+      store: store,
+      describePhone: () async => const PhoneDetails(
+        platform: 'ios',
+        model: 'iPhone 15 Pro',
+        osVersion: 'iOS 18.1',
+        appVersion: '1.0.0 (1)',
+      ),
+    );
     organizations = OrganizationsRepository(client: client, store: store);
     device = FakePrinterHttp(
       (request) => throw PrinterUnreachable(request.uri, 'nothing there'),
@@ -76,6 +85,55 @@ class TestBackend {
 
   /// The printers the API knows, in every workspace.
   List<Map<String, Object?>> printerList = [];
+
+  /// Where the account is signed in. The first is this phone.
+  List<Map<String, Object?>> sessionList = [
+    _sessionBody('session-1', current: true, deviceId: 'device-1'),
+    _sessionBody('session-2', userAgent: 'PrinterHub/1.0 Android'),
+  ];
+
+  /// The phones the account has been used on. A phone that registers is
+  /// added, or replaces the one with its installation id.
+  List<Map<String, Object?>> deviceList = [
+    _deviceBody('device-2', model: 'Pixel 8', platform: 'android'),
+  ];
+
+  static Map<String, Object?> _sessionBody(
+    String id, {
+    bool current = false,
+    String? deviceId,
+    String? userAgent,
+  }) => {
+    'id': id,
+    'device_id': deviceId,
+    'user_agent': userAgent,
+    'ip': '203.0.113.7',
+    'is_current': current,
+    'created_at': '2026-10-01T10:00:00Z',
+    'last_used_at': '2026-10-07T10:00:00Z',
+    'expires_at': '2026-11-01T10:00:00Z',
+  };
+
+  static Map<String, Object?> _deviceBody(
+    String id, {
+    required String model,
+    String platform = 'ios',
+    String installationId = 'another-install',
+    String? osVersion = 'Android 15',
+    bool pushEnabled = true,
+  }) => {
+    'id': id,
+    'installation_id': installationId,
+    'platform': platform,
+    'name': null,
+    'model': model,
+    'os_version': osVersion,
+    'app_version': '1.0.0 (1)',
+    'push_provider': pushEnabled ? 'fcm' : null,
+    'push_enabled': pushEnabled,
+    'last_seen_at': '2026-10-07T10:00:00Z',
+    'created_at': '2026-10-01T10:00:00Z',
+  };
 
   /// The user name and password saved with each printer that was added with
   /// one, by printer id.
@@ -269,6 +327,24 @@ class TestBackend {
         return printer == null
             ? FakeResponse.problem(422, 'pairing.token_invalid')
             : FakeResponse(200, {'printer': printer});
+      case 'GET /auth/sessions':
+        return FakeResponse(200, sessionList);
+      case 'GET /devices':
+        return FakeResponse(200, deviceList);
+      case 'POST /devices':
+        final registered = _deviceBody(
+          'device-1',
+          model: body['model'] as String? ?? 'iPhone',
+          installationId: body['installation_id'] as String,
+          osVersion: body['os_version'] as String?,
+          pushEnabled: body['push_token'] != null,
+        );
+        deviceList = [
+          registered,
+          for (final device in deviceList)
+            if (device['id'] != 'device-1') device,
+        ];
+        return FakeResponse(200, registered);
       case 'POST /auth/logout' ||
           'POST /auth/email/resend' ||
           'POST /auth/password/forgot' ||
@@ -276,6 +352,22 @@ class TestBackend {
           'POST /auth/password/change' ||
           'POST /account/delete':
         return const FakeResponse(204);
+    }
+    final removal = _removalRoute.firstMatch(key);
+    if (removal != null) {
+      final id = removal.group(2);
+      if (removal.group(1) == 'auth/sessions') {
+        sessionList = [
+          for (final session in sessionList)
+            if (session['id'] != id) session,
+        ];
+      } else {
+        deviceList = [
+          for (final device in deviceList)
+            if (device['id'] != id) device,
+        ];
+      }
+      return const FakeResponse(204);
     }
     final credentialsRoute = _credentialsRoute.firstMatch(key);
     if (credentialsRoute != null) {
@@ -289,6 +381,10 @@ class TestBackend {
 
     return FakeResponse.problem(404, 'not_found', detail: 'No route for $key');
   }
+
+  static final RegExp _removalRoute = RegExp(
+    r'^DELETE /(auth/sessions|devices)/([^/]+)$',
+  );
 
   static final RegExp _credentialsRoute = RegExp(
     r'^GET /organizations/[^/]+/printers/([^/]+)/connections/[^/]+/credentials$',

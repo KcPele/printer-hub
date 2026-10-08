@@ -41,6 +41,7 @@ class SettingsPage extends StatelessWidget {
                   icon: Icons.person_outline,
                   title: user.name,
                   subtitle: user.email,
+                  onTap: () => context.push(AppRoutes.profile),
                 ),
                 if (!user.emailVerified)
                   _Entry(
@@ -60,9 +61,25 @@ class SettingsPage extends StatelessWidget {
                         : () => _chooseWorkspace(context, session),
                   ),
                 _Entry(
+                  icon: Icons.lock_outline,
+                  title: l10n.settingsPassword,
+                  onTap: () => context.push(AppRoutes.changePassword),
+                ),
+                _Entry(
+                  icon: Icons.devices_outlined,
+                  title: l10n.settingsDevices,
+                  subtitle: l10n.settingsDevicesSubtitle,
+                  onTap: () => context.push(AppRoutes.devices),
+                ),
+                _Entry(
                   icon: Icons.logout,
                   title: l10n.settingsSignOut,
                   onTap: () => context.read<SessionCubit>().signOut(),
+                ),
+                _Entry(
+                  icon: Icons.delete_outline,
+                  title: l10n.settingsDeleteAccount,
+                  onTap: () => context.push(AppRoutes.deleteAccount),
                 ),
               ],
             ),

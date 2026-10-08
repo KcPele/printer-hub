@@ -17,6 +17,7 @@ dependencies:
   bloc: ^9.2.1
   connection_engine:
     path: packages/connection_engine
+  device_info_plus: ^13.3.0
   equatable: ^3.0.0
   flutter:
     sdk: flutter
@@ -32,6 +33,7 @@ dependencies:
   mobile_scanner: ^7.4.2
   organizations_repository:
     path: packages/organizations_repository
+  package_info_plus: ^10.2.2
   preferences_repository:
     path: packages/preferences_repository
   printer_discovery:

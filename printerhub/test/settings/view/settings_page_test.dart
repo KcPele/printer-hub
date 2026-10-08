@@ -98,6 +98,23 @@ void main() {
         expect(find.text('Acme'), findsOneWidget);
       });
 
+      testWidgets('opens each account screen', (tester) async {
+        final router = recordingRouter();
+        await pump(tester, router: router);
+
+        for (final (entry, route) in [
+          ('Ada', AppRoutes.profile),
+          ('Change password', AppRoutes.changePassword),
+          ('Devices and sessions', AppRoutes.devices),
+          ('Delete account', AppRoutes.deleteAccount),
+        ]) {
+          await tester.ensureVisible(find.text(entry));
+          await tester.tap(find.text(entry));
+
+          verify(() => router.push<Object?>(route)).called(1);
+        }
+      });
+
       testWidgets('offers to verify an unverified email', (tester) async {
         final router = recordingRouter();
         await pump(tester, router: router);

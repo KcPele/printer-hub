@@ -608,6 +608,131 @@
     "@addPrinterNotAPrinter": {
         "description": "Shown when the device is not a supported printer"
     },
+    "settingsPassword": "Change password",
+    "@settingsPassword": {
+        "description": "Settings entry that opens the change-password screen"
+    },
+    "settingsDevices": "Devices and sessions",
+    "@settingsDevices": {
+        "description": "Settings entry that opens the list of devices"
+    },
+    "settingsDevicesSubtitle": "Where your account is signed in",
+    "@settingsDevicesSubtitle": {
+        "description": "Under the devices entry in Settings"
+    },
+    "settingsDeleteAccount": "Delete account",
+    "@settingsDeleteAccount": {
+        "description": "Settings entry that opens account deletion"
+    },
+    "profileTitle": "Profile",
+    "@profileTitle": {
+        "description": "Title of the profile screen"
+    },
+    "profileBody": "Your name is shown to the people you share a workspace with.",
+    "@profileBody": {
+        "description": "Explains what the name is used for"
+    },
+    "profileSave": "Save",
+    "@profileSave": {
+        "description": "Button that saves the profile"
+    },
+    "profileSaved": "Your name was changed.",
+    "@profileSaved": {
+        "description": "Shown after the name is saved"
+    },
+    "passwordTitle": "Change password",
+    "@passwordTitle": {
+        "description": "Title of the change-password screen"
+    },
+    "passwordBody": "Enter the password you use now, then the one you want.",
+    "@passwordBody": {
+        "description": "Explains the change-password form"
+    },
+    "passwordCurrent": "Current password",
+    "@passwordCurrent": {
+        "description": "Label of the current password field"
+    },
+    "passwordAction": "Change password",
+    "@passwordAction": {
+        "description": "Button that changes the password"
+    },
+    "passwordChanged": "Your password was changed.",
+    "@passwordChanged": {
+        "description": "Shown after the password is changed"
+    },
+    "deleteAccountTitle": "Delete account",
+    "@deleteAccountTitle": {
+        "description": "Title of the delete-account screen"
+    },
+    "deleteAccountBody": "This removes your account and signs you out everywhere. Workspaces you own on your own are removed with it.",
+    "@deleteAccountBody": {
+        "description": "Explains what deleting the account does"
+    },
+    "deleteAccountWarning": "This cannot be undone.",
+    "@deleteAccountWarning": {
+        "description": "Warning above the password field"
+    },
+    "deleteAccountAction": "Delete my account",
+    "@deleteAccountAction": {
+        "description": "Button that deletes the account"
+    },
+    "devicesTitle": "Devices and sessions",
+    "@devicesTitle": {
+        "description": "Title of the devices screen"
+    },
+    "devicesSignedIn": "Signed in",
+    "@devicesSignedIn": {
+        "description": "Heading of the list of sessions"
+    },
+    "devicesSignedInBody": "Sign out a device you no longer use, or do not recognise.",
+    "@devicesSignedInBody": {
+        "description": "Under the sessions heading"
+    },
+    "devicesPhones": "Phones and tablets",
+    "@devicesPhones": {
+        "description": "Heading of the list of registered devices"
+    },
+    "devicesPhonesBody": "Notifications go to these. Forget one to stop them.",
+    "@devicesPhonesBody": {
+        "description": "Under the devices heading"
+    },
+    "devicesThisDevice": "This device",
+    "@devicesThisDevice": {
+        "description": "Marks the device the app is running on"
+    },
+    "devicesUnknown": "Unknown device",
+    "@devicesUnknown": {
+        "description": "Shown for a session that says nothing about its device"
+    },
+    "devicesLastUsed": "Last used {date}",
+    "@devicesLastUsed": {
+        "description": "When a session was last used",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "devicesSignOut": "Sign out",
+    "@devicesSignOut": {
+        "description": "Button that signs another device out"
+    },
+    "devicesForget": "Forget",
+    "@devicesForget": {
+        "description": "Button that removes a registered device"
+    },
+    "devicesNotificationsOn": "Notifications on",
+    "@devicesNotificationsOn": {
+        "description": "Says a device receives notifications"
+    },
+    "devicesNotificationsOff": "Notifications off",
+    "@devicesNotificationsOff": {
+        "description": "Says a device does not receive notifications"
+    },
+    "devicesFailedTitle": "Couldn't load your devices",
+    "@devicesFailedTitle": {
+        "description": "Heading when the devices list cannot be read"
+    },
     "printerPasswordTitle": "This printer asks who is printing",
     "@printerPasswordTitle": {
         "description": "Heading of the step that asks for a printer's user name and password"

@@ -10,14 +10,21 @@ import 'package:local_store/local_store.dart';
 ///
 /// Every method that talks to the API throws an [ApiException] on failure.
 class AuthRepository {
-  new({required this._client, required this._store}) {
+  /// `describePhone` reads what this phone is. With it, the phone is
+  /// registered with the account each time a session starts or resumes.
+  new({required this._client, required this._store, this._describePhone}) {
     _sessionEnded = _client.sessionEnded.listen((_) => _forget());
   }
 
   static const String _userKey = 'session.user';
 
+  /// Made once per install and kept through sign-out, so the backend knows
+  /// the same phone when someone signs in again.
+  static const String _installationKey = 'installation.id';
+
   final PrinterHubClient _client;
   final SecureStore _store;
+  final Future<PhoneDetails> Function()? _describePhone;
   // Synchronous, so a listener has the new status before the call that
   // caused it returns.
   final _statuses = StreamController<AuthStatus>.broadcast(sync: true);
@@ -59,6 +66,7 @@ class AuthRepository {
     if (_account == null) return;
     try {
       await _remember(await apiCall(() => _client.api.users.getMe()));
+      await registerDevice();
     } on ApiProblem catch (problem) {
       if (problem.status == 401) await _forget();
     } on ApiUnreachable {
@@ -186,6 +194,61 @@ class AuthRepository {
     return await _remember(account);
   }
 
+  /// This install's identifier, made the first time it is asked for.
+  Future<String> installationId() async {
+    final kept = await _store.read(_installationKey);
+    if (kept != null) return kept;
+    final made = newIdempotencyKey();
+    await _store.write(_installationKey, made);
+    return made;
+  }
+
+  /// Tells the backend which phone this session is on, and with
+  /// [pushToken] where to send its notifications.
+  ///
+  /// Never throws: a session works without it, and it is tried again the
+  /// next time the app opens. Null when it could not be done.
+  Future<UserDevice?> registerDevice({String? pushToken}) async {
+    final describe = _describePhone;
+    if (describe == null) return null;
+    try {
+      final phone = await describe();
+      final id = await installationId();
+      final device = await apiCall(
+        () => _client.api.devices.registerDevice(
+          body: DeviceRegister(
+            installationId: id,
+            platform: DevicePlatform.fromJson(phone.platform),
+            name: phone.name,
+            model: phone.model,
+            osVersion: phone.osVersion,
+            appVersion: phone.appVersion,
+            pushProvider: pushToken == null ? null : PushProviderName.fcm,
+            pushToken: pushToken,
+          ),
+        ),
+      );
+      return UserDevice.fromApi(device, installationId: id);
+    } on ApiException {
+      return null;
+    }
+  }
+
+  /// Every phone and tablet the account has been used on.
+  Future<List<UserDevice>> devices() async {
+    final id = await installationId();
+    final devices = await apiCall(() => _client.api.devices.listDevices());
+    return [
+      for (final device in devices)
+        UserDevice.fromApi(device, installationId: id),
+    ];
+  }
+
+  /// Forgets a device: it stops receiving notifications.
+  Future<void> removeDevice(String id) {
+    return apiCall(() => _client.api.devices.deleteDevice(deviceId: id));
+  }
+
   Future<List<UserSession>> sessions() async {
     final sessions = await apiCall(() => _client.api.auth.listSessions());
     return sessions.map(UserSession.fromApi).toList();
@@ -213,7 +276,9 @@ class AuthRepository {
   Future<User> _startSession(Future<AuthResponse> Function() request) async {
     final response = await apiCall(request);
     await _client.startSession(response.tokens);
-    return await _remember(response.user);
+    final user = await _remember(response.user);
+    await registerDevice();
+    return user;
   }
 
   Future<User> _remember(UserRead account) async {
