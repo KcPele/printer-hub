@@ -2682,5 +2682,17 @@
     "scanFailedInterrupted": "The app was closed while this was scanning, and the pages were not kept.",
     "@scanFailedInterrupted": {
         "description": "Why a scan failed: the app closed during it"
+    },
+    "scanPrint": "Print it",
+    "@scanPrint": {
+        "description": "Button that prints a finished scan"
+    },
+    "documentPrint": "Print",
+    "@documentPrint": {
+        "description": "Menu entry that prints a document kept in the workspace"
+    },
+    "printerChoiceTitle": "Which printer?",
+    "@printerChoiceTitle": {
+        "description": "Title of the sheet that asks which printer to use"
     }
 }

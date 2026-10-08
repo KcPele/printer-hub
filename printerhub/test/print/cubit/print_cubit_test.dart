@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:api_client/api_client.dart';
 import 'package:api_client/testing.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -123,6 +125,43 @@ void main() {
       await choosing;
 
       expect(cubit.state.step, PrintStep.choosing);
+    });
+  });
+
+  group('open', () {
+    blocTest<PrintCubit, PrintState>(
+      'reads a document handed to it, without the file browser',
+      build: build,
+      act: (cubit) => cubit.open(pickedPdf(name: 'Scan today.pdf')),
+      expect: () => [
+        on(PrintStep.reading)
+            .having((s) => s.document!.name, 'name', 'Scan today.pdf'),
+        on(PrintStep.ready).having((s) => s.preview!.pageCount, 'pages', 2),
+      ],
+      verify: (_) => expect(backend.picker.opened, 0),
+    );
+
+    blocTest<PrintCubit, PrintState>(
+      'says when what it was handed is a kind it does not print',
+      build: build,
+      act: (cubit) => cubit.open(pickedPdf(name: 'Budget.xlsx')),
+      expect: () => [const PrintState(problem: PrintProblem.unsupportedFile)],
+    );
+
+    test('a file on the phone is a document to print', () async {
+      final file = File('${backend.scans.path}/Scan%20today.pdf')
+        ..writeAsStringSync('%PDF-1.7 a scan');
+
+      final document = PickedDocument.fromFile(file);
+
+      expect(document.name, 'Scan today.pdf');
+      expect(document.mimeType, 'application/pdf');
+      expect(document.length, 15);
+      expect(document.path, file.path);
+      expect(
+        String.fromCharCodes(await document.open().expand((b) => b).toList()),
+        '%PDF-1.7 a scan',
+      );
     });
   });
 

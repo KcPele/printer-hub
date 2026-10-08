@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
@@ -11,6 +12,17 @@ class PickedDocument extends Equatable {
     required this.length,
     required this.open,
   });
+
+  /// A file already on the phone, such as a scan that was just saved or a
+  /// document fetched from the workspace.
+  factory fromFile(File file) {
+    return PickedDocument(
+      name: Uri.decodeComponent(file.uri.pathSegments.last),
+      path: file.path,
+      length: file.lengthSync(),
+      open: file.openRead,
+    );
+  }
 
   /// The file's name, as it will show on the printer.
   final String name;

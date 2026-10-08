@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:api_client/api_client.dart';
 import 'package:bloc/bloc.dart';
@@ -132,21 +133,29 @@ class DocumentsCubit extends Cubit<DocumentsState> {
   /// Brings a document's file onto the phone and hands it to the share
   /// sheet, where it can be opened, saved, or sent.
   Future<void> open(StoredDocument document) async {
-    if (state.busyId != null || !document.canFetch) return;
+    final file = await fetch(document);
+    if (file != null) await _sharer.share([file], name: document.name);
+  }
+
+  /// Brings a document's file onto the phone, to print it. Null when it
+  /// could not be fetched; the state then says why.
+  Future<File?> fetch(StoredDocument document) async {
+    if (state.busyId != null || !document.canFetch) return null;
     emit(_with(busyId: document.id));
     try {
       final file = await _documentsRepository.fetch(
         organizationId: _organizationId,
         document: document,
       );
-      if (isClosed) return;
+      if (isClosed) return null;
       emit(_with());
-      await _sharer.share([file], name: document.name);
+      return file;
     } on ApiException catch (error) {
       if (!isClosed) emit(_with(error: error));
     } on TransferFailed {
       if (!isClosed) emit(_with(fetchFailed: true));
     }
+    return null;
   }
 
   Future<void> rename(StoredDocument document, String name) {

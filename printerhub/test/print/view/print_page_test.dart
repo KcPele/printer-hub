@@ -111,6 +111,28 @@ void main() {
       expect(find.text('Choose a PDF or a picture from your phone.'), findsOne);
     });
 
+    testWidgets('opens on a document handed to it', (tester) async {
+      final listed = await tester.runAsync(() => backend.printers.list(_org));
+      printers.emit(
+        PrintersState(status: PrintersStatus.ready, printers: listed!),
+      );
+
+      await tester.pumpApp(
+        PrintPage(
+          printerId: 'printer-1',
+          document: pickedPdf(name: 'Scan today.pdf'),
+        ),
+        backend: backend,
+        printersCubit: printers,
+        router: router,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Scan today.pdf'), findsOneWidget);
+      expect(find.text('How to print it'), findsOneWidget);
+      expect(backend.picker.opened, 0);
+    });
+
     testWidgets('says when a printer is no longer in the workspace', (
       tester,
     ) async {

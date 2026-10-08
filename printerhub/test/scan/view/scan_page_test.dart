@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printer_protocols/testing.dart';
+import 'package:printerhub/app/app.dart';
+import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/scan/scan.dart';
 
@@ -355,8 +357,75 @@ void main() {
       await tester.pump();
       expect(backend.sharer.shared.single.name, 'Receipts');
 
-      await tester.tap(find.text('Done'));
+      await press(tester, find.text('Done'));
       verify(router.pop).called(1);
+    });
+
+    testWidgets('prints a saved scan on the printer it was made on', (
+      tester,
+    ) async {
+      await pump(tester);
+      await scan(tester);
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+
+      await tester.tap(find.text('Print it'));
+
+      final handed = verify(
+        () => router.push<Object?>(
+          AppRoutes.printOn('printer-1'),
+          extra: captureAny(named: 'extra'),
+        ),
+      ).captured.single;
+      expect(
+        handed,
+        isA<PickedDocument>()
+            .having((d) => d.mimeType, 'type', 'application/pdf')
+            .having((d) => d.name, 'name', endsWith('.pdf')),
+      );
+    });
+
+    testWidgets('does not offer to print several pictures, or on a device '
+        'that only scans', (tester) async {
+      await pump(tester);
+      await tester.tap(find.text('The feeder'));
+      await tester.pump();
+      await press(tester, find.text('One PDF'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pictures, one a page').last);
+      await tester.pumpAndSettle();
+      backend.scanPages = [tinyJpeg, tinyJpeg];
+      await scan(tester);
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+
+      expect(find.text('Share'), findsOneWidget);
+      expect(find.text('Print it'), findsNothing);
+    });
+
+    testWidgets('does not offer to print on a device that only scans', (
+      tester,
+    ) async {
+      final body = printerBody();
+      final capabilities = body['capabilities']! as Map<String, Object?>;
+      backend.printerList = [
+        {
+          ...body,
+          'capabilities': {
+            ...capabilities,
+            'print': {
+              ...capabilities['print']! as Map<String, Object?>,
+              'supported': false,
+            },
+          },
+        },
+      ];
+      await pump(tester);
+      await scan(tester);
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+
+      expect(find.text('Print it'), findsNothing);
     });
 
     testWidgets('keeps a saved scan in the workspace', (tester) async {

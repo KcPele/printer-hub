@@ -19,12 +19,15 @@ import 'package:printers_repository/printers_repository.dart';
 
 /// Prints a document on one printer: choose it, say how, and follow it.
 class PrintPage extends StatelessWidget {
-  const new({required this.printerId, this.retryOf, super.key});
+  const new({required this.printerId, this.retryOf, this.document, super.key});
 
   final String printerId;
 
   /// The failed or cancelled job this print is another try of.
   final Job? retryOf;
+
+  /// A document handed over to print, in place of one chosen here.
+  final PickedDocument? document;
 
   @override
   Widget build(BuildContext context) {
@@ -42,14 +45,19 @@ class PrintPage extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (context) => PrintCubit(
-            printersRepository: context.read<PrintersRepository>(),
-            jobsRepository: context.read<JobsRepository>(),
-            documents: context.read<PrintDocuments>(),
-            organizationId: organizationId,
-            printer: printer,
-            retryOf: retryOf,
-          ),
+          create: (context) {
+            final cubit = PrintCubit(
+              printersRepository: context.read<PrintersRepository>(),
+              jobsRepository: context.read<JobsRepository>(),
+              documents: context.read<PrintDocuments>(),
+              organizationId: organizationId,
+              printer: printer,
+              retryOf: retryOf,
+            );
+            final handed = document;
+            if (handed != null) unawaited(cubit.open(handed));
+            return cubit;
+          },
         ),
         BlocProvider(
           // Read at once, so the settings a print starts from are in

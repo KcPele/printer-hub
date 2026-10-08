@@ -166,11 +166,17 @@ class PrintCubit extends Cubit<PrintState> {
   ({String jobId, String? title, PrintChoices choices})? _retry;
 
   /// Lets the person choose a file, and reads it.
-  Future<void> choose() async {
+  Future<void> choose() => _take(_documents.picker.pick);
+
+  /// Reads a document handed to the app: a scan just saved, a document
+  /// kept in the workspace, a file another app shared.
+  Future<void> open(PickedDocument document) => _take(() async => document);
+
+  Future<void> _take(Future<PickedDocument?> Function() get) async {
     if (_choosing || state.step == PrintStep.printing) return;
     _choosing = true;
     try {
-      final document = await _documents.picker.pick();
+      final document = await get();
       if (document == null || isClosed) return;
       if (document.mimeType == null) {
         emit(
@@ -228,7 +234,7 @@ class PrintCubit extends Cubit<PrintState> {
       return;
     }
     _touched = true;
-    _take(saved);
+    _apply(saved);
   }
 
   /// Takes what a print usually starts from, unless choices were already
@@ -239,10 +245,10 @@ class PrintCubit extends Cubit<PrintState> {
         state.step == PrintStep.finished) {
       return;
     }
-    _take(usual);
+    _apply(usual);
   }
 
-  void _take(PrintChoices choices) {
+  void _apply(PrintChoices choices) {
     emit(
       PrintState(
         step: state.step,

@@ -3,11 +3,16 @@ import 'dart:async';
 import 'package:app_ui/app_ui.dart';
 import 'package:documents_repository/documents_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/documents/cubit/documents_cubit.dart';
 import 'package:printerhub/documents/document_words.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/print/documents.dart';
+import 'package:printerhub/printers/cubit/printers_cubit.dart';
+import 'package:printerhub/printers/widgets/printer_choice_sheet.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/session/session.dart';
 
@@ -153,7 +158,7 @@ class _Documents extends StatelessWidget {
   }
 }
 
-enum _DocumentAction { open, rename, delete }
+enum _DocumentAction { open, print, rename, delete }
 
 class _DocumentCard extends StatelessWidget {
   const new({
@@ -176,6 +181,16 @@ class _DocumentCard extends StatelessWidget {
     switch (action) {
       case _DocumentAction.open:
         await cubit.open(document);
+      case _DocumentAction.print:
+        final router = GoRouter.of(context);
+        final printer = await choosePrinter(context);
+        if (printer == null) return;
+        final file = await cubit.fetch(document);
+        if (file == null) return;
+        router.go(
+          AppRoutes.printOn(printer.id),
+          extra: PickedDocument.fromFile(file),
+        );
       case _DocumentAction.rename:
         final name = await showDialog<String>(
           context: context,
@@ -209,6 +224,18 @@ class _DocumentCard extends StatelessWidget {
     final l10n = context.l10n;
     final textTheme = context.textTheme;
     final colors = context.colors;
+    // A kind of file the app prints, and a printer to print it on.
+    final canPrint =
+        const {
+          'application/pdf',
+          'image/jpeg',
+          'image/png',
+        }.contains(document.mimeType) &&
+        context.select<PrintersCubit, bool>(
+          (cubit) => cubit.state.printers.any(
+            (printer) => printer.capabilities?.print.supported ?? true,
+          ),
+        );
     final tag = !document.inCloud
         ? l10n.documentOnPhoneOnly
         : document.awaitsFile
@@ -260,6 +287,11 @@ class _DocumentCard extends StatelessWidget {
                 PopupMenuItem(
                   value: _DocumentAction.open,
                   child: Text(l10n.documentOpen),
+                ),
+              if (document.canFetch && canPrint)
+                PopupMenuItem(
+                  value: _DocumentAction.print,
+                  child: Text(l10n.documentPrint),
                 ),
               PopupMenuItem(
                 value: _DocumentAction.rename,

@@ -2,11 +2,13 @@ import 'package:api_client/testing.dart';
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printerhub/account/account.dart';
 import 'package:printerhub/activity/activity.dart';
+import 'package:printerhub/app/app.dart';
 import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/catalogue/catalogue.dart';
 import 'package:printerhub/documents/documents.dart';
@@ -258,6 +260,22 @@ void main() {
 
         expect(find.byType(PrintPage), findsOneWidget);
         expect(find.text('What would you like to print?'), findsOneWidget);
+      });
+
+      testWidgets('opens printing on a document handed over', (tester) async {
+        backend.printerList = [printerBody()];
+        await pump(tester);
+
+        // As a finished scan or a kept document does.
+        GoRouter.of(tester.element(find.byType(HomePage))).go(
+          AppRoutes.printOn('printer-1'),
+          extra: pickedPdf(name: 'Scan today.pdf'),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PrintPage), findsOneWidget);
+        expect(find.text('Scan today.pdf'), findsOneWidget);
+        expect(find.text('How to print it'), findsOneWidget);
       });
 
       testWidgets('opens scanning from a printer’s page', (tester) async {

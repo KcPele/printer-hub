@@ -1,7 +1,11 @@
 import 'package:api_client/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:printerhub/app/app.dart';
 import 'package:printerhub/documents/documents.dart';
+import 'package:printerhub/print/print.dart';
+import 'package:printerhub/printers/printers.dart';
 
 import '../../helpers/helpers.dart';
 
@@ -53,7 +57,10 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text(entry).last);
-    await tester.pumpAndSettle();
+    // The menu closes. What the entry started may take real time: a file
+    // being fetched is waited for with `settle`.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
   }
 
   group('DocumentsPage', () {
@@ -172,6 +179,148 @@ void main() {
       await settle(tester);
 
       expect(find.textContaining('could not be fetched'), findsOneWidget);
+    });
+
+    group('printing', () {
+      late MockGoRouter router;
+      late PrintersCubit printers;
+
+      setUp(() {
+        router = recordingRouter();
+        printers = PrintersCubit(
+          printersRepository: backend.printers,
+          organizationId: _org,
+          organizationChanges: const Stream.empty(),
+        );
+      });
+      tearDown(() => printers.close());
+
+      /// Opens the documents in a workspace that has [has] for printers.
+      Future<void> open(
+        WidgetTester tester,
+        List<Map<String, Object?>> has,
+      ) async {
+        backend.printerList = has;
+        final listed = await tester.runAsync(() => backend.printers.list(_org));
+        printers.emit(
+          PrintersState(status: PrintersStatus.ready, printers: listed!),
+        );
+        await tester.pumpApp(
+          const DocumentsPage(),
+          backend: backend,
+          printersCubit: printers,
+          router: router,
+        );
+        await tester.pumpAndSettle();
+      }
+
+      PickedDocument handedTo(String printerId) =>
+          verify(
+                () => router.go(
+                  AppRoutes.printOn(printerId),
+                  extra: captureAny(named: 'extra'),
+                ),
+              ).captured.single
+              as PickedDocument;
+
+      testWidgets('prints on the only printer without asking which', (
+        tester,
+      ) async {
+        await open(tester, [printerBody()]);
+
+        await menu(tester, 'Contract.pdf', 'Print');
+        await settle(tester);
+
+        final handed = handedTo('printer-1');
+        expect(handed.name, 'Contract.pdf');
+        expect(handed.mimeType, 'application/pdf');
+        expect(handed.length, '%PDF a contract'.length);
+      });
+
+      testWidgets('asks which printer when there are several', (tester) async {
+        await open(tester, [
+          printerBody(),
+          printerBody(id: 'printer-2', name: 'Back office'),
+        ]);
+
+        await menu(tester, 'Contract.pdf', 'Print');
+        expect(find.text('Which printer?'), findsOneWidget);
+        await tester.tap(find.text('Back office'));
+        await settle(tester);
+
+        expect(handedTo('printer-2').name, 'Contract.pdf');
+      });
+
+      testWidgets('fetches nothing when no printer is chosen', (tester) async {
+        await open(tester, [
+          printerBody(),
+          printerBody(id: 'printer-2', name: 'Back office'),
+        ]);
+
+        await menu(tester, 'Contract.pdf', 'Print');
+        await tester.tapAt(const Offset(10, 10));
+        await tester.pumpAndSettle();
+
+        expect(
+          backend.sent('GET $_documents/document-3/download-url'),
+          isEmpty,
+        );
+        verifyNever(() => router.go(any(), extra: any(named: 'extra')));
+      });
+
+      testWidgets('goes nowhere when the file cannot be fetched', (
+        tester,
+      ) async {
+        await open(tester, [printerBody()]);
+
+        // Nothing was ever stored for this one.
+        await menu(tester, 'Receipts.pdf', 'Print');
+        await settle(tester);
+
+        expect(find.textContaining('could not be fetched'), findsOneWidget);
+        verifyNever(() => router.go(any(), extra: any(named: 'extra')));
+      });
+
+      testWidgets('is not offered without a printer that prints', (
+        tester,
+      ) async {
+        final scanner = printerBody();
+        final capabilities = scanner['capabilities']! as Map<String, Object?>;
+        await open(tester, [
+          {
+            ...scanner,
+            'capabilities': {
+              ...capabilities,
+              'print': {
+                ...capabilities['print']! as Map<String, Object?>,
+                'supported': false,
+              },
+            },
+          },
+        ]);
+
+        await tester.tap(find.byTooltip('Show menu').first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Open or share'), findsOneWidget);
+        expect(find.text('Print'), findsNothing);
+      });
+
+      testWidgets('is not offered for a kind of file the app does not print', (
+        tester,
+      ) async {
+        backend.documentList = [
+          documentBody(name: 'Notes.txt', mimeType: 'text/plain'),
+        ];
+        backend.storage.stored['/document-1'] = 'notes'.codeUnits;
+        await open(tester, [printerBody()]);
+
+        await tester.tap(find.byTooltip('Show menu'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Open or share'), findsOneWidget);
+        expect(find.text('Print'), findsNothing);
+      });
     });
 
     testWidgets('renames a document', (tester) async {

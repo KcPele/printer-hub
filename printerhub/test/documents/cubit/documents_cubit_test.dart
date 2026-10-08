@@ -200,6 +200,16 @@ void main() {
       expect(shared.files.single.readAsStringSync(), '%PDF a contract');
     });
 
+    test('fetches the file alone, to print it', () async {
+      final cubit = await loaded();
+
+      final file = await cubit.fetch(cubit.state.documents.first);
+
+      expect(file!.readAsStringSync(), '%PDF a contract');
+      expect(cubit.state.busyId, isNull);
+      expect(backend.sharer.shared, isEmpty);
+    });
+
     test('says when the file cannot be fetched', () async {
       final cubit = await loaded();
 

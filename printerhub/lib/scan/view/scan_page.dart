@@ -4,8 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/printers/cubit/printers_cubit.dart';
 import 'package:printerhub/scan/cubit/scan_cubit.dart';
 import 'package:printerhub/scan/scan_output.dart';
@@ -73,7 +75,11 @@ class ScanView extends StatelessWidget {
             ScanStep.choosing => _Choose(printer: printer),
             ScanStep.scanning => const _Scanning(),
             ScanStep.review || ScanStep.saving => const _Review(),
-            ScanStep.saved => const _Saved(),
+            ScanStep.saved => _Saved(
+              printerId: (printer.capabilities?.print.supported ?? true)
+                  ? printer.id
+                  : null,
+            ),
           },
         ),
       ),
@@ -293,7 +299,11 @@ class _Review extends StatelessWidget {
 }
 
 class _Saved extends StatelessWidget {
-  const new();
+  const new({required this.printerId});
+
+  /// The printer the scan can be printed on: the one it was made on, when
+  /// that prints.
+  final String? printerId;
 
   @override
   Widget build(BuildContext context) {
@@ -353,6 +363,20 @@ class _Saved extends StatelessWidget {
           ],
           AppSubmitButton(label: l10n.scanShare, onPressed: cubit.share),
           const SizedBox(height: AppSpacing.sm),
+          // One file is one print. Several pictures are shared instead.
+          if (state.files.length == 1 && printerId != null) ...[
+            OutlinedButton.icon(
+              onPressed: keeping
+                  ? null
+                  : () => context.push(
+                      AppRoutes.printOn(printerId!),
+                      extra: PickedDocument.fromFile(state.files.single),
+                    ),
+              icon: const Icon(Icons.print_outlined),
+              label: Text(l10n.scanPrint),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           if (state.kept == ScanKept.yes)
             Center(
               child: StatusPill(

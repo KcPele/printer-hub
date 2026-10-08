@@ -196,9 +196,18 @@ GoRouter createAppRouter({
                     routes: [
                       GoRoute(
                         path: 'print',
+                        // Arrives with a job to try again, a document to
+                        // print, or neither.
                         builder: (context, state) => PrintPage(
                           printerId: state.pathParameters['printerId']!,
-                          retryOf: state.extra as Job?,
+                          retryOf: switch (state.extra) {
+                            final Job job => job,
+                            _ => null,
+                          },
+                          document: switch (state.extra) {
+                            final PickedDocument document => document,
+                            _ => null,
+                          },
                         ),
                       ),
                       GoRoute(
