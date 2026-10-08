@@ -2,7 +2,7 @@
 
 # dont ever say in your commit message, co-authored by claude
 
-Backend-first, mobile-first printer and scanner platform. This repo is a monorepo: `backend/` (FastAPI), `printerhub/` (the Flutter app), and `packages/api-client/` (TypeScript client for the later web app).
+Backend-first, mobile-first printer and scanner platform. This repo is a monorepo: `backend/` (FastAPI), `printerhub/` (the Flutter app), `frontend/` (the landing page and the admin console), and `packages/api-client/` (the TypeScript client the web app uses).
 
 **The backend never talks to a printer.** Clients run print and scan jobs on the local network and report state. Anything that needs to reach a printer belongs in a client or in `backend/simulator/`.
 
@@ -19,6 +19,7 @@ Backend-first, mobile-first printer and scanner platform. This repo is a monorep
 | What real printers and scanners do differently, and how the app copes | `docs/printer-compatibility.md` |
 | API contract | `backend/openapi.json`, or `/api/docs` on a running server |
 | Calling the API from the web app | `packages/api-client/README.md` |
+| The web app: landing page and admin console | `frontend/README.md` |
 | Calling the API from the Flutter app | `printerhub/packages/api_client/README.md` |
 | Mobile app architecture, milestones, open decisions | `docs/mobile-app-implementation.md` |
 | Visual references for the three themes | `design/` (on the owner's machine only; ignored by git) |
@@ -86,6 +87,15 @@ A change is done when `make app-check` passes: formatting, `very_good_analysis` 
 - **A file another app hands over arrives through `IncomingDocuments`**, a channel to `SceneDelegate.swift` and `MainActivity.kt` with no plugin between. `IncomingCubit` keeps it until someone is signed in and the printers are known; `App` then asks which printer and opens the print screen. A new kind of file is added in three places: `PickedDocument.mimeType`, `Info.plist`, and the intent filters in `AndroidManifest.xml`.
 - **The file picker and the page renderer are plugins**, kept in `lib/print/platform/` behind `DocumentPicker` and `PageRenderer`, excluded from coverage, with stand-ins in `test/helpers/fake_documents.dart`.
 - **Three kinds of test reach further than unit tests**, and skip themselves when what they need is not running: `make app-simulator-test` (protocols and probe against the simulator), `make app-smoke` (the API client against a local backend), `make app-live-test` (adding the simulated printer, recording jobs, saving presets, and keeping a document through a real backend and its storage). Run it after changing a repository: it is what catches an app and a backend that disagree. The live tests make accounts on the backend they find, so they run only when asked for this way, never as part of `make app-check`.
+
+## Working in `frontend/` (the web app)
+
+TanStack Start, React 19, Tailwind 4, Biome. Installed and run with npm from `frontend/`; it is not part of the pnpm workspace. A change is done when `npm run check` and `npm run typecheck` pass.
+
+- **Colour, shape, and type come from the theme tokens in `src/styles.css`** (`--p`, `--em`, `--sf`, `--rc`, ...), the same three themes as the phone. No hex value for anything a theme decides.
+- **The admin console is everything under `/admin`.** `src/routes/admin.tsx` switches off server rendering for it, because its sign-in lives in the browser's session storage. `AdminShell` lets in only a signed-in super-user.
+- **It reaches the API only through `@printerhub/api-client`**, by the path in `tsconfig.json`: the source in `packages/api-client`, not a copy. That is why the Docker image is built from the repository root.
+- **A page is laid out for a phone first.** Check it at 375 pixels wide: nothing scrolls sideways, and a row that does not fit wraps.
 
 ## Working in `backend/`
 

@@ -1,3 +1,35 @@
+# PrinterHub web app
+
+The landing page (`/`) and the admin console (`/admin`).
+
+## The admin console
+
+`/admin` is for PrinterHub's own staff. It manages what every app is told: the feature switches, for everyone or for one workspace, and the catalogue of printer families. It uses the eight super-user operations of the API and nothing else special.
+
+Run it against a backend on this machine:
+
+```bash
+npm install
+npm run dev
+```
+
+Then open http://localhost:3000/admin. The backend has to be running (`make infra` and `make dev` from the repository root) and has to allow this origin: `PRINTERHUB_CORS_ORIGINS=["http://localhost:3000"]` in `backend/.env`, which the example file already has.
+
+Only a super-user gets in. Register an account, then, from `backend/`:
+
+```bash
+uv run python -m scripts.promote_superuser you@example.com
+```
+
+- **Where the API is.** `VITE_API_URL` (see `.env.example`). Without it, `npm run dev` talks to `http://localhost:8000` and a production build to the live backend.
+- **The API client is the shared one**, `packages/api-client`, reached through the path in `tsconfig.json`. Types come from the backend's contract, so a request the API would refuse for its shape does not compile. `npm run typecheck` checks it.
+- **The Docker image is built from the repository root** for that reason: `docker build -f frontend/Dockerfile .`
+- **The sign-in is kept in the tab's session storage.** Closing the tab signs out. Nothing under `/admin` is rendered on the server.
+
+---
+
+What follows came with the project template.
+
 Welcome to your new TanStack Start app!
 
 # Getting Started

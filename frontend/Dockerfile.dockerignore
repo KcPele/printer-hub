@@ -1,0 +1,10 @@
+# What `docker build -f frontend/Dockerfile .` may see of the repository:
+# the frontend's sources and the API client's, and nothing else.
+*
+!frontend/package.json
+!frontend/tsconfig.json
+!frontend/tsr.config.json
+!frontend/vite.config.ts
+!frontend/biome.json
+!frontend/src
+!packages/api-client/src

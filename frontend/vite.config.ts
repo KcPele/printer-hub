@@ -8,7 +8,13 @@ import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 
 const config = defineConfig({
-	resolve: { tsconfigPaths: true },
+	resolve: {
+		// The API client is the shared one in `packages/api-client`, reached
+		// through the path in tsconfig.json. Its one dependency is installed
+		// here, so it is resolved from here.
+		tsconfigPaths: true,
+		dedupe: ["openapi-fetch"],
+	},
 	plugins: [
 		devtools(),
 		nitro({ rollupConfig: { external: [/^@sentry\//] } }),

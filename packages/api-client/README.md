@@ -57,7 +57,7 @@ It stores nothing. Keeping tokens in secure storage is the app's job (FR-MOB-018
 
 ## The admin operations
 
-This client has eight operations under `/api/v1/admin/` that only a super-user may call: three for the catalogue of printer families and five for feature switches. Nothing uses them yet. The admin dashboard that does is built with the web app; `docs/mobile-app-implementation.md` section 16 lists what it has to do.
+This client has eight operations under `/api/v1/admin/` that only a super-user may call: three for the catalogue of printer families and five for feature switches. The admin console in `frontend/` (`/admin`) is what uses them; `frontend/README.md` says how it reaches this client.
 
 ## When the API changes
 

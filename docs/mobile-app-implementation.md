@@ -415,11 +415,11 @@ Steps 1 to 4 and 7 are done. Step 6 is written and waits for a phone: no part of
 Not in this list, by the owner's decision:
 
 - **Push on iOS.** Later. It needs an APNs key uploaded to Firebase and the Push Notifications capability.
-- **Admin screens** for the catalogue and the feature switches. With the web app and landing page, not in the phone. See "The admin dashboard" below.
+- **Admin screens** for the catalogue and the feature switches. They are in the web app, not in the phone. See "The admin dashboard" below.
 
-### The admin dashboard: do not forget it
+### The admin dashboard
 
-The backend has eight operations that only a super-user may call, and nothing calls them yet. They are for PrinterHub's own staff. When the landing page and web app come into this repository, an admin dashboard is built there, with `@printerhub/api-client`, which has these operations (the Dart client leaves them out on purpose).
+Built 2026-10-08, in the web app: `frontend/`, at `/admin`. The backend has eight operations that only a super-user may call, for PrinterHub's own staff. The dashboard uses all eight through `@printerhub/api-client` (the Dart client leaves them out on purpose). It was checked against a local backend: sign in, a switch made, turned on, set for one workspace, set back, and deleted; a printer family made, changed, and deleted; an account that is not a super-user turned away.
 
 | What the dashboard does | Operations |
 |---|---|
@@ -427,7 +427,7 @@ The backend has eight operations that only a super-user may call, and nothing ca
 | List, create or change, and delete a feature switch | `list_feature_flags`, `put_feature_flag`, `delete_feature_flag` under `/api/v1/admin/feature-flags` |
 | Switch a feature on or off for one workspace, or go back to the default | `put_feature_flag_override`, `delete_feature_flag_override` |
 
-An account becomes a super-user with `python -m scripts.promote_superuser you@example.com` (`docs/deployment.md`). Until the dashboard exists, the same operations can be used from `/api/docs`.
+An account becomes a super-user with `python -m scripts.promote_superuser you@example.com` (`docs/deployment.md`). `frontend/README.md` says how to run the dashboard and what its deployment needs.
 
 ### What the owner still holds
 

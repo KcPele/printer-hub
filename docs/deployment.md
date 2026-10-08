@@ -98,6 +98,15 @@ An account with an unverified address can do everything except see and accept in
 | `WEB_CONCURRENCY` | `1` | Number of API processes. |
 | `PRINTERHUB_EMBEDDED_WORKER` | `true` | Set `false` only when running the worker as its own container. |
 
+## The web app
+
+`frontend/` is the landing page and, at `/admin`, the admin console for PrinterHub's own staff. It is a second service: a Node server built by `frontend/Dockerfile`.
+
+- **Build it from the repository root**, with `frontend/Dockerfile` as the Dockerfile. In Dokploy that is build path `.` and Docker file `frontend/Dockerfile`. The admin console is built on the API client in `packages/api-client`, which a build from `frontend/` alone cannot see; it fails with an unresolved import.
+- **`PRINTERHUB_CORS_ORIGINS` on the backend must list the web app's origin**, for example `["https://printerhub.kcpele.com"]`. Without it the browser blocks every request the admin console makes, and sign-in says the API did not answer.
+- `VITE_API_URL`, a build argument, says where the API is. Left out, a production build uses `https://printerhub-backend.kcpele.com`.
+- The admin console lets in only an account promoted with `python -m scripts.promote_superuser`. The API enforces that; the console only says so sooner.
+
 ## After the first deploy
 
 Check it is healthy:

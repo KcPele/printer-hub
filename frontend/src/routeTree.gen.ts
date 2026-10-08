@@ -10,33 +10,80 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminFeatureSwitchesRouteImport } from './routes/admin.feature-switches'
+import { Route as AdminPrinterFamiliesRouteImport } from './routes/admin.printer-families'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFeatureSwitchesRoute = AdminFeatureSwitchesRouteImport.update({
+  id: '/feature-switches',
+  path: '/feature-switches',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPrinterFamiliesRoute = AdminPrinterFamiliesRouteImport.update({
+  id: '/printer-families',
+  path: '/printer-families',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/admin/feature-switches': typeof AdminFeatureSwitchesRoute
+  '/admin/printer-families': typeof AdminPrinterFamiliesRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/feature-switches': typeof AdminFeatureSwitchesRoute
+  '/admin/printer-families': typeof AdminPrinterFamiliesRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/admin/feature-switches': typeof AdminFeatureSwitchesRoute
+  '/admin/printer-families': typeof AdminPrinterFamiliesRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/admin/feature-switches'
+    | '/admin/printer-families'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/admin/feature-switches' | '/admin/printer-families' | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/admin/feature-switches'
+    | '/admin/printer-families'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +95,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/feature-switches': {
+      id: '/admin/feature-switches'
+      path: '/feature-switches'
+      fullPath: '/admin/feature-switches'
+      preLoaderRoute: typeof AdminFeatureSwitchesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/printer-families': {
+      id: '/admin/printer-families'
+      path: '/printer-families'
+      fullPath: '/admin/printer-families'
+      preLoaderRoute: typeof AdminPrinterFamiliesRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminFeatureSwitchesRoute: typeof AdminFeatureSwitchesRoute
+  AdminPrinterFamiliesRoute: typeof AdminPrinterFamiliesRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminFeatureSwitchesRoute: AdminFeatureSwitchesRoute,
+  AdminPrinterFamiliesRoute: AdminPrinterFamiliesRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
