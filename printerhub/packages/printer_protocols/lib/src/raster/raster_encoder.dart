@@ -312,3 +312,64 @@ class RasterEncoder {
     return written;
   }
 }
+
+/// Makes a drawn page into the pixels a [RasterEncoder] takes.
+///
+/// [rgba] is the picture as a renderer gives it: [width] by [height]
+/// pixels of red, green, blue, and alpha. It is laid on a white sheet the
+/// size of the [document]'s pages, centred, and cut where it is larger. A
+/// see-through pixel shows the white of the paper. For a grey document the
+/// colours are weighed the way the eye does.
+Uint8List rasterPageFromRgba(
+  Uint8List rgba, {
+  required int width,
+  required int height,
+  required RasterDocument document,
+}) {
+  if (rgba.length != width * height * 4) {
+    throw ArgumentError.value(
+      rgba.length,
+      'rgba',
+      'A picture of $width by $height is ${width * height * 4} bytes',
+    );
+  }
+  final gray = document.color == RasterColor.sgray8;
+  final size = document.color.bytesPerPixel;
+  final page = Uint8List(document.bytesPerPage)
+    ..fillRange(0, document.bytesPerPage, 255);
+
+  // Where the picture's top left corner lands on the page. Negative when
+  // the picture is the larger.
+  final left = (document.widthPx - width) ~/ 2;
+  final top = (document.heightPx - height) ~/ 2;
+  final firstRow = top < 0 ? -top : 0;
+  final lastRow = height < document.heightPx - top
+      ? height
+      : document.heightPx - top;
+  final firstColumn = left < 0 ? -left : 0;
+  final lastColumn = width < document.widthPx - left
+      ? width
+      : document.widthPx - left;
+
+  for (var y = firstRow; y < lastRow; y++) {
+    var from = (y * width + firstColumn) * 4;
+    var to = ((y + top) * document.widthPx + firstColumn + left) * size;
+    for (var x = firstColumn; x < lastColumn; x++) {
+      final alpha = rgba[from + 3];
+      // Over white paper: what is not covered stays white.
+      final red = 255 - (255 - rgba[from]) * alpha ~/ 255;
+      final green = 255 - (255 - rgba[from + 1]) * alpha ~/ 255;
+      final blue = 255 - (255 - rgba[from + 2]) * alpha ~/ 255;
+      if (gray) {
+        page[to] = (red * 299 + green * 587 + blue * 114) ~/ 1000;
+      } else {
+        page[to] = red;
+        page[to + 1] = green;
+        page[to + 2] = blue;
+      }
+      from += 4;
+      to += size;
+    }
+  }
+  return page;
+}

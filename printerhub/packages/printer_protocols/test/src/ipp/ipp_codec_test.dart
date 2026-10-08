@@ -121,6 +121,38 @@ void main() {
       expect(decodeIpp(bytes).data, [9, 8, 7]);
     });
 
+    test('resolutions survive, in either unit', () {
+      final message = IppMessage(
+        code: 0,
+        requestId: 1,
+        groups: [
+          IppGroup(IppGroupTag.printer, [
+            IppAttribute.all(
+              'printer-resolution-supported',
+              IppValueTag.resolution,
+              const [
+                IppResolution(300, 600),
+                IppResolution(118, 118, perInch: false),
+              ],
+            ),
+          ]),
+        ],
+      );
+
+      final decoded = decodeIpp(encodeIpp(message)).message;
+
+      expect(
+        decoded
+            .group(IppGroupTag.printer)!['printer-resolution-supported']!
+            .values
+            .map((value) => value.value),
+        const [
+          IppResolution(300, 600),
+          IppResolution(118, 118, perInch: false),
+        ],
+      );
+    });
+
     test('negative integers survive', () {
       final message = IppMessage(
         code: 0,

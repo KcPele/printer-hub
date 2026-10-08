@@ -158,6 +158,19 @@ class IppClient {
     );
   }
 
+  /// Asks whether the printer would accept a job with [options], as
+  /// [validateJob] does, but lets a printer too old to be asked through.
+  Future<void> wouldAccept(IppJobOptions options) async {
+    try {
+      await validateJob(options);
+    } on IppException catch (error) {
+      // An old printer without Validate-Job is sent the job regardless.
+      if (error.statusCode != IppStatus.serverErrorOperationNotSupported) {
+        rethrow;
+      }
+    }
+  }
+
   /// Sends [document] to be printed and returns the job the printer made.
   ///
   /// The document is streamed, never held in memory. [length] is its size
@@ -168,19 +181,17 @@ class IppClient {
   /// refuses a bad request before megabytes are sent, and it is when a
   /// printer that wants a password asks for it, while the request can still
   /// be sent again.
+  ///
+  /// Pass [preflight] as false when the caller has already asked, with
+  /// [validateJob] or [wouldAccept], and needs to tell a refusal before
+  /// the document went from a failure after.
   Future<IppJob> printJob({
     required Stream<List<int>> document,
     required int length,
     required IppJobOptions options,
+    bool preflight = true,
   }) async {
-    try {
-      await validateJob(options);
-    } on IppException catch (error) {
-      // An old printer without Validate-Job is sent the job regardless.
-      if (error.statusCode != IppStatus.serverErrorOperationNotSupported) {
-        rethrow;
-      }
-    }
+    if (preflight) await wouldAccept(options);
     final response = await _send(
       IppOperation.printJob,
       operation: _documentAttributes(options),

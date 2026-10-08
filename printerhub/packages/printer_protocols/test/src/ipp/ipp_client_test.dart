@@ -227,6 +227,21 @@ void main() {
       expect(sent(1).message.group(IppGroupTag.operation)!['job-name'], isNull);
     });
 
+    test('printJob sends at once when the caller has already asked', () async {
+      await client.wouldAccept(options);
+      await client.printJob(
+        document: Stream.value([1, 2, 3]),
+        length: 3,
+        options: options,
+        preflight: false,
+      );
+
+      expect(
+        [for (var i = 0; i < http.requests.length; i++) sent(i).message.code],
+        [IppOperation.validateJob, IppOperation.printJob],
+      );
+    });
+
     test('printJob tolerates an answer without a job', () async {
       final job = await client.printJob(
         document: const Stream.empty(),

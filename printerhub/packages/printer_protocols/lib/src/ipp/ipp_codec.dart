@@ -163,6 +163,13 @@ void _writeValue(BytesBuilder out, String name, IppValue item) {
         ..._uint32(range.lower),
         ..._uint32(range.upper),
       ]);
+    case final IppResolution resolution:
+      raw = Uint8List.fromList([
+        ..._uint32(resolution.x),
+        ..._uint32(resolution.y),
+        // 3 is dots per inch, 4 dots per centimetre.
+        if (resolution.perInch) 3 else 4,
+      ]);
     case final Uint8List bytes:
       raw = bytes;
     case null:

@@ -330,4 +330,103 @@ void main() {
       expect(SheetBack.fromKeyword(null), SheetBack.normal);
     });
   });
+
+  group('rasterPageFromRgba', () {
+    RasterDocument page(RasterColor color, {int width = 2, int height = 2}) {
+      return _document(
+        RasterFormat.pwg,
+        color,
+        sides: RasterSides.oneSided,
+        width: width,
+        height: height,
+      );
+    }
+
+    // Red, green, blue, and a see-through pixel.
+    final picture = Uint8List.fromList([
+      255, 0, 0, 255, 0, 255, 0, 255, //
+      0, 0, 255, 255, 9, 9, 9, 0,
+    ]);
+
+    test('keeps the colours and shows paper through what is clear', () {
+      expect(
+        rasterPageFromRgba(
+          picture,
+          width: 2,
+          height: 2,
+          document: page(RasterColor.srgb8),
+        ),
+        [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255],
+      );
+    });
+
+    test('weighs the colours the way the eye does, for grey', () {
+      expect(
+        rasterPageFromRgba(
+          picture,
+          width: 2,
+          height: 2,
+          document: page(RasterColor.sgray8),
+        ),
+        [76, 149, 29, 255],
+      );
+    });
+
+    test('blends a half-clear pixel with the paper', () {
+      final half = Uint8List.fromList([0, 0, 0, 128]);
+
+      expect(
+        rasterPageFromRgba(
+          half,
+          width: 1,
+          height: 1,
+          document: page(RasterColor.sgray8, width: 1, height: 1),
+        ),
+        [127],
+      );
+    });
+
+    test('centres a picture smaller than the page on white', () {
+      final dot = Uint8List.fromList([0, 0, 0, 255]);
+
+      expect(
+        rasterPageFromRgba(
+          dot,
+          width: 1,
+          height: 1,
+          document: page(RasterColor.sgray8, width: 3, height: 3),
+        ),
+        [255, 255, 255, 255, 0, 255, 255, 255, 255],
+      );
+    });
+
+    test('cuts a picture larger than the page to its middle', () {
+      // Three by three, numbered 10 to 90 in grey.
+      final big = Uint8List.fromList([
+        for (var i = 1; i <= 9; i++) ...[i * 10, i * 10, i * 10, 255],
+      ]);
+
+      expect(
+        rasterPageFromRgba(
+          big,
+          width: 3,
+          height: 3,
+          document: page(RasterColor.sgray8, width: 1, height: 1),
+        ),
+        [50],
+      );
+    });
+
+    test('refuses a picture that is not the size it says', () {
+      expect(
+        () => rasterPageFromRgba(
+          Uint8List(7),
+          width: 2,
+          height: 2,
+          document: page(RasterColor.srgb8),
+        ),
+        throwsArgumentError,
+      );
+    });
+  });
 }
