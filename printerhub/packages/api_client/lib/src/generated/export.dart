@@ -125,6 +125,7 @@ export 'models/printer_status_detail_input.dart';
 export 'models/printer_status_detail_output.dart';
 export 'models/printer_status_report.dart';
 export 'models/printer_update.dart';
+export 'models/profile_category.dart';
 export 'models/protocols_input.dart';
 export 'models/protocols_output.dart';
 export 'models/push_provider_name.dart';

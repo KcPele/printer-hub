@@ -124,6 +124,10 @@
           "capabilities": {
             "$ref": "#/components/schemas/PrinterCapabilities-Output"
           },
+          "category": {
+            "$ref": "#/components/schemas/ProfileCategory",
+            "default": "office_multifunction"
+          },
           "display_name": {
             "maxLength": 200,
             "minLength": 1,
@@ -166,6 +170,33 @@
             "title": "Optional Features",
             "type": "array"
           },
+          "popularity": {
+            "default": 0,
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Popularity",
+            "type": "integer"
+          },
+          "setup_tips": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 16,
+            "title": "Setup Tips",
+            "type": "array"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
           "updated_at": {
             "format": "date-time",
             "title": "Updated At",
@@ -179,10 +210,14 @@
         "required": [
           "manufacturer",
           "display_name",
+          "category",
+          "summary",
+          "popularity",
           "model_patterns",
           "capabilities",
           "optional_features",
           "notes",
+          "setup_tips",
           "id",
           "version",
           "updated_at"
@@ -194,6 +229,10 @@
         "properties": {
           "capabilities": {
             "$ref": "#/components/schemas/PrinterCapabilities-Input"
+          },
+          "category": {
+            "$ref": "#/components/schemas/ProfileCategory",
+            "default": "office_multifunction"
           },
           "display_name": {
             "maxLength": 200,
@@ -231,6 +270,33 @@
             "maxItems": 64,
             "title": "Optional Features",
             "type": "array"
+          },
+          "popularity": {
+            "default": 0,
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Popularity",
+            "type": "integer"
+          },
+          "setup_tips": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 16,
+            "title": "Setup Tips",
+            "type": "array"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
           }
         },
         "required": [
@@ -5738,6 +5804,17 @@
         ],
         "title": "Problem",
         "type": "object"
+      },
+      "ProfileCategory": {
+        "description": "What kind of machine a family is, for browsing the catalogue.",
+        "enum": [
+          "office_multifunction",
+          "office_printer",
+          "home_multifunction",
+          "home_printer"
+        ],
+        "title": "ProfileCategory",
+        "type": "string"
       },
       "Protocols-Input": {
         "additionalProperties": false,

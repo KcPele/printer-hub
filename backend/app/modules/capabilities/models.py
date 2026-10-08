@@ -1,9 +1,10 @@
 from typing import Any
 
-from sqlalchemy import String, UniqueConstraint
+from sqlalchemy import String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db import Base, IdMixin, TimestampMixin
+from app.core.db import Base, IdMixin, TimestampMixin, str_enum
+from app.modules.capabilities.schemas import ProfileCategory
 
 
 class CapabilityProfile(Base, IdMixin, TimestampMixin):
@@ -22,5 +23,15 @@ class CapabilityProfile(Base, IdMixin, TimestampMixin):
     capabilities: Mapped[dict[str, Any]]
     optional_features: Mapped[list[str]] = mapped_column(default=list)
     notes: Mapped[list[str]] = mapped_column(default=list)
+    # What the catalogue shows: the kind of machine, a line about it, how far up the
+    # list it belongs, and what to do on the printer before adding it.
+    category: Mapped[ProfileCategory] = mapped_column(
+        str_enum(ProfileCategory),
+        default=ProfileCategory.OFFICE_MULTIFUNCTION,
+        server_default=ProfileCategory.OFFICE_MULTIFUNCTION.value,
+    )
+    summary: Mapped[str | None] = mapped_column(String(200))
+    popularity: Mapped[int] = mapped_column(default=0, server_default=text("0"))
+    setup_tips: Mapped[list[str]] = mapped_column(default=list, server_default=text("'[]'::jsonb"))
     # Incremented on every change so clients can cache a profile.
     version: Mapped[int] = mapped_column(default=1)

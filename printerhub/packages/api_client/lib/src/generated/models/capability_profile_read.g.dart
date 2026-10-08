@@ -22,20 +22,32 @@ CapabilityProfileRead _$CapabilityProfileReadFromJson(
   optionalFeatures: (json['optional_features'] as List<dynamic>)
       .map((e) => e as String)
       .toList(),
+  setupTips: (json['setup_tips'] as List<dynamic>)
+      .map((e) => e as String)
+      .toList(),
+  summary: json['summary'] as String?,
   updatedAt: DateTime.parse(json['updated_at'] as String),
   version: (json['version'] as num).toInt(),
+  category: json['category'] == null
+      ? ProfileCategory.officeMultifunction
+      : ProfileCategory.fromJson(json['category'] as String),
+  popularity: (json['popularity'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$CapabilityProfileReadToJson(
   CapabilityProfileRead instance,
 ) => <String, dynamic>{
   'capabilities': instance.capabilities.toJson(),
+  'category': instance.category.toJson(),
   'display_name': instance.displayName,
   'id': instance.id,
   'manufacturer': instance.manufacturer,
   'model_patterns': instance.modelPatterns,
   'notes': instance.notes,
   'optional_features': instance.optionalFeatures,
+  'popularity': instance.popularity,
+  'setup_tips': instance.setupTips,
+  'summary': ?instance.summary,
   'updated_at': instance.updatedAt.toIso8601String(),
   'version': instance.version,
 };

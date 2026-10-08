@@ -5,6 +5,7 @@
 import 'package:json_annotation/json_annotation.dart';
 
 import 'printer_capabilities_output.dart';
+import 'profile_category.dart';
 
 part 'capability_profile_read.g.dart';
 
@@ -18,14 +19,19 @@ class CapabilityProfileRead {
     required this.modelPatterns,
     required this.notes,
     required this.optionalFeatures,
+    required this.setupTips,
+    required this.summary,
     required this.updatedAt,
     required this.version,
+    this.category = ProfileCategory.officeMultifunction,
+    this.popularity = 0,
   });
 
   factory CapabilityProfileRead.fromJson(Map<String, Object?> json) =>
       _$CapabilityProfileReadFromJson(json);
 
   final PrinterCapabilitiesOutput capabilities;
+  final ProfileCategory category;
   @JsonKey(name: 'display_name')
   final String displayName;
   final String id;
@@ -35,6 +41,10 @@ class CapabilityProfileRead {
   final List<String> notes;
   @JsonKey(name: 'optional_features')
   final List<String> optionalFeatures;
+  final int popularity;
+  @JsonKey(name: 'setup_tips')
+  final List<String> setupTips;
+  final String? summary;
   @JsonKey(name: 'updated_at')
   final DateTime updatedAt;
   final int version;

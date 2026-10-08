@@ -18,13 +18,34 @@ def _apply(profile: CapabilityProfile, payload: CapabilityProfileWrite) -> None:
     profile.capabilities = payload.capabilities.model_dump(mode="json")
     profile.optional_features = payload.optional_features
     profile.notes = payload.notes
+    profile.category = payload.category
+    profile.summary = payload.summary
+    profile.popularity = payload.popularity
+    profile.setup_tips = payload.setup_tips
+
+
+def _content(profile: CapabilityProfile) -> tuple[object, ...]:
+    """Everything a client reads from a profile, to tell whether it changed."""
+    return (
+        profile.model_patterns,
+        profile.capabilities,
+        profile.optional_features,
+        profile.notes,
+        profile.category,
+        profile.summary,
+        profile.popularity,
+        profile.setup_tips,
+    )
 
 
 async def list_profiles(
     session: AsyncSession, *, manufacturer: str | None = None
 ) -> list[CapabilityProfile]:
+    # The catalogue's order: the families most people have first.
     stmt = select(CapabilityProfile).order_by(
-        CapabilityProfile.manufacturer, CapabilityProfile.display_name
+        CapabilityProfile.popularity.desc(),
+        CapabilityProfile.manufacturer,
+        CapabilityProfile.display_name,
     )
     if manufacturer is not None:
         stmt = stmt.where(func.lower(CapabilityProfile.manufacturer) == manufacturer.lower())
@@ -106,19 +127,9 @@ async def seed_built_in_profiles(session: AsyncSession) -> int:
             await create(session, payload)
             changed += 1
             continue
-        before = (
-            existing.model_patterns,
-            existing.capabilities,
-            existing.optional_features,
-            existing.notes,
-        )
+        before = _content(existing)
         _apply(existing, payload)
-        after = (
-            existing.model_patterns,
-            existing.capabilities,
-            existing.optional_features,
-            existing.notes,
-        )
+        after = _content(existing)
         if before != after:
             existing.version += 1
             changed += 1

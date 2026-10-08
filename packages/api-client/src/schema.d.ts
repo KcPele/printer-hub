@@ -1323,6 +1323,8 @@ export interface components {
         /** CapabilityProfileRead */
         CapabilityProfileRead: {
             capabilities: components["schemas"]["PrinterCapabilities-Output"];
+            /** @default office_multifunction */
+            category: components["schemas"]["ProfileCategory"];
             /** Display Name */
             display_name: string;
             /**
@@ -1339,6 +1341,15 @@ export interface components {
             /** Optional Features */
             optional_features: string[];
             /**
+             * Popularity
+             * @default 0
+             */
+            popularity: number;
+            /** Setup Tips */
+            setup_tips: string[];
+            /** Summary */
+            summary: string | null;
+            /**
              * Updated At
              * Format: date-time
              */
@@ -1349,6 +1360,8 @@ export interface components {
         /** CapabilityProfileWrite */
         CapabilityProfileWrite: {
             capabilities: components["schemas"]["PrinterCapabilities-Input"];
+            /** @default office_multifunction */
+            category?: components["schemas"]["ProfileCategory"];
             /** Display Name */
             display_name: string;
             /** Manufacturer */
@@ -1359,6 +1372,15 @@ export interface components {
             notes?: string[];
             /** Optional Features */
             optional_features?: string[];
+            /**
+             * Popularity
+             * @default 0
+             */
+            popularity?: number;
+            /** Setup Tips */
+            setup_tips?: string[];
+            /** Summary */
+            summary?: string | null;
         };
         /** ChangePasswordRequest */
         ChangePasswordRequest: {
@@ -3269,6 +3291,12 @@ export interface components {
              */
             type: string;
         };
+        /**
+         * ProfileCategory
+         * @description What kind of machine a family is, for browsing the catalogue.
+         * @enum {string}
+         */
+        ProfileCategory: "office_multifunction" | "office_printer" | "home_multifunction" | "home_printer";
         /** Protocols */
         "Protocols-Input": {
             /** Airprint */

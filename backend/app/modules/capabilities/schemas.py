@@ -122,9 +122,23 @@ class PrinterCapabilities(_Section):
     model_config = ConfigDict(extra="forbid", populate_by_name=True, serialize_by_alias=True)
 
 
+class ProfileCategory(enum.StrEnum):
+    """What kind of machine a family is, for browsing the catalogue."""
+
+    OFFICE_MULTIFUNCTION = "office_multifunction"
+    OFFICE_PRINTER = "office_printer"
+    HOME_MULTIFUNCTION = "home_multifunction"
+    HOME_PRINTER = "home_printer"
+
+
 class CapabilityProfileWrite(ApiModel):
     manufacturer: str = Field(min_length=1, max_length=100)
     display_name: str = Field(min_length=1, max_length=200)
+    category: ProfileCategory = ProfileCategory.OFFICE_MULTIFUNCTION
+    # One line saying what the family is, shown in the catalogue.
+    summary: str | None = Field(default=None, max_length=200)
+    # Higher is listed first.
+    popularity: int = Field(default=0, ge=0, le=1000)
     # Case-insensitive glob patterns matched against the reported model name.
     model_patterns: list[str] = Field(min_length=1, max_length=32)
     capabilities: PrinterCapabilities
@@ -132,6 +146,9 @@ class CapabilityProfileWrite(ApiModel):
     # must be confirmed by probing, for example `connectivity.wifi`.
     optional_features: list[str] = Field(default_factory=list, max_length=64)
     notes: list[str] = Field(default_factory=list, max_length=32)
+    # What to do on the printer so that it can be found and used, in the
+    # order to do it. Written for the person holding the phone.
+    setup_tips: list[str] = Field(default_factory=list, max_length=16)
 
 
 class CapabilityProfileRead(CapabilityProfileWrite):
