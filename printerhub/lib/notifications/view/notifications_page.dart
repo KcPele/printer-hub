@@ -42,6 +42,9 @@ class NotificationsView extends StatelessWidget {
     final session = context.read<SessionCubit>();
     unawaited(context.read<NotificationsCubit>().read(notification));
 
+    if (notification.invitationId != null) {
+      return router.go(AppRoutes.invitations);
+    }
     final jobId = notification.jobId;
     if (jobId == null) return;
     final workspace = session.state.organizations

@@ -39,6 +39,7 @@ void main() {
         'account.password_incorrect': l10n.errorPasswordIncorrect,
         'account.sole_owner': l10n.errorSoleOwner,
         'rate_limited': l10n.errorRateLimited,
+        'auth.email_not_verified': l10n.errorEmailNotVerified,
         'pairing.token_invalid': l10n.errorPairingInvalid,
         'pairing.not_a_member': l10n.errorPairingNotMember,
       };

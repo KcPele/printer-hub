@@ -9,6 +9,7 @@ import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
+import 'package:printerhub/workspace/workspace_words.dart';
 
 class SettingsPage extends StatelessWidget {
   const new({super.key});
@@ -80,6 +81,32 @@ class SettingsPage extends StatelessWidget {
                   icon: Icons.delete_outline,
                   title: l10n.settingsDeleteAccount,
                   onTap: () => context.push(AppRoutes.deleteAccount),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            _Section(
+              title: l10n.settingsTeam,
+              children: [
+                if (organization != null) ...[
+                  _Entry(
+                    icon: Icons.tune,
+                    title: l10n.settingsWorkspaceRules,
+                    subtitle: WorkspaceWords.role(l10n, organization.role),
+                    onTap: () => context.push(AppRoutes.workspace),
+                  ),
+                  _Entry(
+                    icon: Icons.group_outlined,
+                    title: l10n.settingsPeople,
+                    subtitle: l10n.settingsPeopleSubtitle,
+                    onTap: () => context.push(AppRoutes.members),
+                  ),
+                ],
+                _Entry(
+                  icon: Icons.mail_outline,
+                  title: l10n.settingsInvitations,
+                  subtitle: l10n.settingsInvitationsSubtitle,
+                  onTap: () => context.push(AppRoutes.invitations),
                 ),
               ],
             ),

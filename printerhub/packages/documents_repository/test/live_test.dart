@@ -1,7 +1,7 @@
 // Documents against the real API and its storage, with nothing faked: the
 // local backend (`make dev`) and MinIO (`make infra`).
 //
-//   flutter test --tags live
+//   make app-live-test
 //
 // Skipped when the backend is not running. It registers a throwaway
 // account on the backend and deletes it at the end.
@@ -17,6 +17,8 @@ import 'package:flutter_test/flutter_test.dart';
 const _api = 'http://localhost:8000';
 
 Future<bool> _listening(int port) async {
+  // Asked for by name: these tests make accounts on whatever is listening.
+  if (Platform.environment['PRINTERHUB_LIVE'] != '1') return false;
   try {
     final socket = await Socket.connect(
       'localhost',
@@ -33,7 +35,7 @@ Future<bool> _listening(int port) async {
 void main() {
   test('keeps a scan in the workspace, and fetches it back', () async {
     if (!await _listening(8000) || !await _listening(9000)) {
-      markTestSkipped('Needs `make dev` and `make infra`.');
+      markTestSkipped('Run it with `make app-live-test`.');
       return;
     }
     // Widget tests block real network calls. This test is about them.

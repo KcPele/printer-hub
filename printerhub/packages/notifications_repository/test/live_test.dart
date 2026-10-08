@@ -1,7 +1,7 @@
 // Notifications against the real API, with nothing faked: the local
 // backend (`make dev`).
 //
-//   flutter test --tags live
+//   make app-live-test
 //
 // Skipped when it is not running. It registers a throwaway account on the
 // backend and deletes it at the end.
@@ -15,6 +15,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:notifications_repository/notifications_repository.dart';
 
 Future<bool> _listening(int port) async {
+  // Asked for by name: these tests make accounts on whatever is listening.
+  if (Platform.environment['PRINTERHUB_LIVE'] != '1') return false;
   try {
     final socket = await Socket.connect(
       'localhost',
@@ -31,7 +33,7 @@ Future<bool> _listening(int port) async {
 void main() {
   test('is told when a job fails, and reads it', () async {
     if (!await _listening(8000)) {
-      markTestSkipped('Needs `make dev`.');
+      markTestSkipped('Run it with `make app-live-test`.');
       return;
     }
     // Widget tests block real network calls. This test is about them.

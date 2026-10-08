@@ -18,6 +18,7 @@ import 'package:printerhub/settings/settings.dart';
 import 'package:printerhub/shell/shell.dart';
 import 'package:printerhub/theme/theme.dart';
 import 'package:printerhub/welcome/welcome.dart';
+import 'package:printerhub/workspace/workspace.dart';
 
 /// Where each screen lives.
 abstract final class AppRoutes {
@@ -58,6 +59,10 @@ abstract final class AppRoutes {
   static const String changePassword = '/settings/password';
   static const String devices = '/settings/devices';
   static const String deleteAccount = '/settings/delete-account';
+  static const String workspace = '/settings/workspace';
+  static const String members = '/settings/workspace/people';
+  static const String workspaceLog = '/settings/workspace/log';
+  static const String invitations = '/settings/invitations';
   static const String theme = '/settings/theme';
   static const String gallery = '/settings/gallery';
 
@@ -256,6 +261,24 @@ GoRouter createAppRouter({
                   GoRoute(
                     path: 'delete-account',
                     builder: (context, state) => const DeleteAccountPage(),
+                  ),
+                  GoRoute(
+                    path: 'workspace',
+                    builder: (context, state) => const WorkspacePage(),
+                    routes: [
+                      GoRoute(
+                        path: 'people',
+                        builder: (context, state) => const MembersPage(),
+                      ),
+                      GoRoute(
+                        path: 'log',
+                        builder: (context, state) => const WorkspaceLogPage(),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'invitations',
+                    builder: (context, state) => const InvitationsPage(),
                   ),
                   GoRoute(
                     path: 'theme',

@@ -1,7 +1,7 @@
 // The whole path with nothing faked: the local backend (`make dev`) and the
 // printer simulator (`make simulator`).
 //
-//   flutter test --tags live
+//   make app-live-test
 //
 // Skipped when either is not running. It registers a throwaway account on
 // the backend and deletes it at the end.
@@ -20,6 +20,8 @@ const _api = 'http://localhost:8000';
 const _simulator = 'localhost:8631';
 
 Future<bool> _listening(int port) async {
+  // Asked for by name: these tests make accounts on whatever is listening.
+  if (Platform.environment['PRINTERHUB_LIVE'] != '1') return false;
   try {
     final socket = await Socket.connect(
       'localhost',
@@ -38,7 +40,7 @@ void main() {
     'adds the simulated printer to a workspace and reads its status',
     () async {
       if (!await _listening(8000) || !await _listening(8631)) {
-        markTestSkipped('Needs `make dev` and `make simulator`.');
+        markTestSkipped('Run it with `make app-live-test`.');
         return;
       }
       // Widget tests block real network calls. This test is about them.

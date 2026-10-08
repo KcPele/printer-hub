@@ -1,7 +1,7 @@
 // Jobs and presets against the real API, with nothing faked: the local
 // backend (`make dev`).
 //
-//   flutter test --tags live
+//   make app-live-test
 //
 // Skipped when it is not running. It registers a throwaway account on the
 // backend and deletes it at the end.
@@ -18,6 +18,8 @@ import 'package:local_store/local_store.dart';
 const _api = 'http://localhost:8000';
 
 Future<bool> _listening(int port) async {
+  // Asked for by name: these tests make accounts on whatever is listening.
+  if (Platform.environment['PRINTERHUB_LIVE'] != '1') return false;
   try {
     final socket = await Socket.connect(
       'localhost',
@@ -72,7 +74,7 @@ void main() {
   });
 
   test('records a print, lists it, and tries a failed one again', () async {
-    if (!running) return markTestSkipped('Needs `make dev`.');
+    if (!running) return markTestSkipped('Run it with `make app-live-test`.');
     final jobs = JobsRepository(client: client, store: InMemorySecureStore());
 
     final started = await jobs.startPrint(
@@ -134,7 +136,7 @@ void main() {
   });
 
   test('sends a job that was started with the API out of reach', () async {
-    if (!running) return markTestSkipped('Needs `make dev`.');
+    if (!running) return markTestSkipped('Run it with `make app-live-test`.');
     final store = InMemorySecureStore();
     final nowhere = PrinterHubClient(
       baseUrl: Uri.parse('http://localhost:9'),
@@ -172,7 +174,7 @@ void main() {
   });
 
   test('saves, changes, and deletes a way of printing', () async {
-    if (!running) return markTestSkipped('Needs `make dev`.');
+    if (!running) return markTestSkipped('Run it with `make app-live-test`.');
     final presets = PresetsRepository(client: client);
 
     final saved = await presets.savePrint(

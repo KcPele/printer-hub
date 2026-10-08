@@ -483,9 +483,9 @@
     "@verifyBanner": {
         "description": "Reminder on Home for an unverified account"
     },
-    "workspaceTitle": "Name your workspace",
+    "workspaceTitle": "Workspace",
     "@workspaceTitle": {
-        "description": "Title of the screen that creates the first workspace"
+        "description": "Title of the workspace screen"
     },
     "workspaceSubtitle": "A workspace holds your printers. You can invite people to it later.",
     "@workspaceSubtitle": {
@@ -2230,5 +2230,429 @@
     "notificationUnread": "Not read yet",
     "@notificationUnread": {
         "description": "Screen reader label of the dot on an unread notification"
+    },
+    "settingsTeam": "Your workspace",
+    "@settingsTeam": {
+        "description": "Heading of the workspace section in Settings"
+    },
+    "settingsWorkspaceRules": "Name and rules",
+    "@settingsWorkspaceRules": {
+        "description": "Settings entry that opens the workspace's name and policy"
+    },
+    "settingsPeople": "People",
+    "@settingsPeople": {
+        "description": "Settings entry that opens the members of the workspace"
+    },
+    "settingsPeopleSubtitle": "Who is in it, and who is invited",
+    "@settingsPeopleSubtitle": {
+        "description": "Under the People entry"
+    },
+    "settingsInvitations": "Invitations",
+    "@settingsInvitations": {
+        "description": "Settings entry that opens invitations sent to the user"
+    },
+    "settingsInvitationsSubtitle": "Join another workspace",
+    "@settingsInvitationsSubtitle": {
+        "description": "Under the Invitations entry"
+    },
+    "roleOwner": "Owner",
+    "@roleOwner": {
+        "description": "A member's role"
+    },
+    "roleAdmin": "Admin",
+    "@roleAdmin": {
+        "description": "A member's role"
+    },
+    "roleOperator": "Operator",
+    "@roleOperator": {
+        "description": "A member's role"
+    },
+    "roleUser": "Member",
+    "@roleUser": {
+        "description": "A member's role"
+    },
+    "roleViewer": "Viewer",
+    "@roleViewer": {
+        "description": "A member's role"
+    },
+    "workspaceFailedTitle": "The workspace could not be read",
+    "@workspaceFailedTitle": {
+        "description": "Heading when the workspace failed to load"
+    },
+    "workspaceName": "Name",
+    "@workspaceName": {
+        "description": "Label of the workspace name field"
+    },
+    "workspaceNameRequired": "Give the workspace a name.",
+    "@workspaceNameRequired": {
+        "description": "Shown when the workspace name is empty"
+    },
+    "workspaceRulesTitle": "Rules for everyone",
+    "@workspaceRulesTitle": {
+        "description": "Heading above the workspace policy"
+    },
+    "workspaceMaxCopies": "Most copies in one job",
+    "@workspaceMaxCopies": {
+        "description": "Label of the copy limit field"
+    },
+    "workspaceMaxCopiesHint": "Leave empty for no limit",
+    "@workspaceMaxCopiesHint": {
+        "description": "Hint in the copy limit field"
+    },
+    "workspaceMaxCopiesInvalid": "Use a number from 1 to 9999, or leave it empty.",
+    "@workspaceMaxCopiesInvalid": {
+        "description": "Shown when the copy limit is not a number in range"
+    },
+    "workspaceCloud": "Keep documents in the workspace",
+    "@workspaceCloud": {
+        "description": "Switch that allows cloud document storage"
+    },
+    "workspaceCloudBody": "Off keeps every scan on the phone that made it",
+    "@workspaceCloudBody": {
+        "description": "Under the cloud documents switch"
+    },
+    "workspaceSave": "Save",
+    "@workspaceSave": {
+        "description": "Button that saves the workspace's name and rules"
+    },
+    "workspaceSaved": "Saved",
+    "@workspaceSaved": {
+        "description": "Shown after the workspace was saved"
+    },
+    "workspaceRulesReadOnly": "An owner or admin sets these.",
+    "@workspaceRulesReadOnly": {
+        "description": "Shown to a member who cannot change the rules"
+    },
+    "workspaceNoLimit": "No limit",
+    "@workspaceNoLimit": {
+        "description": "Shown for a rule that is not set"
+    },
+    "workspaceYes": "Yes",
+    "@workspaceYes": {
+        "description": "A rule that is on"
+    },
+    "workspaceNo": "No",
+    "@workspaceNo": {
+        "description": "A rule that is off"
+    },
+    "workspaceLog": "What has been done",
+    "@workspaceLog": {
+        "description": "Entry that opens the workspace's activity log"
+    },
+    "workspaceLogSubtitle": "Printers, people, and settings that were changed",
+    "@workspaceLogSubtitle": {
+        "description": "Under the log entry"
+    },
+    "workspaceLeave": "Leave this workspace",
+    "@workspaceLeave": {
+        "description": "Button that removes the user from the workspace"
+    },
+    "workspaceLeaveBody": "You lose its printers and history until someone invites you again.",
+    "@workspaceLeaveBody": {
+        "description": "Body of the leave confirmation"
+    },
+    "workspaceLeaveConfirm": "Leave",
+    "@workspaceLeaveConfirm": {
+        "description": "Button that confirms leaving"
+    },
+    "workspaceDelete": "Delete this workspace",
+    "@workspaceDelete": {
+        "description": "Button that deletes the workspace"
+    },
+    "workspaceDeleteBody": "Its printers, history, and documents are deleted for everyone in it. This cannot be undone.",
+    "@workspaceDeleteBody": {
+        "description": "Body of the delete confirmation"
+    },
+    "workspaceDeleteConfirm": "Delete",
+    "@workspaceDeleteConfirm": {
+        "description": "Button that confirms deleting the workspace"
+    },
+    "workspaceCancel": "Cancel",
+    "@workspaceCancel": {
+        "description": "Button that closes a workspace dialog without doing anything"
+    },
+    "membersTitle": "People",
+    "@membersTitle": {
+        "description": "Title of the members screen"
+    },
+    "membersFailedTitle": "The people could not be read",
+    "@membersFailedTitle": {
+        "description": "Heading when members failed to load"
+    },
+    "membersYou": "You",
+    "@membersYou": {
+        "description": "Tag on the signed-in user in the members list"
+    },
+    "membersInvite": "Invite someone",
+    "@membersInvite": {
+        "description": "Button that opens the invitation dialog"
+    },
+    "membersInviteEmail": "Their email address",
+    "@membersInviteEmail": {
+        "description": "Label of the invitation email field"
+    },
+    "membersInviteRole": "They join as",
+    "@membersInviteRole": {
+        "description": "Label of the invitation role choice"
+    },
+    "membersInviteSend": "Invite",
+    "@membersInviteSend": {
+        "description": "Button that sends an invitation"
+    },
+    "membersWaiting": "Invited, not joined yet",
+    "@membersWaiting": {
+        "description": "Heading above pending invitations"
+    },
+    "membersRevoke": "Take back the invitation",
+    "@membersRevoke": {
+        "description": "Tooltip of the button that revokes an invitation"
+    },
+    "membersRemove": "Remove from the workspace",
+    "@membersRemove": {
+        "description": "Menu entry that removes a member"
+    },
+    "membersCodeTitle": "Invitation ready",
+    "@membersCodeTitle": {
+        "description": "Title of the dialog that shows an invitation code"
+    },
+    "membersCodeCopy": "Copy the code",
+    "@membersCodeCopy": {
+        "description": "Button that copies the invitation code"
+    },
+    "membersCodeCopied": "Copied",
+    "@membersCodeCopied": {
+        "description": "Shown after the invitation code was copied"
+    },
+    "membersCodeDone": "Done",
+    "@membersCodeDone": {
+        "description": "Button that closes the invitation code dialog"
+    },
+    "invitationsTitle": "Invitations",
+    "@invitationsTitle": {
+        "description": "Title of the received invitations screen"
+    },
+    "invitationsFailedTitle": "Your invitations could not be read",
+    "@invitationsFailedTitle": {
+        "description": "Heading when invitations failed to load"
+    },
+    "invitationsEmpty": "Nobody has invited you just now.",
+    "@invitationsEmpty": {
+        "description": "Shown when there are no invitations"
+    },
+    "invitationsAccept": "Join",
+    "@invitationsAccept": {
+        "description": "Button that accepts an invitation"
+    },
+    "invitationsNeedVerified": "Verify your email address to see invitations sent to it. A code still works.",
+    "@invitationsNeedVerified": {
+        "description": "Shown when the user's email is not verified"
+    },
+    "invitationsCodeTitle": "Have a code?",
+    "@invitationsCodeTitle": {
+        "description": "Heading above the invitation code field"
+    },
+    "invitationsCodeLabel": "Invitation code",
+    "@invitationsCodeLabel": {
+        "description": "Label of the invitation code field"
+    },
+    "invitationsCodeJoin": "Join with the code",
+    "@invitationsCodeJoin": {
+        "description": "Button that accepts an invitation by its code"
+    },
+    "logTitle": "What has been done",
+    "@logTitle": {
+        "description": "Title of the workspace activity log"
+    },
+    "logFailedTitle": "The log could not be read",
+    "@logFailedTitle": {
+        "description": "Heading when the log failed to load"
+    },
+    "logEmpty": "Nothing has been recorded yet.",
+    "@logEmpty": {
+        "description": "Shown when the log is empty"
+    },
+    "logMore": "Show earlier",
+    "@logMore": {
+        "description": "Button that loads older log entries"
+    },
+    "logFailed": "Did not work",
+    "@logFailed": {
+        "description": "Tag on a logged action that failed"
+    },
+    "logSomeone": "Someone who has left",
+    "@logSomeone": {
+        "description": "Used when the person who did something is no longer a member"
+    },
+    "logSystem": "PrinterHub",
+    "@logSystem": {
+        "description": "Used when the system did something itself"
+    },
+    "errorEmailNotVerified": "Verify your email address first.",
+    "@errorEmailNotVerified": {
+        "description": "Shown when an action needs a verified email address"
+    },
+    "workspaceLeaveTitle": "Leave {name}?",
+    "@workspaceLeaveTitle": {
+        "description": "Title of the leave confirmation",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "workspaceDeleteTitle": "Delete {name}?",
+    "@workspaceDeleteTitle": {
+        "description": "Title of the delete confirmation",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "workspaceLeft": "You left {name}",
+    "@workspaceLeft": {
+        "description": "Shown after leaving a workspace",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "workspaceDeleted": "{name} was deleted",
+    "@workspaceDeleted": {
+        "description": "Shown after deleting a workspace",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "membersRemoveTitle": "Remove {name}?",
+    "@membersRemoveTitle": {
+        "description": "Title of the remove-member confirmation",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "membersCodeBody": "Give this code to {email}. They type it under Invitations in Settings. It is shown only now.",
+    "@membersCodeBody": {
+        "description": "Explains the invitation code",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "membersInvitedAs": "{role} · until {date}",
+    "@membersInvitedAs": {
+        "description": "Role and expiry of a pending invitation",
+        "placeholders": {
+            "role": {
+                "type": "String"
+            },
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "invitationsAs": "You would join as {role}",
+    "@invitationsAs": {
+        "description": "The role an invitation offers",
+        "placeholders": {
+            "role": {
+                "type": "String"
+            }
+        }
+    },
+    "invitationsJoined": "You joined {name}",
+    "@invitationsJoined": {
+        "description": "Shown after joining a workspace",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "logBy": "{who} · {when}",
+    "@logBy": {
+        "description": "Who did a logged action and when",
+        "placeholders": {
+            "who": {
+                "type": "String"
+            },
+            "when": {
+                "type": "String"
+            }
+        }
+    },
+    "logActionPrinterAdded": "Added a printer",
+    "@logActionPrinterAdded": {
+        "description": "Logged action"
+    },
+    "logActionPrinterUpdated": "Changed a printer",
+    "@logActionPrinterUpdated": {
+        "description": "Logged action"
+    },
+    "logActionPrinterRemoved": "Removed a printer",
+    "@logActionPrinterRemoved": {
+        "description": "Logged action"
+    },
+    "logActionPrinterShared": "Shared a printer with a code",
+    "@logActionPrinterShared": {
+        "description": "Logged action"
+    },
+    "logActionConnectionCreated": "Added a way to reach a printer",
+    "@logActionConnectionCreated": {
+        "description": "Logged action"
+    },
+    "logActionConnectionChanged": "Changed a way to reach a printer",
+    "@logActionConnectionChanged": {
+        "description": "Logged action"
+    },
+    "logActionConnectionRemoved": "Removed a way to reach a printer",
+    "@logActionConnectionRemoved": {
+        "description": "Logged action"
+    },
+    "logActionCredentialsRead": "Read a printer's password",
+    "@logActionCredentialsRead": {
+        "description": "Logged action"
+    },
+    "logActionCredentialsChanged": "Changed a printer's password",
+    "@logActionCredentialsChanged": {
+        "description": "Logged action"
+    },
+    "logActionInvitationCreated": "Invited someone",
+    "@logActionInvitationCreated": {
+        "description": "Logged action"
+    },
+    "logActionInvitationRevoked": "Took back an invitation",
+    "@logActionInvitationRevoked": {
+        "description": "Logged action"
+    },
+    "logActionMemberJoined": "Joined the workspace",
+    "@logActionMemberJoined": {
+        "description": "Logged action"
+    },
+    "logActionMemberLeft": "Left the workspace",
+    "@logActionMemberLeft": {
+        "description": "Logged action"
+    },
+    "logActionMemberRoleChanged": "Changed someone's role",
+    "@logActionMemberRoleChanged": {
+        "description": "Logged action"
+    },
+    "logActionMemberAccountDeleted": "Deleted their account",
+    "@logActionMemberAccountDeleted": {
+        "description": "Logged action"
+    },
+    "logActionOrganizationCreated": "Created the workspace",
+    "@logActionOrganizationCreated": {
+        "description": "Logged action"
+    },
+    "logActionOrganizationUpdated": "Changed the workspace",
+    "@logActionOrganizationUpdated": {
+        "description": "Logged action"
     }
 }

@@ -18,6 +18,7 @@ import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/scan/scan.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
+import 'package:printerhub/workspace/workspace.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 class App extends StatelessWidget {
@@ -102,6 +103,21 @@ class App extends StatelessWidget {
               final session = context.read<SessionCubit>();
               final cubit = PrintersCubit(
                 printersRepository: printersRepository,
+                organizationId: session.state.organization?.id,
+                organizationChanges: session.stream
+                    .map((state) => state.organization?.id)
+                    .distinct(),
+              );
+              unawaited(cubit.load());
+              return cubit;
+            },
+          ),
+          BlocProvider(
+            lazy: false,
+            create: (context) {
+              final session = context.read<SessionCubit>();
+              final cubit = FeaturesCubit(
+                organizationsRepository: organizationsRepository,
                 organizationId: session.state.organization?.id,
                 organizationChanges: session.stream
                     .map((state) => state.organization?.id)

@@ -3,3 +3,4 @@ library;
 
 export 'src/organization.dart';
 export 'src/organizations_repository.dart';
+export 'src/team.dart';

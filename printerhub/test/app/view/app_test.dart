@@ -19,6 +19,7 @@ import 'package:printerhub/session/session.dart';
 import 'package:printerhub/settings/settings.dart';
 import 'package:printerhub/theme/theme.dart';
 import 'package:printerhub/welcome/welcome.dart';
+import 'package:printerhub/workspace/workspace.dart';
 
 import '../../helpers/helpers.dart';
 
@@ -379,6 +380,55 @@ void main() {
 
         expect(find.byType(CataloguePage), findsOneWidget);
         expect(find.text('Xerox VersaLink C7100 Series'), findsOneWidget);
+      });
+
+      testWidgets('opens the workspace screens from Settings', (tester) async {
+        backend
+          ..features = {'scan.ocr': true}
+          ..auditList = [auditBody()];
+        await pump(tester);
+        // What is switched on for the workspace was read as the app began.
+        final features = BlocProvider.of<FeaturesCubit>(
+          tester.element(find.byType(HomePage)),
+        );
+        expect(features.enabled('scan.ocr'), isTrue);
+        await openArea(tester, 'Settings');
+
+        await openEntry(tester, 'Name and rules');
+        expect(find.byType(WorkspacePage), findsOneWidget);
+        await tester.tap(find.text('What has been done'));
+        await tester.pumpAndSettle();
+        expect(find.byType(WorkspaceLogPage), findsOneWidget);
+        expect(find.text('Printer created'), findsOneWidget);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+
+        await openEntry(tester, 'People');
+        expect(find.byType(MembersPage), findsOneWidget);
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+
+        await openEntry(tester, 'Invitations');
+        expect(find.byType(InvitationsPage), findsOneWidget);
+      });
+
+      testWidgets('leaving the only workspace asks for a new one', (
+        tester,
+      ) async {
+        await pump(tester);
+        await openArea(tester, 'Settings');
+        await openEntry(tester, 'Name and rules');
+
+        await tester.ensureVisible(find.text('Leave this workspace'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Leave this workspace'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(TextButton, 'Leave'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CreateWorkspacePage), findsOneWidget);
       });
 
       testWidgets('opens each account screen from Settings', (tester) async {

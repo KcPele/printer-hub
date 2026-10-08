@@ -102,6 +102,28 @@ class TestBackend {
   late final JobsRepository jobs;
   late final PresetsRepository presets;
 
+  /// The people in the workspace, the invitations it has sent, and the
+  /// ones the signed-in person was sent.
+  List<Map<String, Object?>> memberList = [
+    memberBody(userId: '0198c0de-0000-7000-8000-000000000002', name: 'Ada'),
+    memberBody(
+      userId: 'user-2',
+      name: 'Grace Hopper',
+      email: 'grace@example.com',
+      role: 'user',
+    ),
+  ];
+  List<Map<String, Object?>> invitationList = [];
+  List<Map<String, Object?>> receivedInvitations = [];
+
+  /// What the workspace's log records, newest first, and how many it
+  /// gives at a time.
+  List<Map<String, Object?>> auditList = [];
+  int auditPageSize = 20;
+
+  /// What is switched on for the workspace.
+  Map<String, bool> features = {};
+
   /// What the account has been told, newest first.
   late final NotificationsRepository notifications;
   List<Map<String, Object?>> notificationList = [];
@@ -604,6 +626,10 @@ class TestBackend {
           ? FakeResponse.problem(404, 'connection.not_found')
           : FakeResponse(200, {...secrets, 'extra': <String, String>{}});
     }
+    final teamRoute = _teamRoute.firstMatch(key);
+    if (teamRoute != null) {
+      return _answerTeam(teamRoute, body, request.uri.queryParameters);
+    }
     final notificationRoute = _notificationRoute.firstMatch(key);
     if (notificationRoute != null) {
       return _answerNotifications(
@@ -643,6 +669,123 @@ class TestBackend {
     '^(GET|POST|PUT|PATCH|DELETE) /organizations/([^/]+)/printers'
     r'(?:/([^/]+))?(/status|/pairing-tokens|/capabilities)?$',
   );
+
+  static final RegExp _teamRoute = RegExp(
+    '^(GET|POST|PATCH|DELETE) (?:/organizations/([^/]+)'
+    '(?:(/members|/invitations|/audit-logs|/feature-flags)(?:/([^/]+))?)?'
+    r'|/invitations(?:/([^/]+))?(?:/accept)?)$',
+  );
+
+  /// A workspace and its people: its rules, its members, the invitations
+  /// it sends and the ones the signed-in person takes up, and its log.
+  FakeResponse _answerTeam(
+    RegExpMatch route,
+    Map<String, dynamic> body,
+    Map<String, String> query,
+  ) {
+    final method = route.group(1)!;
+    final organizationId = route.group(2);
+    final part = route.group(3);
+    final id = route.group(4);
+
+    if (organizationId == null) {
+      // The invitations the signed-in person was sent.
+      if (method == 'GET') return FakeResponse(200, receivedInvitations);
+      final wanted = route.group(5);
+      final invitation = receivedInvitations
+          .where(
+            (one) => wanted == 'accept'
+                ? body['token'] == 'code-${one['id']}'
+                : one['id'] == wanted,
+          )
+          .firstOrNull;
+      if (invitation == null) {
+        return FakeResponse.problem(
+          404,
+          'invitation.not_found',
+          detail: 'That invitation is no longer open.',
+        );
+      }
+      final joined = organizationBody(
+        id: invitation['organization_id']! as String,
+        name: invitation['organization_name']! as String,
+        role: invitation['role']! as String,
+      );
+      receivedInvitations = [
+        for (final one in receivedInvitations)
+          if (one != invitation) one,
+      ];
+      workspaces = [...workspaces, joined];
+      return FakeResponse(200, joined);
+    }
+
+    final index = workspaces.indexWhere((one) => one['id'] == organizationId);
+    if (index < 0) return FakeResponse.problem(404, 'organization.not_found');
+    switch (part) {
+      case '/members' when id == null:
+        return FakeResponse(200, memberList);
+      case '/members':
+        final member = memberList.indexWhere(
+          (one) => (one['user']! as Map)['id'] == id,
+        );
+        if (method == 'DELETE') {
+          memberList = [...memberList]..removeAt(member);
+          if (id == user['id']) {
+            workspaces = [...workspaces]..removeAt(index);
+          }
+          return const FakeResponse(204);
+        }
+        final changed = {...memberList[member], 'role': body['role']};
+        memberList = [...memberList]..[member] = changed;
+        return FakeResponse(200, changed);
+      case '/invitations' when method == 'POST':
+        final sent = invitationBody(
+          id: 'invitation-${invitationList.length + 1}',
+          email: body['email'] as String,
+          role: body['role'] as String,
+        );
+        invitationList = [...invitationList, sent];
+        return FakeResponse(201, {...sent, 'token': 'code-${sent['id']}'});
+      case '/invitations' when method == 'DELETE':
+        invitationList = [
+          for (final one in invitationList)
+            if (one['id'] != id) one,
+        ];
+        return const FakeResponse(204);
+      case '/invitations':
+        return FakeResponse(200, invitationList);
+      case '/audit-logs':
+        final from = int.parse(query['cursor'] ?? '0');
+        final to = from + auditPageSize;
+        return FakeResponse(200, {
+          'items': auditList.skip(from).take(auditPageSize).toList(),
+          'next_cursor': to < auditList.length ? '$to' : null,
+        });
+      case '/feature-flags':
+        return FakeResponse(200, {'flags': features});
+    }
+    switch (method) {
+      case 'DELETE':
+        workspaces = [...workspaces]..removeAt(index);
+        return const FakeResponse(204);
+      case 'PATCH':
+        final changed = {
+          ...workspaces[index],
+          if (body['name'] != null) 'name': body['name'],
+          if (body['settings'] != null)
+            'settings': {
+              ...workspaces[index]['settings']! as Map<String, Object?>,
+              // A rule left out is one that is not set.
+              'max_copies_per_job': null,
+              ...body['settings'] as Map<String, dynamic>,
+            },
+        };
+        workspaces = [...workspaces]..[index] = changed;
+        return FakeResponse(200, changed);
+      default:
+        return FakeResponse(200, workspaces[index]);
+    }
+  }
 
   static final RegExp _notificationRoute = RegExp(
     r'^(GET|POST) /notifications(?:/([^/]+))?(/read)?$',

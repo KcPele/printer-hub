@@ -18,6 +18,7 @@ import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/scan/scan.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
+import 'package:printerhub/workspace/workspace.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 import 'test_backend.dart';
@@ -106,6 +107,12 @@ extension PumpApp on WidgetTester {
       signedInChanges: const Stream.empty(),
     );
     addTearDown(unread.close);
+    final features = FeaturesCubit(
+      organizationsRepository: api.organizations,
+      organizationId: session.state.organization?.id,
+      organizationChanges: const Stream.empty(),
+    );
+    addTearDown(features.close);
 
     await pumpWidget(
       MultiRepositoryProvider(
@@ -134,6 +141,7 @@ extension PumpApp on WidgetTester {
             BlocProvider.value(value: session),
             BlocProvider.value(value: printers),
             BlocProvider.value(value: unread),
+            BlocProvider.value(value: features),
           ],
           child: BlocBuilder<ThemeCubit, AppThemeId>(
             builder: (context, theme) => MaterialApp(

@@ -144,16 +144,38 @@ void main() {
       verify(() => router.go(AppRoutes.job('job-1'))).called(1);
     });
 
-    testWidgets('only reads a notification that leads nowhere', (tester) async {
+    testWidgets('opens the invitations for an invitation', (tester) async {
       await pump(tester);
 
-      // An invitation has no job, and this job's workspace has been left.
       await tester.tap(find.text('You were invited'));
+      await tester.pumpAndSettle();
+
+      verify(() => router.go(AppRoutes.invitations)).called(1);
+      expect(backend.notificationList[1]['read_at'], isNotNull);
+    });
+
+    testWidgets('only reads a notification that leads nowhere', (tester) async {
+      backend.notificationList = [
+        notificationBody(
+          title: 'Scan ready',
+          data: about('a workspace since left'),
+        ),
+        notificationBody(
+          id: 'notification-2',
+          type: 'something.new',
+          title: 'Something new',
+          data: const {},
+        ),
+      ];
+      await pump(tester);
+
+      // This job's workspace has been left, and the other names nothing.
       await tester.tap(find.text('Scan ready'));
+      await tester.tap(find.text('Something new'));
       await tester.pumpAndSettle();
 
       verifyNever(() => router.go(any(), extra: any(named: 'extra')));
-      expect(backend.notificationList[1]['read_at'], isNotNull);
+      expect(backend.notificationList.first['read_at'], isNotNull);
     });
 
     testWidgets('marks everything read', (tester) async {

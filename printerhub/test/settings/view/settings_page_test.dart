@@ -115,6 +115,28 @@ void main() {
         }
       });
 
+      testWidgets('opens the workspace, its people, and invitations', (
+        tester,
+      ) async {
+        final router = recordingRouter();
+        await pump(tester, router: router);
+
+        expect(find.text('Your workspace'), findsOneWidget);
+        // What the person is in the workspace sits under its entry.
+        expect(find.text('Owner'), findsOneWidget);
+        for (final (entry, route) in [
+          ('Name and rules', AppRoutes.workspace),
+          ('People', AppRoutes.members),
+          ('Invitations', AppRoutes.invitations),
+        ]) {
+          await tester.ensureVisible(find.text(entry));
+          await tester.pump();
+          await tester.tap(find.text(entry));
+
+          verify(() => router.push<Object?>(route)).called(1);
+        }
+      });
+
       testWidgets('offers to verify an unverified email', (tester) async {
         final router = recordingRouter();
         await pump(tester, router: router);

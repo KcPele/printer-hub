@@ -117,6 +117,67 @@ Map<String, Object?> organizationBody({
   'created_at': '2026-10-07T10:00:00Z',
 };
 
+/// A `MemberRead` body.
+Map<String, Object?> memberBody({
+  String userId = 'user-1',
+  String name = 'Ada Lovelace',
+  String email = 'ada@example.com',
+  String role = 'owner',
+}) => {
+  'user': {'id': userId, 'email': email, 'name': name},
+  'role': role,
+  'joined_at': '2026-10-07T10:00:00Z',
+};
+
+/// An `InvitationRead` body: one a workspace has sent.
+Map<String, Object?> invitationBody({
+  String id = 'invitation-1',
+  String email = 'grace@example.com',
+  String role = 'user',
+}) => {
+  'id': id,
+  'email': email,
+  'role': role,
+  'invited_by_user_id': 'user-1',
+  'expires_at': '2026-10-14T10:00:00Z',
+  'created_at': '2026-10-07T10:00:00Z',
+};
+
+/// A `MyInvitationRead` body: one the signed-in person was sent.
+Map<String, Object?> receivedInvitationBody({
+  String id = 'invitation-9',
+  String organizationId = '0198c0de-0000-7000-8000-00000000000c',
+  String organizationName = 'Beta',
+  String role = 'user',
+}) => {
+  'id': id,
+  'organization_id': organizationId,
+  'organization_name': organizationName,
+  'role': role,
+  'expires_at': '2026-10-14T10:00:00Z',
+  'created_at': '2026-10-07T10:00:00Z',
+};
+
+/// An `AuditLogRead` body.
+Map<String, Object?> auditBody({
+  String id = 'audit-1',
+  String action = 'printer.created',
+  String targetType = 'printer',
+  String outcome = 'success',
+  String? actorUserId = 'user-1',
+  Map<String, Object?> detail = const {},
+}) => {
+  'id': id,
+  'actor_user_id': actorUserId,
+  'action': action,
+  'target_type': targetType,
+  'target_id': null,
+  'outcome': outcome,
+  'detail': detail,
+  'ip': null,
+  'created_at': '2026-10-07T10:00:00Z',
+};
+
 /// A `ConnectionRead` body.
 Map<String, Object?> connectionBody({
   String type = 'ipp',
