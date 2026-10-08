@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/activity/cubit/activity_cubit.dart';
+import 'package:printerhub/activity/job_recovery.dart';
 import 'package:printerhub/activity/job_words.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/errors/error_messages.dart';
@@ -32,6 +33,7 @@ class ActivityPage extends StatelessWidget {
       create: (context) {
         final cubit = ActivityCubit(
           jobsRepository: context.read<JobsRepository>(),
+          recovery: context.read<JobRecovery>(),
           organizationId: organizationId,
         );
         unawaited(cubit.load());

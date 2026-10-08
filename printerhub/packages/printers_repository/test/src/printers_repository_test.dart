@@ -1019,6 +1019,75 @@ void main() {
     });
   });
 
+  group('fate', () {
+    /// A printer that has one finished job, numbered 7.
+    FakeAnswer printer(SentRequest request) {
+      final asked = decodeIpp(request.body).message;
+      final wanted = asked.group(IppGroupTag.operation)!['job-id']?.first;
+      return FakeAnswer.ipp(
+        ippResponse(
+          status: asked.code == IppOperation.getJobAttributes && wanted != 7
+              ? IppStatus.clientErrorNotFound
+              : IppStatus.ok,
+          groups: [
+            if (wanted == 7)
+              IppGroup(IppGroupTag.job, [
+                IppAttribute.single('job-id', IppValueTag.integer, 7),
+                IppAttribute.single('job-state', IppValueTag.enumeration, 9),
+              ]),
+          ],
+        ),
+      );
+    }
+
+    test('asks the printer what became of a print, by its number', () async {
+      device.device = printer;
+      final saved = PrinterRead.fromJson(printerBody().cast());
+
+      final fate = await repository.fate(
+        organizationId: _org,
+        printer: saved,
+        title: 'Report.pdf',
+        reference: 'ab12',
+        printerJobRef: '7',
+      );
+
+      expect(fate!.stage, PrintStage.completed);
+      // Only the printing connection is asked.
+      expect(device.requests.map((r) => r.uri.port).toSet(), {631});
+    });
+
+    test('says a print never arrived when the printer has nothing by its '
+        'name', () async {
+      device.device = printer;
+      final saved = PrinterRead.fromJson(printerBody().cast());
+
+      final fate = await repository.fate(
+        organizationId: _org,
+        printer: saved,
+        title: 'Report.pdf',
+        reference: 'ab12',
+      );
+
+      expect(fate!.errorCode, 'print.interrupted');
+    });
+
+    test('has no answer when the printer cannot be reached', () async {
+      final saved = PrinterRead.fromJson(printerBody().cast());
+
+      expect(
+        await repository.fate(
+          organizationId: _org,
+          printer: saved,
+          title: 'Report.pdf',
+          reference: 'ab12',
+          printerJobRef: 'not-a-number',
+        ),
+        isNull,
+      );
+    });
+  });
+
   group('scan', () {
     const namespaces =
         'xmlns:scan="http://schemas.hp.com/imaging/escl/2011/05/03" '

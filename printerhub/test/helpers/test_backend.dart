@@ -164,6 +164,10 @@ class TestBackend {
   /// completed, 5 printing, 6 stopped, 7 cancelled, 8 given up on.
   int printerJobState = 9;
 
+  /// True makes the printer deny any knowledge of a job it is asked
+  /// about, as one does some time after the job is over.
+  bool printerForgetsJobs = false;
+
   /// The IPP status the printer answers Validate-Job with, when not OK.
   int? printerRefuses;
 
@@ -467,11 +471,15 @@ class TestBackend {
       case IppOperation.cancelJob:
         printerJobState = 7;
         return FakeAnswer.ipp(ippResponse());
+      case IppOperation.getJobAttributes when printerForgetsJobs:
+        return FakeAnswer.ipp(
+          ippResponse(status: IppStatus.clientErrorNotFound),
+        );
       case IppOperation.getJobs:
         return FakeAnswer.ipp(
           ippResponse(
             groups: [
-              for (final sent in printed)
+              for (final sent in printerForgetsJobs ? <IppDecoded>[] : printed)
                 job(
                   name:
                       sent.message

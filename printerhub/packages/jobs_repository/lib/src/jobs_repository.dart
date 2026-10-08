@@ -29,6 +29,14 @@ class JobsRepository {
   static String _outboxKey(String organizationId) =>
       'jobs.outbox.$organizationId';
 
+  static String _runningKey(String organizationId) =>
+      'jobs.running.$organizationId';
+
+  /// The jobs this run of the app started and has not seen the end of.
+  /// A job that is running elsewhere in the app is not one that was
+  /// interrupted.
+  final Set<String> _live = {};
+
   /// Records a print the phone is about to run, and returns the job.
   ///
   /// [connectionId] is the connection it will try first.
@@ -103,11 +111,15 @@ class JobsRepository {
       // The backend has it: nothing is left to send.
       outbox.remove(entry);
       await _write(organizationId, outbox);
+      final job = Job.fromApi(recorded);
+      await _track(organizationId, job);
       _changes.add(null);
-      return Job.fromApi(recorded);
+      return job;
     } on ApiUnreachable {
+      final job = entry.asJob();
+      await _track(organizationId, job);
       _changes.add(null);
-      return entry.asJob();
+      return job;
     } on ApiProblem {
       // The backend will not have this job. It is not kept to be sent
       // again, and the caller is told why.
@@ -126,11 +138,87 @@ class JobsRepository {
     JobUpdate update,
   ) async {
     final event = update.toApi(_now().toUtc());
+    final ended = Job.finished.contains(update.status);
     try {
       await _report(organizationId, jobId, event);
     } finally {
-      if (Job.finished.contains(update.status)) _changes.add(null);
+      if (ended) {
+        await _untrack(organizationId, jobId);
+        _changes.add(null);
+      } else if (update.printerJobRef != null) {
+        await _noteOnPrinter(organizationId, jobId, update.printerJobRef!);
+      }
     }
+  }
+
+  /// The jobs this phone started and never saw the end of, because the
+  /// app was closed while they ran. Oldest first.
+  ///
+  /// Each is still to be settled: ask the printer what became of it, and
+  /// [report] the answer, which takes it off this list.
+  Future<List<RunningJob>> interrupted(String organizationId) async {
+    return [
+      for (final job in await _readRunning(organizationId))
+        if (!_live.contains(job.jobId)) job,
+    ];
+  }
+
+  Future<void> _track(String organizationId, Job job) async {
+    _live.add(job.id);
+    await _writeRunning(organizationId, [
+      ...await _readRunning(organizationId),
+      RunningJob(
+        jobId: job.id,
+        printerId: job.printerId,
+        kind: job.kind,
+        title: job.title,
+        startedAt: _now().toUtc(),
+      ),
+    ]);
+  }
+
+  Future<void> _untrack(String organizationId, String jobId) async {
+    _live.remove(jobId);
+    final running = await _readRunning(organizationId);
+    if (running.every((job) => job.jobId != jobId)) return;
+    await _writeRunning(organizationId, [
+      for (final job in running)
+        if (job.jobId != jobId) job,
+    ]);
+  }
+
+  /// Keeps the printer's own number for a job, by which it is asked about
+  /// later.
+  Future<void> _noteOnPrinter(
+    String organizationId,
+    String jobId,
+    String printerJobRef,
+  ) async {
+    await _writeRunning(organizationId, [
+      for (final job in await _readRunning(organizationId))
+        if (job.jobId == jobId) job.onPrinterAs(printerJobRef) else job,
+    ]);
+  }
+
+  Future<List<RunningJob>> _readRunning(String organizationId) async {
+    final json = await _store.read(_runningKey(organizationId));
+    if (json == null) return [];
+    try {
+      return [
+        for (final item in jsonDecode(json) as List<dynamic>)
+          RunningJob.fromJson(item as Map<String, dynamic>),
+      ];
+    } on Object {
+      // Written by an older version of the app.
+      return [];
+    }
+  }
+
+  Future<void> _writeRunning(String organizationId, List<RunningJob> running) {
+    return _store.write(
+      _runningKey(organizationId),
+      jsonEncode([for (final job in running) job.toJson()]),
+    );
   }
 
   Future<void> _report(
@@ -306,6 +394,7 @@ class JobsRepository {
         () => _client.api.jobs.cancelJob(orgId: organizationId, jobId: jobId),
       ),
     );
+    await _untrack(organizationId, jobId);
     _changes.add(null);
     return job;
   }
@@ -325,6 +414,8 @@ class JobsRepository {
         ),
       ),
     );
+    // It is about to be run, like a job that was just started.
+    await _track(organizationId, job);
     _changes.add(null);
     return job;
   }
@@ -333,7 +424,9 @@ class JobsRepository {
   Future<void> clear(Iterable<String> organizationIds) async {
     for (final id in organizationIds) {
       await _store.delete(_outboxKey(id));
+      await _store.delete(_runningKey(id));
     }
+    _live.clear();
   }
 
   /// A copy made of nothing but JSON values, as it will be once it has

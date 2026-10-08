@@ -2674,5 +2674,13 @@
     "devicesRenameCancel": "Cancel",
     "@devicesRenameCancel": {
         "description": "Button that closes the device name dialog"
+    },
+    "printFailedInterrupted": "The app was closed before the document reached the printer. Nothing was printed.",
+    "@printFailedInterrupted": {
+        "description": "Why a print failed: the app closed before the printer had the document"
+    },
+    "scanFailedInterrupted": "The app was closed while this was scanning, and the pages were not kept.",
+    "@scanFailedInterrupted": {
+        "description": "Why a scan failed: the app closed during it"
     }
 }

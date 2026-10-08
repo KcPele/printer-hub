@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:notifications_repository/notifications_repository.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
+import 'package:printerhub/activity/activity.dart';
 import 'package:printerhub/app/app.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/notifications/notifications.dart';
@@ -125,6 +126,12 @@ extension PumpApp on WidgetTester {
           RepositoryProvider<PrintersRepository>.value(value: api.printers),
           RepositoryProvider<JobsRepository>.value(value: api.jobs),
           RepositoryProvider<PresetsRepository>.value(value: api.presets),
+          RepositoryProvider<JobRecovery>(
+            create: (_) => JobRecovery(
+              jobsRepository: api.jobs,
+              printersRepository: api.printers,
+            ),
+          ),
           RepositoryProvider<DocumentsRepository>.value(
             value: api.documentsKept,
           ),

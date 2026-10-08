@@ -4,6 +4,7 @@ import 'package:api_client/api_client.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:jobs_repository/jobs_repository.dart';
+import 'package:printerhub/activity/job_recovery.dart';
 
 enum ActivityStatus { loading, ready, failed }
 
@@ -73,12 +74,16 @@ class ActivityState extends Equatable {
 /// Reading it is also when the phone sends what it recorded while the API
 /// was out of reach. It reads again by itself when a job begins or ends.
 class ActivityCubit extends Cubit<ActivityState> {
-  new({required this._jobsRepository, required this._organizationId})
-    : super(const ActivityState()) {
+  new({
+    required this._jobsRepository,
+    required this._recovery,
+    required this._organizationId,
+  }) : super(const ActivityState()) {
     _changes = _jobsRepository.changes.listen((_) => unawaited(refresh()));
   }
 
   final JobsRepository _jobsRepository;
+  final JobRecovery _recovery;
   final String _organizationId;
   late final StreamSubscription<void> _changes;
 
@@ -158,6 +163,9 @@ class ActivityCubit extends Cubit<ActivityState> {
     if (_syncing) return;
     _syncing = true;
     try {
+      // A job the app was closed during is settled first, so the history
+      // read next is the true one.
+      await _recovery.recover(_organizationId);
       await _jobsRepository.sync(_organizationId);
     } on ApiException {
       // Reading the history says what is wrong.

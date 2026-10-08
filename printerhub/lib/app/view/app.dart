@@ -10,6 +10,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:notifications_repository/notifications_repository.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
+import 'package:printerhub/activity/job_recovery.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/notifications/notifications.dart';
@@ -69,6 +70,12 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: printersRepository),
         RepositoryProvider.value(value: jobsRepository),
         RepositoryProvider.value(value: presetsRepository),
+        RepositoryProvider(
+          create: (_) => JobRecovery(
+            jobsRepository: jobsRepository,
+            printersRepository: printersRepository,
+          ),
+        ),
         RepositoryProvider.value(value: documentsRepository),
         RepositoryProvider.value(value: notificationsRepository),
         RepositoryProvider.value(value: finders),
@@ -175,13 +182,32 @@ class _AppViewState extends State<AppView> {
     super.initState();
     // Whatever happened while the app was away is counted as it returns.
     _lifecycle = AppLifecycleListener(
-      onResume: () => unawaited(context.read<UnreadCubit>().refresh()),
+      onResume: () {
+        unawaited(context.read<UnreadCubit>().refresh());
+        _recover(context.read<SessionCubit>().state.organization?.id);
+      },
     );
+    // A job the app was closed during is settled as soon as there is a
+    // workspace to settle it in: at start, and on moving to another.
+    final session = context.read<SessionCubit>();
+    _workspaces = session.stream
+        .map((state) => state.organization?.id)
+        .distinct()
+        .listen(_recover);
+    _recover(session.state.organization?.id);
+  }
+
+  late final StreamSubscription<String?> _workspaces;
+
+  void _recover(String? organizationId) {
+    if (organizationId == null) return;
+    unawaited(context.read<JobRecovery>().recover(organizationId));
   }
 
   @override
   void dispose() {
     _lifecycle.dispose();
+    unawaited(_workspaces.cancel());
     _router.dispose();
     _session.dispose();
     super.dispose();

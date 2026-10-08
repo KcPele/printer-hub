@@ -2,6 +2,7 @@ import 'package:api_client/testing.dart';
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:jobs_repository/jobs_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printerhub/account/account.dart';
@@ -284,6 +285,47 @@ void main() {
 
         expect(find.byType(ScanPage), findsOneWidget);
         expect(find.text('How to scan it'), findsOneWidget);
+      });
+
+      testWidgets('settles a job the app was closed during, as it starts '
+          'and as it comes back', (tester) async {
+        backend
+          ..printerList = [printerBody()]
+          ..plugInPrinter();
+        // Each was started by an earlier run of the app and never ended.
+        Future<String> closedDuringPrint() async {
+          final before = JobsRepository(
+            client: backend.client,
+            store: backend.store,
+          );
+          final job = await before.startPrint(
+            organizationId: '0198c0de-0000-7000-8000-00000000000b',
+            printerId: 'printer-1',
+            title: 'Closed.pdf',
+            choices: const PrintChoices(),
+          );
+          await before.report(
+            '0198c0de-0000-7000-8000-00000000000b',
+            job.id,
+            const JobUpdate(status: 'printing', printerJobRef: '1'),
+          );
+          return job.id;
+        }
+
+        String statusOf(String id) =>
+            backend.jobList.firstWhere((job) => job['id'] == id)['status']!
+                as String;
+
+        final first = (await tester.runAsync(closedDuringPrint))!;
+        await pump(tester);
+        expect(statusOf(first), 'completed');
+
+        final second = (await tester.runAsync(closedDuringPrint))!;
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pumpAndSettle();
+        expect(statusOf(second), 'completed');
       });
 
       testWidgets('counts what is unread, again as the app comes back, and '

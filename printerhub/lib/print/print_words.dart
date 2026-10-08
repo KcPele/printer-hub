@@ -99,6 +99,8 @@ abstract final class PrintWords {
       'print.format_not_supported' => l10n.printFailedFormat,
       'print.connection_lost' => l10n.printFailedConnectionLost,
       'print.outcome_unknown' => l10n.printFailedUnknown,
+      'print.interrupted' => l10n.printFailedInterrupted,
+      'scan.interrupted' => l10n.scanFailedInterrupted,
       'ipp.job-aborted' => l10n.printFailedAborted,
       _ when said != null && said.isNotEmpty => l10n.printFailedRefusedWhy(
         said,

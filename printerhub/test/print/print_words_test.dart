@@ -77,6 +77,8 @@ void main() {
     expect(failure('print.format_not_supported'), contains('cannot take'));
     expect(failure('print.connection_lost'), contains('was lost'));
     expect(failure('print.outcome_unknown'), contains('printed twice'));
+    expect(failure('print.interrupted'), contains('Nothing was printed'));
+    expect(failure('scan.interrupted'), contains('pages were not kept'));
     expect(failure('ipp.job-aborted'), contains('gave up'));
     expect(
       failure('ipp.client-error-not-possible', 'Unsupported media'),

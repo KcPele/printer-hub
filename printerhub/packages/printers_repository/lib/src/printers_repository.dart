@@ -364,6 +364,33 @@ class PrintersRepository {
     return PrinterPrint._(run, saved);
   }
 
+  /// Asks [printer] what became of a print this phone sent and stopped
+  /// following, because the app was closed. Nothing is sent to print.
+  ///
+  /// [title] and [reference] are what the print was started with;
+  /// [printerJobRef] is the printer's number for it, when that was learned.
+  /// Null when the printer cannot be asked now.
+  Future<PrintProgress?> fate({
+    required String organizationId,
+    required PrinterRead printer,
+    required String title,
+    required String reference,
+    String? printerJobRef,
+  }) async {
+    return await _runner.fate(
+      connections: [
+        for (final connection in printer.connections)
+          ?connectionFromApi(connection),
+      ],
+      jobName: PrintRunner.jobNameFor(title, reference),
+      printerJobId: int.tryParse(printerJobRef ?? ''),
+      credentials: await credentialsFor(
+        organizationId: organizationId,
+        printer: printer,
+      ),
+    );
+  }
+
   /// Scans on [printer], over the local network. Each page is kept in a
   /// file as it arrives.
   PrinterScan scan({

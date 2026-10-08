@@ -397,3 +397,73 @@ class JobUpdate extends Equatable {
     pageCount,
   ];
 }
+
+/// A job this phone started and has not seen the end of.
+class RunningJob extends Equatable {
+  const new({
+    required this.jobId,
+    required this.printerId,
+    required this.kind,
+    required this.startedAt,
+    this.title,
+    this.printerJobRef,
+  });
+
+  factory fromJson(Map<String, dynamic> json) {
+    return RunningJob(
+      jobId: json['job_id'] as String,
+      printerId: json['printer_id'] as String,
+      kind: json['kind'] as String,
+      startedAt: DateTime.parse(json['started_at'] as String),
+      title: json['title'] as String?,
+      printerJobRef: json['printer_job_ref'] as String?,
+    );
+  }
+
+  final String jobId;
+  final String printerId;
+
+  /// `print`, `scan`, or `copy`.
+  final String kind;
+
+  /// When this phone started it.
+  final DateTime startedAt;
+
+  /// The document's name.
+  final String? title;
+
+  /// The printer's own number for the job. Null until the printer has
+  /// taken it.
+  final String? printerJobRef;
+
+  /// The same job, now known to the printer as [printerJobRef].
+  RunningJob onPrinterAs(String printerJobRef) {
+    return RunningJob(
+      jobId: jobId,
+      printerId: printerId,
+      kind: kind,
+      startedAt: startedAt,
+      title: title,
+      printerJobRef: printerJobRef,
+    );
+  }
+
+  Map<String, Object?> toJson() => {
+    'job_id': jobId,
+    'printer_id': printerId,
+    'kind': kind,
+    'started_at': startedAt.toIso8601String(),
+    'title': title,
+    'printer_job_ref': printerJobRef,
+  };
+
+  @override
+  List<Object?> get props => [
+    jobId,
+    printerId,
+    kind,
+    startedAt,
+    title,
+    printerJobRef,
+  ];
+}

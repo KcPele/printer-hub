@@ -55,6 +55,10 @@ It stores nothing. Keeping tokens in secure storage is the app's job (FR-MOB-018
 - **Branch on `error.code`, never on `error.detail`.** Codes such as `job.invalid_transition` are part of the contract. The detail text is for people and may change.
 - **Fields with defaults are optional when sending and always present when reading.** `settings: { copies: 2 }` is a complete print request; the response carries every setting.
 
+## The admin operations
+
+This client has eight operations under `/api/v1/admin/` that only a super-user may call: three for the catalogue of printer families and five for feature switches. Nothing uses them yet. The admin dashboard that does is built with the web app; `docs/mobile-app-implementation.md` section 16 lists what it has to do.
+
 ## When the API changes
 
 From the repo root:

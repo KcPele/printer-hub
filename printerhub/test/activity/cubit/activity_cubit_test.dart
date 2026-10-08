@@ -23,8 +23,14 @@ void main() {
   });
   tearDown(() => backend.close());
 
-  ActivityCubit build() =>
-      ActivityCubit(jobsRepository: backend.jobs, organizationId: _org);
+  ActivityCubit build() => ActivityCubit(
+    jobsRepository: backend.jobs,
+    recovery: JobRecovery(
+      jobsRepository: backend.jobs,
+      printersRepository: backend.printers,
+    ),
+    organizationId: _org,
+  );
 
   List<String> titles(ActivityState state) => [
     for (final job in state.visible) job.title!,
@@ -216,6 +222,33 @@ void main() {
       ]);
       expect(cubit.state.visible.first.waitingToSync, isFalse);
     });
+  });
+
+  test('settles a job the app was closed during before listing', () async {
+    backend
+      ..printerList = [printerBody()]
+      ..plugInPrinter();
+    // Started by an earlier run of the app, and never seen to end.
+    final before = JobsRepository(client: backend.client, store: backend.store);
+    final job = await before.startPrint(
+      organizationId: _org,
+      printerId: 'printer-1',
+      title: 'Closed.pdf',
+      choices: const PrintChoices(),
+    );
+    await before.report(
+      _org,
+      job.id,
+      const JobUpdate(status: 'printing', printerJobRef: '1'),
+    );
+    final cubit = build();
+    addTearDown(cubit.close);
+
+    await cubit.load();
+    await pumpEventQueue();
+
+    final listed = cubit.state.visible.firstWhere((one) => one.id == job.id);
+    expect(listed.status, 'completed');
   });
 
   test('reads again by itself when a job begins', () async {

@@ -214,9 +214,104 @@ class PrintRunner {
       ],
       document,
       request,
-      '${document.name} [$reference]',
+      jobNameFor(document.name, reference),
       credentials,
     ).._begin();
+  }
+
+  /// What a print is called on the printer: the document's name with the
+  /// print's own [reference], by which it is found there again.
+  static String jobNameFor(String documentName, String reference) =>
+      '$documentName [$reference]';
+
+  /// Asks the printer what became of a print this app sent and then
+  /// stopped following, because the app was closed.
+  ///
+  /// [printerJobId] is the printer's number for the job, when the app got
+  /// as far as learning it; [jobName] is what [jobNameFor] made.
+  ///
+  /// Answers with where the job stands: [PrintStage.completed],
+  /// [PrintStage.cancelled], [PrintStage.failed], or still
+  /// [PrintStage.printing] or [PrintStage.attention]. A printer that has
+  /// no such job answers [PrintStage.unknown] when it once had it, since
+  /// printers forget, and [PrintStage.failed] with `print.interrupted`
+  /// when the document never reached it. Null when the printer cannot be
+  /// asked now. Nothing here sends anything to print.
+  Future<PrintProgress?> fate({
+    required List<DeviceConnection> connections,
+    required String jobName,
+    int? printerJobId,
+    PrinterCredentials? credentials,
+  }) async {
+    for (final connection in connections) {
+      if (connection.type == 'escl') continue;
+      final client = IppClient(
+        printerUri: connection.uri,
+        http: _http,
+        credentials: credentials,
+      );
+      try {
+        final job = await _lookFor(client, jobName, printerJobId);
+        if (job == null) {
+          return printerJobId == null
+              ? PrintProgress(
+                  PrintStage.failed,
+                  connection: connection,
+                  errorCode: 'print.interrupted',
+                )
+              : PrintProgress(
+                  PrintStage.unknown,
+                  connection: connection,
+                  printerJobId: printerJobId,
+                  errorCode: 'print.outcome_unknown',
+                );
+        }
+        return PrintProgress(
+          switch (job.state) {
+            IppJobState.completed => PrintStage.completed,
+            IppJobState.canceled => PrintStage.cancelled,
+            IppJobState.aborted => PrintStage.failed,
+            IppJobState.processingStopped => PrintStage.attention,
+            _ => PrintStage.printing,
+          },
+          connection: connection,
+          printerJobId: job.id,
+          errorCode: job.state == IppJobState.aborted
+              ? 'ipp.job-aborted'
+              : null,
+          errorMessage: job.state == IppJobState.aborted
+              ? job.stateReasons.join(', ')
+              : null,
+          reasons: job.stateReasons,
+        );
+      } on Object {
+        // This way of reaching it did not answer. Another may.
+        continue;
+      }
+    }
+    return null;
+  }
+
+  /// The job on the printer: by its number when that is known and the
+  /// printer still has it, else by its name. Null when the printer has
+  /// neither.
+  static Future<IppJob?> _lookFor(
+    IppClient client,
+    String jobName,
+    int? printerJobId,
+  ) async {
+    if (printerJobId != null) {
+      try {
+        return await client.getJobAttributes(printerJobId);
+      } on IppException catch (error) {
+        if (error.statusCode != IppStatus.clientErrorNotFound) rethrow;
+      }
+    }
+    final jobs = [
+      ...await client.getJobs(),
+      ...await client.getJobs(completed: true),
+    ];
+    return jobs.where((job) => job.name == jobName).firstOrNull;
   }
 }
 

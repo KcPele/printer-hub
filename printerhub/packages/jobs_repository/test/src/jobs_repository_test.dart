@@ -587,6 +587,160 @@ void main() {
     });
   });
 
+  group('interrupted', () {
+    /// The same phone after the app was closed and opened again: what was
+    /// kept is still there, and nothing is running any more.
+    JobsRepository reopened() {
+      final client = PrinterHubClient(
+        baseUrl: Uri.parse('https://api.example.com'),
+        tokenStore: InMemoryTokenStore(),
+        httpClientAdapter: api,
+      );
+      addTearDown(client.close);
+      return JobsRepository(
+        client: client,
+        store: store,
+        now: () => DateTime.utc(2026, 10, 8, 10),
+      );
+    }
+
+    test('is nothing while a job is still running here', () async {
+      await start();
+
+      expect(await repository.interrupted(_org), isEmpty);
+    });
+
+    test('is a job the app was closed during', () async {
+      final job = await start();
+      await repository.report(
+        _org,
+        job.id,
+        const JobUpdate(status: 'processing'),
+      );
+
+      final left = (await reopened().interrupted(_org)).single;
+
+      expect(left.jobId, job.id);
+      expect(left.printerId, 'printer-1');
+      expect(left.kind, 'print');
+      expect(left.title, 'Report.pdf');
+      expect(left.startedAt, DateTime.utc(2026, 10, 8, 9, 30));
+      // The printer never took it.
+      expect(left.printerJobRef, isNull);
+    });
+
+    test('carries the printer’s number for the job once it has one', () async {
+      final job = await start();
+      await start(title: 'Other.pdf');
+      await repository.report(
+        _org,
+        job.id,
+        const JobUpdate(status: 'printing', printerJobRef: '7'),
+      );
+
+      final left = await reopened().interrupted(_org);
+
+      expect(left.map((job) => job.printerJobRef), ['7', null]);
+      expect(left.first.title, 'Report.pdf');
+    });
+
+    test('is not a job that ended', () async {
+      final job = await start();
+      await repository.report(
+        _org,
+        job.id,
+        const JobUpdate(status: 'completed'),
+      );
+
+      expect(await reopened().interrupted(_org), isEmpty);
+    });
+
+    test('is settled by reporting how it ended', () async {
+      final job = await start();
+      final later = reopened();
+      expect(await later.interrupted(_org), hasLength(1));
+
+      await later.report(
+        _org,
+        job.id,
+        const JobUpdate(status: 'failed', errorCode: 'print.interrupted'),
+      );
+
+      expect(await later.interrupted(_org), isEmpty);
+    });
+
+    test('is a job started while offline too', () async {
+      offline = true;
+      final job = await start();
+
+      expect((await reopened().interrupted(_org)).single.jobId, job.id);
+    });
+
+    test('is not a job the backend would not record', () async {
+      api.handler = (_) async => FakeResponse.problem(403, 'permission.denied');
+      await expectLater(start(), throwsA(isA<ApiProblem>()));
+
+      expect(await reopened().interrupted(_org), isEmpty);
+    });
+
+    test('is a scan the app was closed during', () async {
+      await repository.startScan(
+        organizationId: _org,
+        printerId: 'printer-1',
+        choices: const ScanChoices(),
+      );
+
+      final left = (await reopened().interrupted(_org)).single;
+
+      expect(left.kind, 'scan');
+      expect(left.title, isNull);
+    });
+
+    test('is another try of a job, until that ends', () async {
+      await repository.retry(organizationId: _org, jobId: 'job-1');
+      expect(await repository.interrupted(_org), isEmpty);
+
+      expect((await reopened().interrupted(_org)).single.jobId, 'job-1');
+    });
+
+    test('is not a job that was marked cancelled', () async {
+      final job = await start();
+      final later = reopened();
+
+      await later.cancel(organizationId: _org, jobId: job.id);
+
+      expect(await later.interrupted(_org), isEmpty);
+    });
+
+    test('is forgotten when the person signs out', () async {
+      await start();
+
+      await repository.clear([_org]);
+
+      expect(await reopened().interrupted(_org), isEmpty);
+      expect(store.values, isNot(contains('jobs.running.$_org')));
+    });
+
+    test('is nothing when what was kept cannot be read', () async {
+      await store.write('jobs.running.$_org', '{"not":"a list"}');
+
+      expect(await repository.interrupted(_org), isEmpty);
+    });
+
+    test('a running job compares by value', () {
+      RunningJob make() => RunningJob(
+        jobId: 'job-1',
+        printerId: 'printer-1',
+        kind: 'print',
+        startedAt: DateTime.utc(2026),
+      );
+
+      expect(make(), make());
+      expect(make().onPrinterAs('7'), isNot(make()));
+      expect(RunningJob.fromJson(make().toJson().cast()), make());
+    });
+  });
+
   test('clear forgets what is waiting', () async {
     offline = true;
     await start();
