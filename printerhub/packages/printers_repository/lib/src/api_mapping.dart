@@ -1,5 +1,7 @@
 import 'package:api_client/api_client.dart';
 import 'package:connection_engine/connection_engine.dart';
+import 'package:printer_protocols/printer_protocols.dart'
+    show PrinterCredentials;
 
 /// Keeps the values an API enum knows and drops the rest. Sending a value
 /// the API does not know would be refused.
@@ -15,8 +17,21 @@ List<E> _known<E extends Enum>(
 }
 
 /// A connection the device answered on, as the API stores it.
-ConnectionCreate connectionToApi(DeviceConnection connection, int priority) {
+///
+/// [credentials] are what the printer asked for before it would answer.
+/// They go with the connections that print; a scanner is not asked.
+ConnectionCreate connectionToApi(
+  DeviceConnection connection,
+  int priority, {
+  PrinterCredentials? credentials,
+}) {
   return ConnectionCreate(
+    credentials: credentials == null || connection.type == 'escl'
+        ? null
+        : ConnectionCredentialsInput(
+            username: credentials.userName,
+            password: credentials.password,
+          ),
     type: ConnectionType.fromJson(connection.type),
     purposes: _known(
       connection.purposes,
@@ -136,6 +151,7 @@ PrinterCreate printerToApi(
   DeviceDescription device, {
   required String name,
   String? location,
+  PrinterCredentials? credentials,
 }) {
   return PrinterCreate(
     friendlyName: name,
@@ -147,7 +163,7 @@ PrinterCreate printerToApi(
     connections: [
       for (final (index, connection) in device.connections.indexed)
         // Priorities start at 1: the first connection is tried first.
-        connectionToApi(connection, index + 1),
+        connectionToApi(connection, index + 1, credentials: credentials),
     ],
   );
 }

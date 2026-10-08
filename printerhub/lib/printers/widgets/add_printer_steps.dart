@@ -2,6 +2,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printer_discovery/printer_discovery.dart';
+import 'package:printerhub/auth/widgets/password_field.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/printers/cubit/add_printer_cubit.dart';
@@ -85,6 +86,106 @@ class _AddressStepState extends State<AddressStep> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The printer asked who is printing: a user name and a password, which
+/// are saved with the printer for the rest of the workspace.
+class PasswordStep extends StatefulWidget {
+  const new({super.key});
+
+  @override
+  State<PasswordStep> createState() => _PasswordStepState();
+}
+
+class _PasswordStepState extends State<PasswordStep> {
+  final _form = GlobalKey<FormState>();
+  final _userName = TextEditingController();
+  final _password = TextEditingController();
+
+  @override
+  void dispose() {
+    _userName.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _connect() async {
+    if (!_form.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+    await context.read<AddPrinterCubit>().signIn(
+      userName: _userName.text.trim(),
+      password: _password.text,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return SingleChildScrollView(
+      padding: _stepPadding,
+      child: Form(
+        key: _form,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Center(
+              child: AppIllustration(AppIllustrations.private, height: 168),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              l10n.printerPasswordTitle,
+              style: context.textTheme.headlineSmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              l10n.printerPasswordBody,
+              style: context.textTheme.bodyLarge?.copyWith(
+                color: context.colors.textMuted,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            AppCard(
+              padding: const EdgeInsets.all(AppSpacing.page),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextFormField(
+                    controller: _userName,
+                    autocorrect: false,
+                    textInputAction: TextInputAction.next,
+                    validator: (value) => (value ?? '').trim().isEmpty
+                        ? l10n.printerPasswordUserNeeded
+                        : null,
+                    decoration: InputDecoration(
+                      labelText: l10n.printerPasswordUser,
+                      prefixIcon: const Icon(Icons.person_outline),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  PasswordField(
+                    controller: _password,
+                    label: l10n.printerPasswordPassword,
+                    validator: (value) => (value ?? '').isEmpty
+                        ? l10n.printerPasswordNeeded
+                        : null,
+                    onSubmitted: _connect,
+                  ),
+                  const StepMessages(),
+                  const SizedBox(height: AppSpacing.lg),
+                  AppSubmitButton(
+                    label: l10n.printerPasswordAction,
+                    onPressed: _connect,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -278,6 +379,11 @@ class StepMessages extends StatelessWidget {
         l10n.addPrinterUnreachable,
       AddPrinterState(probeFailure: ProbeFailureKind.notAPrinter) =>
         l10n.addPrinterNotAPrinter,
+      AddPrinterState(probeFailure: ProbeFailureKind.wrongPassword) =>
+        l10n.printerPasswordWrong,
+      // Only reported once a password has been given and could not be sent.
+      AddPrinterState(probeFailure: ProbeFailureKind.needsPassword) =>
+        l10n.printerPasswordNeedsSecure,
       AddPrinterState(notice: AddPrinterNotice.codeNotRecognised) =>
         l10n.qrUnrecognised,
       AddPrinterState(notice: AddPrinterNotice.nfcNothing) => l10n.nfcNothing,

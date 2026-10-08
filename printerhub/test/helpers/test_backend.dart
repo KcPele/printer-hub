@@ -77,6 +77,10 @@ class TestBackend {
   /// The printers the API knows, in every workspace.
   List<Map<String, Object?>> printerList = [];
 
+  /// The user name and password saved with each printer that was added with
+  /// one, by printer id.
+  final Map<String, Map<String, dynamic>> printerPasswords = {};
+
   /// The account the API knows.
   Map<String, Object?> user = userBody();
 
@@ -122,9 +126,13 @@ class TestBackend {
   /// Puts a colour multifunction printer on the local network, answering
   /// IPP and eSCL at any address. [stateReasons] and [tonerLevels] set what
   /// it reports about itself.
+  ///
+  /// With [signIn], it prints only for that user name and password, as a
+  /// printer with IPP authentication switched on does.
   void plugInPrinter({
     List<String> stateReasons = const ['none'],
     Map<String, int> tonerLevels = const {'black': 82, 'cyan': 8},
+    PrinterCredentials? signIn,
   }) {
     device.device = (request) {
       if (request.uri.path.endsWith('ScannerStatus')) {
@@ -132,6 +140,12 @@ class TestBackend {
       }
       if (request.uri.path.contains('eSCL')) {
         return FakeAnswer.text(200, _scannerCapabilities);
+      }
+      if (signIn != null && !_signedIn(request, signIn)) {
+        return const FakeAnswer(
+          401,
+          headers: {'www-authenticate': 'Digest realm="Printer", nonce="n1"'},
+        );
       }
       return FakeAnswer.ipp(
         ippResponse(
@@ -175,6 +189,16 @@ class TestBackend {
         ),
       );
     };
+  }
+
+  /// Whether [request] is signed the way [expected] would sign it.
+  static bool _signedIn(SentRequest request, PrinterCredentials expected) {
+    return request.headers['Authorization'] ==
+        const AuthChallenge(
+          digest: true,
+          realm: 'Printer',
+          nonce: 'n1',
+        ).authorize(expected, method: request.method, uri: request.uri);
   }
 
   /// Takes the printer off the network again.
@@ -253,11 +277,22 @@ class TestBackend {
           'POST /account/delete':
         return const FakeResponse(204);
     }
+    final credentialsRoute = _credentialsRoute.firstMatch(key);
+    if (credentialsRoute != null) {
+      final secrets = printerPasswords[credentialsRoute.group(1)];
+      return secrets == null
+          ? FakeResponse.problem(404, 'connection.not_found')
+          : FakeResponse(200, {...secrets, 'extra': <String, String>{}});
+    }
     final printerRoute = _printerRoute.firstMatch(key);
     if (printerRoute != null) return _answerPrinters(printerRoute, body);
 
     return FakeResponse.problem(404, 'not_found', detail: 'No route for $key');
   }
+
+  static final RegExp _credentialsRoute = RegExp(
+    r'^GET /organizations/[^/]+/printers/([^/]+)/connections/[^/]+/credentials$',
+  );
 
   static final RegExp _printerRoute = RegExp(
     '^(GET|POST|PATCH|DELETE) /organizations/([^/]+)/printers'
@@ -294,15 +329,26 @@ class TestBackend {
           'next_cursor': null,
         });
       }
+      final id = 'printer-${printerList.length + 1}';
+      final sent = (body['connections'] as List<dynamic>? ?? [])
+          .cast<Map<String, dynamic>>();
+      final secrets = sent
+          .map((connection) => connection['credentials'])
+          .whereType<Map<String, dynamic>>()
+          .firstOrNull;
       final created = printerBody(
-        id: 'printer-${printerList.length + 1}',
+        id: id,
         name: body['friendly_name'] as String,
         location: body['location'] as String?,
         organizationId: organizationId,
         scans: (body['capabilities'] as Map<String, dynamic>).containsKey(
           'scan',
         ),
+        connections: secrets == null
+            ? null
+            : [connectionBody(printerId: id, hasCredentials: true)],
       );
+      if (secrets != null) printerPasswords[id] = secrets;
       printerList = [...printerList, created];
       return FakeResponse(201, created);
     }

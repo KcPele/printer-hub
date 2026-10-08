@@ -157,6 +157,159 @@ void main() {
     );
   });
 
+  group('a printer that asks who is printing', () {
+    const ada = PrinterCredentials(userName: 'ada', password: 'pw');
+
+    blocTest<AddPrinterCubit, AddPrinterState>(
+      'asks for the password, without calling that a failure',
+      setUp: () => backend.plugInPrinter(signIn: ada),
+      build: build,
+      act: (cubit) => cubit.find('192.168.1.40'),
+      skip: 1,
+      expect: () => [
+        const AddPrinterState(
+          step: AddPrinterStep.password,
+          address: '192.168.1.40',
+        ),
+      ],
+    );
+
+    blocTest<AddPrinterCubit, AddPrinterState>(
+      'finds the printer once it is signed in to',
+      setUp: () => backend.plugInPrinter(signIn: ada),
+      build: build,
+      act: (cubit) async {
+        await cubit.find('192.168.1.40');
+        await cubit.signIn(userName: 'ada', password: 'pw');
+      },
+      skip: 2,
+      expect: () => [
+        onStep(AddPrinterStep.searching),
+        onStep(AddPrinterStep.found)
+            .having((s) => s.device!.model, 'model', 'VersaLink C7130'),
+      ],
+    );
+
+    blocTest<AddPrinterCubit, AddPrinterState>(
+      'says when the password is wrong, and can be tried again',
+      setUp: () => backend.plugInPrinter(signIn: ada),
+      build: build,
+      act: (cubit) async {
+        await cubit.find('192.168.1.40');
+        await cubit.signIn(userName: 'ada', password: 'guess');
+        await cubit.signIn(userName: 'ada', password: 'pw');
+      },
+      skip: 3,
+      expect: () => [
+        const AddPrinterState(
+          step: AddPrinterStep.password,
+          address: '192.168.1.40',
+          probeFailure: ProbeFailureKind.wrongPassword,
+        ),
+        onStep(AddPrinterStep.searching),
+        onStep(AddPrinterStep.found),
+      ],
+    );
+
+    blocTest<AddPrinterCubit, AddPrinterState>(
+      'saves the password with the printer',
+      setUp: () => backend.plugInPrinter(signIn: ada),
+      build: build,
+      act: (cubit) async {
+        await cubit.find('192.168.1.40');
+        await cubit.signIn(userName: 'ada', password: 'pw');
+        await cubit.save(name: 'Locked');
+      },
+      skip: 5,
+      expect: () => [
+        onStep(AddPrinterStep.added).having(
+          (s) => s.printer!.connections.single.hasCredentials,
+          'hasCredentials',
+          isTrue,
+        ),
+      ],
+      verify: (_) => expect(backend.printerPasswords['printer-1'], {
+        'username': 'ada',
+        'password': 'pw',
+      }),
+    );
+
+    blocTest<AddPrinterCubit, AddPrinterState>(
+      'saves no password with a printer that asked for none',
+      setUp: () => backend.plugInPrinter(),
+      build: build,
+      act: (cubit) async {
+        await cubit.find('192.168.1.40');
+        await cubit.save(name: 'Open');
+      },
+      verify: (_) => expect(backend.printerPasswords, isEmpty),
+    );
+
+    blocTest<AddPrinterCubit, AddPrinterState>(
+      'signs in to a printer found on the network too',
+      setUp: () => backend.plugInPrinter(signIn: ada),
+      build: build,
+      act: (cubit) async {
+        await cubit.findNearby(_announced);
+        await cubit.signIn(userName: 'ada', password: 'pw');
+      },
+      skip: 3,
+      expect: () => [onStep(AddPrinterStep.found)],
+    );
+
+    blocTest<AddPrinterCubit, AddPrinterState>(
+      'returns to where it was asked from when the printer has gone',
+      setUp: () => backend.plugInPrinter(signIn: ada),
+      build: build,
+      act: (cubit) async {
+        await cubit.find('192.168.1.40');
+        backend.unplugPrinter();
+        await cubit.signIn(userName: 'ada', password: 'pw');
+      },
+      skip: 3,
+      expect: () => [
+        const AddPrinterState(
+          step: AddPrinterStep.address,
+          address: '192.168.1.40',
+          probeFailure: ProbeFailureKind.unreachable,
+        ),
+      ],
+    );
+
+    blocTest<AddPrinterCubit, AddPrinterState>(
+      'says when the password cannot be sent safely',
+      // A plain password, and no secure address to send it to.
+      setUp: () =>
+          backend.device.device = (request) =>
+              request.uri.scheme == 'http' && request.uri.port == 631
+              ? const FakeAnswer(
+                  401,
+                  headers: {'www-authenticate': 'Basic realm="Printer"'},
+                )
+              : throw PrinterUnreachable(request.uri, 'nothing there'),
+      build: build,
+      act: (cubit) async {
+        await cubit.find('192.168.1.40');
+        await cubit.signIn(userName: 'ada', password: 'pw');
+      },
+      skip: 3,
+      expect: () => [
+        const AddPrinterState(
+          step: AddPrinterStep.password,
+          address: '192.168.1.40',
+          probeFailure: ProbeFailureKind.needsPassword,
+        ),
+      ],
+    );
+
+    blocTest<AddPrinterCubit, AddPrinterState>(
+      'does nothing before a printer has asked',
+      build: build,
+      act: (cubit) => cubit.signIn(userName: 'ada', password: 'pw'),
+      expect: () => <AddPrinterState>[],
+    );
+  });
+
   group('findNearby', () {
     blocTest<AddPrinterCubit, AddPrinterState>(
       'asks a printer that announced itself what it is',

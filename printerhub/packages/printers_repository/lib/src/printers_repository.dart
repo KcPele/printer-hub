@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:api_client/api_client.dart';
 import 'package:connection_engine/connection_engine.dart';
 import 'package:local_store/local_store.dart';
+import 'package:printer_protocols/printer_protocols.dart'
+    show PrinterCredentials;
 import 'package:printers_repository/src/api_mapping.dart';
 
 /// The printers of a workspace.
@@ -20,6 +22,11 @@ class PrintersRepository {
   final SecureStore _store;
 
   static String _cacheKey(String organizationId) => 'printers.$organizationId';
+
+  /// Where the passwords of a workspace's printers are kept on this phone,
+  /// so a printer can still be used when the API cannot be reached.
+  static String _credentialsKey(String organizationId) =>
+      'printer-credentials.$organizationId';
 
   /// The workspace's printers.
   ///
@@ -52,7 +59,15 @@ class PrintersRepository {
   }
 
   /// Asks the device at [address] what it is. Throws [ProbeFailure].
-  Future<DeviceDescription> probe(String address) => _probe.probe(address);
+  ///
+  /// A printer that asks who is printing fails as
+  /// [ProbeFailureKind.needsPassword] until it is given [credentials].
+  Future<DeviceDescription> probe(
+    String address, {
+    PrinterCredentials? credentials,
+  }) {
+    return _probe.probe(address, credentials: credentials);
+  }
 
   /// Asks a device that announced itself on the network what it is.
   /// Throws [ProbeFailure].
@@ -60,8 +75,76 @@ class PrintersRepository {
     required String host,
     Uri? ipp,
     Uri? escl,
+    PrinterCredentials? credentials,
   }) {
-    return _probe.probeAnnounced(host: host, ipp: ipp, escl: escl);
+    return _probe.probeAnnounced(
+      host: host,
+      ipp: ipp,
+      escl: escl,
+      credentials: credentials,
+    );
+  }
+
+  /// The user name and password [printer] asks for, or null when it asks
+  /// for none, or when this member may not use them.
+  ///
+  /// They are kept by the backend, encrypted, so every member's phone can
+  /// print. Once read they stay in this phone's keystore: the backend
+  /// records every read, and a printer must be usable when the API cannot
+  /// be reached. Pass [fresh] to read them again, after the printer has
+  /// refused the ones kept.
+  Future<PrinterCredentials?> credentialsFor({
+    required String organizationId,
+    required PrinterRead printer,
+    bool fresh = false,
+  }) async {
+    final connection = printer.connections
+        .where((connection) => connection.hasCredentials)
+        .firstOrNull;
+    if (connection == null) return null;
+
+    final kept = await _keptCredentials(organizationId);
+    final entry = kept[connection.id];
+    if (entry != null && !fresh) {
+      return PrinterCredentials(userName: entry['u']!, password: entry['p']!);
+    }
+    try {
+      final read = await apiCall(
+        () => _client.api.connections.readConnectionCredentials(
+          orgId: organizationId,
+          printerId: printer.id,
+          connectionId: connection.id,
+        ),
+      );
+      final userName = read.username;
+      final password = read.password;
+      if (userName == null || password == null) return null;
+
+      kept[connection.id] = {'u': userName, 'p': password};
+      await _store.write(_credentialsKey(organizationId), jsonEncode(kept));
+      return PrinterCredentials(userName: userName, password: password);
+    } on ApiException {
+      // Out of reach, or this member is not allowed the password. Without
+      // it the printer will ask, and the app will say so.
+      return null;
+    }
+  }
+
+  Future<Map<String, Map<String, String>>> _keptCredentials(
+    String organizationId,
+  ) async {
+    final json = await _store.read(_credentialsKey(organizationId));
+    if (json == null) return {};
+    try {
+      return {
+        for (final MapEntry(:key, :value)
+            in (jsonDecode(json) as Map<String, dynamic>).entries)
+          key: Map<String, String>.from(value as Map),
+      };
+    } on Object {
+      // Written by an older version of the app.
+      return {};
+    }
   }
 
   /// Makes a short-lived code another member can scan to open [printerId]
@@ -97,11 +180,17 @@ class PrintersRepository {
     required DeviceDescription device,
     required String name,
     String? location,
+    PrinterCredentials? credentials,
   }) async {
     final printer = await apiCall(
       () => _client.api.printers.addPrinter(
         orgId: organizationId,
-        body: printerToApi(device, name: name, location: location),
+        body: printerToApi(
+          device,
+          name: name,
+          location: location,
+          credentials: credentials,
+        ),
       ),
     );
     // What the device said about itself while it was probed is worth
@@ -118,10 +207,16 @@ class PrintersRepository {
     required String organizationId,
     required PrinterRead printer,
   }) async {
-    final status = await _probe.status([
-      for (final connection in printer.connections)
-        ?connectionFromApi(connection),
-    ]);
+    final status = await _probe.status(
+      [
+        for (final connection in printer.connections)
+          ?connectionFromApi(connection),
+      ],
+      credentials: await credentialsFor(
+        organizationId: organizationId,
+        printer: printer,
+      ),
+    );
     final reported = await _report(organizationId, printer, status);
     return (printer: reported ?? printer, status: status);
   }
@@ -157,6 +252,7 @@ class PrintersRepository {
   Future<void> clear(Iterable<String> organizationIds) async {
     for (final id in organizationIds) {
       await _store.delete(_cacheKey(id));
+      await _store.delete(_credentialsKey(id));
     }
   }
 

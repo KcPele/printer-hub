@@ -125,6 +125,7 @@ Map<String, Object?> connectionBody({
   String path = '/ipp/print',
   int priority = 1,
   String printerId = 'printer-1',
+  bool hasCredentials = false,
 }) => {
   'id': 'connection-$type-$priority',
   'printer_id': printerId,
@@ -140,7 +141,7 @@ Map<String, Object?> connectionBody({
     'ssid': null,
     'options': <String, Object?>{},
   },
-  'has_credentials': false,
+  'has_credentials': hasCredentials,
   'health': 'unknown',
   'last_success_at': null,
   'last_failure_at': null,

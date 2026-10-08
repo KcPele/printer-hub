@@ -341,6 +341,119 @@ void main() {
       });
     });
 
+    group('a printer that asks who is printing', () {
+      const ada = PrinterCredentials(userName: 'ada', password: 'pw');
+
+      Future<void> asked(WidgetTester tester) async {
+        backend.plugInPrinter(signIn: ada);
+        await pump(tester);
+        await findAt(tester, '10.0.0.7');
+        await tester.pumpAndSettle();
+      }
+
+      Future<void> connect(WidgetTester tester) async {
+        await tester.ensureVisible(find.text('Connect'));
+        await tester.tap(find.text('Connect'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('is asked for its user name and password', (tester) async {
+        await asked(tester);
+
+        expect(find.text('This printer asks who is printing'), findsOneWidget);
+        expect(find.textContaining('saved encrypted'), findsOneWidget);
+        expect(find.textContaining('did not accept'), findsNothing);
+      });
+
+      testWidgets('needs both before it tries', (tester) async {
+        await asked(tester);
+        final sent = backend.device.requests.length;
+
+        await connect(tester);
+
+        expect(
+          find.text('Enter the user name the printer asks for.'),
+          findsOneWidget,
+        );
+        expect(find.text("Enter the printer's password."), findsOneWidget);
+        expect(backend.device.requests, hasLength(sent));
+      });
+
+      testWidgets('is found once signed in to, and saved with its password', (
+        tester,
+      ) async {
+        await asked(tester);
+        await tester.fill('User name', ' ada ');
+        await tester.fill('Password', 'pw');
+
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
+        expect(find.text('Found it'), findsOneWidget);
+
+        await tester.fill('Name', 'Locked printer');
+        await tester.ensureVisible(find.text('Add printer'));
+        await tester.tap(find.text('Add printer'));
+        await tester.pumpAndSettle();
+
+        expect(backend.printerPasswords['printer-1'], {
+          'username': 'ada',
+          'password': 'pw',
+        });
+      });
+
+      testWidgets('says when the password is wrong', (tester) async {
+        await asked(tester);
+        await tester.fill('User name', 'ada');
+        await tester.fill('Password', 'guess');
+
+        await connect(tester);
+
+        expect(find.textContaining('did not accept'), findsOneWidget);
+        expect(find.text('Connect'), findsOneWidget);
+      });
+
+      testWidgets('says when the password cannot be sent safely', (
+        tester,
+      ) async {
+        backend.device.device = (request) =>
+            request.uri.scheme == 'http' && request.uri.port == 631
+            ? const FakeAnswer(
+                401,
+                headers: {'www-authenticate': 'Basic realm="Printer"'},
+              )
+            : throw PrinterUnreachable(request.uri, 'nothing there');
+        await pump(tester);
+        await findAt(tester, '10.0.0.7');
+        await tester.pumpAndSettle();
+        await tester.fill('User name', 'ada');
+        await tester.fill('Password', 'pw');
+
+        await connect(tester);
+
+        expect(find.textContaining('secure connection'), findsOneWidget);
+      });
+
+      testWidgets('goes back to the ways to connect', (tester) async {
+        await asked(tester);
+
+        final backHandling = tester.widget<PopScope<dynamic>>(
+          find
+              .descendant(
+                of: find.byType(AddPrinterView),
+                matching: find.byWidgetPredicate(
+                  (widget) => widget is PopScope,
+                ),
+              )
+              .first,
+        );
+        expect(backHandling.canPop, isFalse);
+        backHandling.onPopInvokedWithResult!(false, null);
+        await settle(tester);
+
+        expect(find.text('Nearby printers'), findsOneWidget);
+      });
+    });
+
     group('by a code', () {
       testWidgets('shows the camera', (tester) async {
         await pump(tester);

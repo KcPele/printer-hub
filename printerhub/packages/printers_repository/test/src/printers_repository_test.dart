@@ -184,6 +184,208 @@ void main() {
     expect(device.requests.map((request) => request.uri.port), contains(631));
   });
 
+  group('a printer that asks who is printing', () {
+    const credentials = PrinterCredentials(userName: 'ada', password: 'pw');
+    const path =
+        '$_printers/printer-1/connections/connection-ipp-1/credentials';
+    final locked = PrinterRead.fromJson(
+      printerBody(connections: [connectionBody(hasCredentials: true)]).cast(),
+    );
+
+    /// A printer that answers only a signed request.
+    void lockDevice() {
+      device.device = (request) => request.headers['Authorization'] == null
+          ? const FakeAnswer(
+              401,
+              headers: {'www-authenticate': 'Digest realm="x", nonce="n"'},
+            )
+          : FakeAnswer.ipp(
+              ippResponse(
+                groups: [
+                  IppGroup(IppGroupTag.printer, [
+                    IppAttribute.single(
+                      'printer-state',
+                      IppValueTag.enumeration,
+                      3,
+                    ),
+                  ]),
+                ],
+              ),
+            );
+    }
+
+    void serveCredentials({String? password = 'pw'}) {
+      api.handler = (request) async => request.path.endsWith('/credentials')
+          ? FakeResponse(200, {
+              'username': 'ada',
+              'password': password,
+              'extra': <String, String>{},
+            })
+          : FakeResponse(200, printerBody());
+    }
+
+    test('is probed with the password it is given', () async {
+      lockDevice();
+
+      await expectLater(
+        repository.probe('192.168.1.40'),
+        throwsA(
+          isA<ProbeFailure>().having(
+            (failure) => failure.kind,
+            'kind',
+            ProbeFailureKind.needsPassword,
+          ),
+        ),
+      );
+      final found = await repository.probe(
+        '192.168.1.40',
+        credentials: credentials,
+      );
+      expect(found.connections.single.type, 'ipp');
+
+      final announced = await repository.probeAnnounced(
+        host: '192.168.1.40',
+        ipp: Uri.parse('ipp://192.168.1.40:631/ipp/print'),
+        credentials: credentials,
+      );
+      expect(announced.connections.single.type, 'ipp');
+    });
+
+    test('is saved with its password on the connections that print', () async {
+      await repository.add(
+        organizationId: _org,
+        device: _device,
+        name: 'Front desk',
+        credentials: credentials,
+      );
+
+      final connections =
+          bodyOf(api.requests.first)['connections'] as List<dynamic>;
+      expect((connections[0] as Map)['credentials'], {
+        'username': 'ada',
+        'password': 'pw',
+      });
+      expect((connections[1] as Map)['type'], 'escl');
+      expect((connections[1] as Map).containsKey('credentials'), isFalse);
+    });
+
+    test('has its password read once, then kept on the phone', () async {
+      serveCredentials();
+
+      final first = await repository.credentialsFor(
+        organizationId: _org,
+        printer: locked,
+      );
+      final second = await repository.credentialsFor(
+        organizationId: _org,
+        printer: locked,
+      );
+
+      expect(first!.userName, 'ada');
+      expect(first.password, 'pw');
+      expect(second!.password, 'pw');
+      // The backend records every read, so it is asked once.
+      expect(api.requests.map((request) => request.path), [path]);
+    });
+
+    test('has its password read again when asked afresh', () async {
+      serveCredentials();
+      await repository.credentialsFor(organizationId: _org, printer: locked);
+      serveCredentials(password: 'changed');
+
+      final fresh = await repository.credentialsFor(
+        organizationId: _org,
+        printer: locked,
+        fresh: true,
+      );
+
+      expect(fresh!.password, 'changed');
+      expect(
+        (await repository.credentialsFor(
+          organizationId: _org,
+          printer: locked,
+        ))!.password,
+        'changed',
+      );
+    });
+
+    test('has none when it asks for none', () async {
+      expect(
+        await repository.credentialsFor(
+          organizationId: _org,
+          printer: PrinterRead.fromJson(printerBody().cast()),
+        ),
+        isNull,
+      );
+      expect(api.requests, isEmpty);
+    });
+
+    test('has none when the member may not use it, or offline', () async {
+      api.handler = (_) async => const FakeResponse(403, {
+        'type': 'about:blank',
+        'title': 'Forbidden',
+        'status': 403,
+        'code': 'auth.permission_denied',
+        'detail': 'no',
+      });
+      expect(
+        await repository.credentialsFor(organizationId: _org, printer: locked),
+        isNull,
+      );
+
+      api.handler = (_) async => throw const FormatException('offline');
+      expect(
+        await repository.credentialsFor(organizationId: _org, printer: locked),
+        isNull,
+      );
+    });
+
+    test('has none when the stored ones are incomplete', () async {
+      serveCredentials(password: null);
+
+      expect(
+        await repository.credentialsFor(organizationId: _org, printer: locked),
+        isNull,
+      );
+    });
+
+    test(
+      'ignores kept passwords it cannot read, and forgets on clear',
+      () async {
+        store.values['printer-credentials.$_org'] = 'not json';
+        serveCredentials();
+
+        expect(
+          await repository.credentialsFor(
+            organizationId: _org,
+            printer: locked,
+          ),
+          isNotNull,
+        );
+        expect(store.values['printer-credentials.$_org'], contains('ada'));
+
+        await repository.clear([_org]);
+        expect(store.values, isEmpty);
+      },
+    );
+
+    test('has its status read with the password', () async {
+      lockDevice();
+      serveCredentials();
+
+      final result = await repository.refreshStatus(
+        organizationId: _org,
+        printer: locked,
+      );
+
+      expect(result.status.state, 'online');
+      expect(
+        device.requests.last.headers['Authorization'],
+        startsWith('Digest username="ada"'),
+      );
+    });
+  });
+
   group('pairing', () {
     test('createPairingCode returns the link to show as a QR code', () async {
       api.handler = (_) async => const FakeResponse(201, {

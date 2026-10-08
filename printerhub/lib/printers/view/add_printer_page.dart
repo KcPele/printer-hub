@@ -60,6 +60,7 @@ class AddPrinterView extends StatelessWidget {
     AddPrinterStep.qr,
     AddPrinterStep.wifiDirect,
     AddPrinterStep.bluetooth,
+    AddPrinterStep.password,
     AddPrinterStep.found,
   };
 
@@ -130,6 +131,7 @@ class AddPrinterView extends StatelessWidget {
               AddPrinterStep.qr => const QrStep(),
               AddPrinterStep.wifiDirect => const WifiDirectStep(),
               AddPrinterStep.bluetooth => const BluetoothStep(),
+              AddPrinterStep.password => const PasswordStep(),
               AddPrinterStep.searching ||
               AddPrinterStep.paired => const SearchingStep(),
               AddPrinterStep.found ||

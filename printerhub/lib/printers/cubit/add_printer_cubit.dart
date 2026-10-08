@@ -24,6 +24,10 @@ enum AddPrinterStep {
   /// Asking a device what it is, or redeeming a pairing code.
   searching,
 
+  /// The printer asked who is printing. Waiting for a user name and
+  /// password.
+  password,
+
   /// The device answered. Waiting for a name.
   found,
 
@@ -157,6 +161,14 @@ class AddPrinterCubit extends Cubit<AddPrinterState> {
   final PrinterFinders _finders;
   final String _organizationId;
 
+  /// The question last put to a device and the step it was asked from, so
+  /// it can be put again once the printer's password is known.
+  Future<DeviceDescription> Function(PrinterCredentials? credentials)? _asked;
+  AddPrinterStep _askedFrom = AddPrinterStep.ways;
+
+  /// What the found printer asked for, saved with it.
+  PrinterCredentials? _credentials;
+
   bool get _busy =>
       state.step == AddPrinterStep.searching ||
       state.step == AddPrinterStep.saving;
@@ -184,19 +196,32 @@ class AddPrinterCubit extends Cubit<AddPrinterState> {
   /// Asks the device at [address] what it is.
   Future<void> find(String address) {
     return _ask(
-      () => _printersRepository.probe(address),
+      (credentials) =>
+          _printersRepository.probe(address, credentials: credentials),
       from: AddPrinterStep.address,
       address: address,
+    );
+  }
+
+  /// Puts the last question again, signed with what the printer asked for.
+  Future<void> signIn({required String userName, required String password}) {
+    final asked = _asked;
+    if (asked == null) return Future.value();
+    return _ask(
+      asked,
+      from: _askedFrom,
+      credentials: PrinterCredentials(userName: userName, password: password),
     );
   }
 
   /// Asks a printer that announced itself on the network what it is.
   Future<void> findNearby(NearbyDevice device) {
     return _ask(
-      () => _printersRepository.probeAnnounced(
+      (credentials) => _printersRepository.probeAnnounced(
         host: device.host,
         ipp: device.ipp,
         escl: device.escl,
+        credentials: credentials,
       ),
       from: state.step,
     );
@@ -218,7 +243,8 @@ class AddPrinterCubit extends Cubit<AddPrinterState> {
       return;
     }
     await _ask(
-      () => _printersRepository.probe(gateway),
+      (credentials) =>
+          _printersRepository.probe(gateway, credentials: credentials),
       from: AddPrinterStep.wifiDirect,
     );
   }
@@ -288,7 +314,8 @@ class AddPrinterCubit extends Cubit<AddPrinterState> {
         }
       case PrinterAddressCode(:final address):
         await _ask(
-          () => _printersRepository.probe(address),
+          (credentials) =>
+              _printersRepository.probe(address, credentials: credentials),
           from: origin,
           address: address,
         );
@@ -311,6 +338,7 @@ class AddPrinterCubit extends Cubit<AddPrinterState> {
         device: device,
         name: name,
         location: location,
+        credentials: _credentials,
       );
       emit(state.on(AddPrinterStep.added, printer: printer));
     } on ApiException catch (error) {
@@ -319,19 +347,33 @@ class AddPrinterCubit extends Cubit<AddPrinterState> {
   }
 
   /// Asks a device what it is. When it does not answer, returns to the
-  /// step the question came [from], with the reason.
+  /// step the question came [from], with the reason. When it wants a
+  /// password first, asks for one.
   Future<void> _ask(
-    Future<DeviceDescription> Function() ask, {
+    Future<DeviceDescription> Function(PrinterCredentials? credentials) ask, {
     required AddPrinterStep from,
     String? address,
+    PrinterCredentials? credentials,
   }) async {
     if (_busy) return;
+    _asked = ask;
+    _askedFrom = from;
     emit(state.on(AddPrinterStep.searching, address: address));
     try {
-      final device = await ask();
+      final device = await ask(credentials);
+      _credentials = credentials;
       emit(state.on(AddPrinterStep.found, device: device));
     } on ProbeFailure catch (failure) {
-      emit(state.on(from, probeFailure: failure.kind));
+      final locked =
+          failure.kind == ProbeFailureKind.needsPassword ||
+          failure.kind == ProbeFailureKind.wrongPassword;
+      emit(
+        state.on(
+          locked ? AddPrinterStep.password : from,
+          // Being asked the first time is not a failure to report.
+          probeFailure: locked && credentials == null ? null : failure.kind,
+        ),
+      );
     }
   }
 }

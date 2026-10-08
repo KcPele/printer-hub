@@ -608,6 +608,42 @@
     "@addPrinterNotAPrinter": {
         "description": "Shown when the device is not a supported printer"
     },
+    "printerPasswordTitle": "This printer asks who is printing",
+    "@printerPasswordTitle": {
+        "description": "Heading of the step that asks for a printer's user name and password"
+    },
+    "printerPasswordBody": "Enter the user name and password set on the printer. Whoever looks after it can tell you what they are. They are saved encrypted with the printer, so the rest of your workspace can print without typing them.",
+    "@printerPasswordBody": {
+        "description": "Explains what to type and what happens to it"
+    },
+    "printerPasswordUser": "User name",
+    "@printerPasswordUser": {
+        "description": "Label of the printer user name field"
+    },
+    "printerPasswordPassword": "Password",
+    "@printerPasswordPassword": {
+        "description": "Label of the printer password field"
+    },
+    "printerPasswordUserNeeded": "Enter the user name the printer asks for.",
+    "@printerPasswordUserNeeded": {
+        "description": "Shown when the printer user name is left empty"
+    },
+    "printerPasswordNeeded": "Enter the printer's password.",
+    "@printerPasswordNeeded": {
+        "description": "Shown when the printer password is left empty"
+    },
+    "printerPasswordAction": "Connect",
+    "@printerPasswordAction": {
+        "description": "Button that signs in to the printer"
+    },
+    "printerPasswordWrong": "The printer did not accept that user name and password.",
+    "@printerPasswordWrong": {
+        "description": "Shown when the printer refuses the credentials"
+    },
+    "printerPasswordNeedsSecure": "This printer only takes its password over a secure connection. Switch on secure printing (IPPS or HTTPS) in the printer's settings, then try again.",
+    "@printerPasswordNeedsSecure": {
+        "description": "Shown when the printer wants a Basic password and offers no TLS"
+    },
     "addPrinterFound": "Found it",
     "@addPrinterFound": {
         "description": "Title when the printer was found"
