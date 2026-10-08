@@ -7,6 +7,9 @@ class EmailMessage:
     to: str
     subject: str
     text: str
+    # How the email looks where HTML is shown. The text always goes with it,
+    # for the readers and mail clients that show text only.
+    html: str | None = None
 
 
 class EmailSender(Protocol):

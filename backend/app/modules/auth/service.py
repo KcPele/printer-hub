@@ -50,7 +50,12 @@ SEND_EMAIL_TASK = "send_email"
 
 def _queue_email(session: AsyncSession, message: EmailMessage) -> None:
     tasks.enqueue(
-        session, SEND_EMAIL_TASK, to=message.to, subject=message.subject, text=message.text
+        session,
+        SEND_EMAIL_TASK,
+        to=message.to,
+        subject=message.subject,
+        text=message.text,
+        html=message.html,
     )
 
 

@@ -198,6 +198,10 @@ async def test_password_reset_flow(
     assert message["to"] == user.email
     assert message["subject"] == "Your PrinterHub password reset code"
     assert "Hi Ada" in message["text"]
+    # The same email, as it looks where HTML is shown.
+    assert "Hi Ada," in message["html"]
+    assert "Reset your password" in message["html"]
+    assert code_from(task_queue) in message["html"]
 
     reset = await client.post(
         f"{API}/auth/password/reset",

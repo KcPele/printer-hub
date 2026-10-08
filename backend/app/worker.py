@@ -63,11 +63,16 @@ MAX_EMAIL_ATTEMPTS = 5
 _EMAIL_RETRY_BASE_SECONDS = 20
 
 
-async def send_email(ctx: dict[str, Any], to: str, subject: str, text: str) -> None:
-    """Send one email, retrying with a growing delay while the mail server is unreachable."""
+async def send_email(
+    ctx: dict[str, Any], to: str, subject: str, text: str, html: str | None = None
+) -> None:
+    """Send one email, retrying with a growing delay while the mail server is unreachable.
+
+    `html` has a default so that an email queued before emails had HTML is still sent.
+    """
     attempt = int(ctx.get("job_try", 1))
     try:
-        await get_email_sender().send(EmailMessage(to=to, subject=subject, text=text))
+        await get_email_sender().send(EmailMessage(to=to, subject=subject, text=text, html=html))
     except Exception as error:
         if attempt >= MAX_EMAIL_ATTEMPTS:
             log.error("email_gave_up", subject=subject, error=type(error).__name__)

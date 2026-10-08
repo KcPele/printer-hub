@@ -36,6 +36,8 @@ class SmtpEmailSender:
         mime["To"] = message.to
         mime["Subject"] = message.subject
         mime.set_content(message.text)
+        if message.html is not None:
+            mime.add_alternative(message.html, subtype="html")
 
         context = ssl.create_default_context()
         connection: smtplib.SMTP

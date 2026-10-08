@@ -107,3 +107,25 @@ async def test_failure_propagates_so_the_worker_can_retry(
 
     with pytest.raises(smtplib.SMTPConnectError):
         await sender.send(MESSAGE)
+
+
+async def test_an_email_with_html_carries_its_text_too(fake_smtp: type[FakeServer]) -> None:
+    sender = SmtpEmailSender(host="smtp.example.com", port=587, sender="PrinterHub <a@example.com>")
+
+    await sender.send(
+        EmailMessage(
+            to="ada@example.com",
+            subject="Verify your PrinterHub email address",
+            text="Code: 042817",
+            html="<p>Code: <b>042817</b></p>",
+        )
+    )
+
+    [mime] = fake_smtp.instances[0].sent
+    assert mime.get_content_type() == "multipart/alternative"
+    # Text first, HTML last: a mail client shows the last form it can.
+    text, html = mime.iter_parts()
+    assert text.get_content_type() == "text/plain"
+    assert text.get_content().strip() == "Code: 042817"
+    assert html.get_content_type() == "text/html"
+    assert "<b>042817</b>" in html.get_content()

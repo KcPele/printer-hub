@@ -151,6 +151,15 @@ async def test_send_email_task_delivers(mailbox: MemoryEmailSender) -> None:
 
     [message] = mailbox.sent
     assert (message.to, message.subject, message.text) == ("ada@example.com", "Subject", "Body")
+    # An email queued before emails had HTML has none, and is sent all the same.
+    assert message.html is None
+
+
+async def test_send_email_task_delivers_the_html_with_the_text(mailbox: MemoryEmailSender) -> None:
+    await worker.send_email({}, "ada@example.com", "Subject", "Body", "<p>Body</p>")
+
+    [message] = mailbox.sent
+    assert (message.text, message.html) == ("Body", "<p>Body</p>")
 
 
 async def test_send_email_task_retries_with_a_growing_delay(mailbox: MemoryEmailSender) -> None:
