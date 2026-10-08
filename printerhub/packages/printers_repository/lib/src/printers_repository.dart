@@ -18,6 +18,7 @@ class PrintersRepository {
     required this._client,
     required this._probe,
     required this._runner,
+    required this._scanner,
     required this._store,
   });
 
@@ -26,6 +27,7 @@ class PrintersRepository {
   final PrinterHubClient _client;
   final DeviceProbe _probe;
   final PrintRunner _runner;
+  final ScanRunner _scanner;
   final SecureStore _store;
 
   static String _cacheKey(String organizationId) => 'printers.$organizationId';
@@ -362,6 +364,22 @@ class PrintersRepository {
     return PrinterPrint._(run, saved);
   }
 
+  /// Scans on [printer], over the local network. Each page is kept in a
+  /// file as it arrives.
+  PrinterScan scan({
+    required PrinterRead printer,
+    required ScanRequest request,
+  }) {
+    final saved = {
+      for (final connection in printer.connections)
+        ?connectionFromApi(connection): connection.id,
+    };
+    return PrinterScan._(
+      _scanner.start(connections: saved.keys.toList(), request: request),
+      saved,
+    );
+  }
+
   /// One printer, as the backend has it now.
   Future<PrinterRead> get({
     required String organizationId,
@@ -598,6 +616,24 @@ class PrinterPrint {
   Stream<PrintProgress> get progress => _run.progress;
 
   /// Stops the print, on the printer when it already has the job.
+  Future<void> cancel() => _run.cancel();
+
+  /// Which saved connection [connection] is, for the job's record.
+  String? connectionIdOf(DeviceConnection? connection) =>
+      _connectionIds[connection];
+}
+
+/// A scan in progress on a saved printer.
+class PrinterScan {
+  new _(this._run, this._connectionIds);
+
+  final ScanRun _run;
+  final Map<DeviceConnection, String> _connectionIds;
+
+  /// Each step of the scan, ending with one that is final.
+  Stream<ScanProgress> get progress => _run.progress;
+
+  /// Stops the scan. The pages that have arrived are kept.
   Future<void> cancel() => _run.cancel();
 
   /// Which saved connection [connection] is, for the job's record.

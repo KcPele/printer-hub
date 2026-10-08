@@ -29,14 +29,18 @@ void main() {
     final path = request.path.replaceFirst(_jobs, '');
     if (request.method == 'POST' && path.isEmpty) {
       final sent = bodyOf(request);
-      return FakeResponse(
-        201,
-        jobBody(
-          id: sent['id'] as String,
-          title: sent['title'] as String?,
-          copies: (sent['settings'] as Map)['copies'] as int,
-        ),
+      final job = jobBody(
+        id: sent['id'] as String,
+        type: sent['type'] as String,
+        title: sent['title'] as String?,
       );
+      return FakeResponse(201, {
+        ...job,
+        'settings': {
+          ...job['settings']! as Map<String, Object?>,
+          ...sent['settings'] as Map<String, dynamic>,
+        },
+      });
     }
     if (path == '/batch') {
       return FakeResponse(200, {
@@ -165,6 +169,59 @@ void main() {
       await expectLater(start(), throwsA(isA<ApiProblem>()));
 
       expect(await repository.waiting(_org), isEmpty);
+    });
+  });
+
+  group('startScan', () {
+    Future<Job> startScan() {
+      return repository.startScan(
+        organizationId: _org,
+        printerId: 'printer-1',
+        title: 'Scan 8 Oct',
+        choices: const ScanChoices(
+          source: 'adf',
+          color: 'grayscale',
+          duplex: true,
+          resolutionDpi: 600,
+          format: 'image/jpeg',
+          mediaSize: 'iso_a5_148x210mm',
+        ),
+        connectionId: 'connection-escl-1',
+      );
+    }
+
+    test('records the scan with the backend', () async {
+      final job = await startScan();
+
+      final sent = bodyOf(api.requests.single);
+      expect(sent['type'], 'scan');
+      expect(sent['id'], startsWith('01a11ad9-21c0-7'));
+      expect(sent['title'], 'Scan 8 Oct');
+      expect(sent['connection_id'], 'connection-escl-1');
+      expect(sent['settings'], {
+        'source': 'adf',
+        'color_mode': 'grayscale',
+        'duplex': true,
+        'resolution_dpi': 600,
+        'format': 'image/jpeg',
+        'media_size': 'iso_a5_148x210mm',
+        'searchable_pdf': false,
+      });
+      expect(job.kind, 'scan');
+      expect(job.print, isNull);
+      expect(job.scan!.fromFeeder, isTrue);
+      expect(job.scan!.resolutionDpi, 600);
+      expect(outbox(), isEmpty);
+    });
+
+    test('starts offline too, and is sent later', () async {
+      offline = true;
+      final job = await startScan();
+      expect(job.waitingToSync, isTrue);
+      expect(job.scan!.color, 'grayscale');
+
+      offline = false;
+      expect(await repository.sync(_org), 0);
     });
   });
 
@@ -586,6 +643,26 @@ void main() {
       expect(job.submittedAt.millisecondsSinceEpoch, 0);
       expect(job.print, isNull);
       expect(job.fallbackOccurred, isFalse);
+    });
+
+    test('scan choices change one at a time, and compare by value', () {
+      const choices = ScanChoices();
+
+      expect(choices, const ScanChoices());
+      expect(choices.fromFeeder, isFalse);
+      expect(choices.copyWith(source: 'adf').source, 'adf');
+      expect(choices.copyWith(color: 'grayscale').color, 'grayscale');
+      expect(choices.copyWith(duplex: true).duplex, isTrue);
+      expect(choices.copyWith(resolutionDpi: 600).resolutionDpi, 600);
+      expect(choices.copyWith(format: 'image/jpeg').format, 'image/jpeg');
+      expect(
+        choices
+            .copyWith(mediaSize: () => 'iso_a5_148x210mm')
+            .copyWith(source: 'adf')
+            .mediaSize,
+        'iso_a5_148x210mm',
+      );
+      expect(ScanChoices.fromJson(const {}), choices);
     });
 
     test('an update compares by value', () {

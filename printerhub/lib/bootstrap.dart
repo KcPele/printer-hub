@@ -93,6 +93,7 @@ Future<void> bootstrap(
     client: client,
     probe: DeviceProbe(http: printerHttp),
     runner: PrintRunner(http: printerHttp),
+    scanner: ScanRunner(http: printerHttp),
     store: secureStore,
   );
   await authRepository.restore();

@@ -61,23 +61,30 @@ void main() {
     expect(status.scannerState, 'idle');
   });
 
-  group('printing', () {
-    final control = HttpClient();
+  // The simulator's own controls: its faults and what it was sent.
+  final control = HttpClient();
 
-    Future<Map<String, dynamic>> simulator(
-      String method,
-      String path, [
-      Map<String, Object?>? body,
-    ]) async {
-      final request = await control.openUrl(method, _base.replace(path: path));
-      if (body != null) {
-        request.headers.contentType = ContentType.json;
-        request.write(jsonEncode(body));
-      }
-      final answer = await utf8.decodeStream(await request.close());
-      return jsonDecode(answer) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> simulator(
+    String method,
+    String path, [
+    Map<String, Object?>? body,
+  ]) async {
+    final request = await control.openUrl(method, _base.replace(path: path));
+    if (body != null) {
+      request.headers.contentType = ContentType.json;
+      request.write(jsonEncode(body));
     }
+    final answer = await utf8.decodeStream(await request.close());
+    return jsonDecode(answer) as Map<String, dynamic>;
+  }
 
+  // The simulator is left as it was found, for whoever uses it next.
+  tearDownAll(() async {
+    if (await up) await simulator('POST', '/sim/reset');
+    control.close(force: true);
+  });
+
+  group('printing', () {
     final printing = DeviceConnection(
       type: 'ipp',
       uri: Uri(
@@ -126,12 +133,6 @@ void main() {
           .progress
           .toList();
     }
-
-    // The simulator is left as it was found, for whoever uses it next.
-    tearDownAll(() async {
-      if (await up) await simulator('POST', '/sim/reset');
-      control.close(force: true);
-    });
 
     Future<List<dynamic>> jobs() async =>
         (await simulator('GET', '/sim/state'))['print_jobs'] as List<dynamic>;
@@ -254,6 +255,101 @@ void main() {
       expect(steps.last.stage, PrintStage.failed);
       expect(steps.last.errorCode, 'ipp.server-error-service-unavailable');
       expect(await jobs(), isEmpty);
+    });
+  });
+
+  group('scanning', () {
+    final scanning = DeviceConnection(
+      type: 'escl',
+      uri: _base.replace(path: '/eSCL'),
+    );
+    late Directory directory;
+
+    setUp(() async {
+      directory = Directory.systemTemp.createTempSync('scan_simulator_test');
+      if (await up) await simulator('POST', '/sim/reset');
+    });
+    tearDown(() => directory.deleteSync(recursive: true));
+
+    Future<List<ScanProgress>> scan(ScanRequest request) {
+      return ScanRunner(
+        http: IoPrinterHttp(connectTimeout: const Duration(seconds: 1)),
+        directory: directory,
+        pause: (_) => Future<void>.delayed(const Duration(milliseconds: 20)),
+      ).start(connections: [scanning], request: request).progress.toList();
+    }
+
+    test('scans a page from the glass as a picture', () async {
+      if (!await up) return markTestSkipped('The simulator is not running.');
+
+      final steps = await scan(const ScanRequest());
+
+      expect(steps.last.stage, ScanStage.completed);
+      final page = steps.last.pages.single;
+      expect(page.mimeType, 'image/jpeg');
+      // A JPEG begins with these two bytes.
+      expect(page.file.readAsBytesSync().take(2), [0xff, 0xd8]);
+    });
+
+    test(
+      'scans every sheet in the feeder, waiting out a busy scanner',
+      () async {
+        if (!await up) return markTestSkipped('The simulator is not running.');
+        await simulator('PATCH', '/sim/state', {
+          'adf_pages': 3,
+          'scan_busy_responses': 2,
+        });
+
+        final steps = await scan(
+          const ScanRequest(source: 'adf', format: 'application/pdf'),
+        );
+
+        expect(steps.last.stage, ScanStage.completed);
+        expect(steps.last.pages, hasLength(3));
+        for (final page in steps.last.pages) {
+          expect(page.mimeType, 'application/pdf');
+          expect(
+            utf8.decode(page.file.readAsBytesSync().take(5).toList()),
+            '%PDF-',
+          );
+        }
+        // The scanner was left with no job of ours.
+        final state = await simulator('GET', '/sim/state');
+        expect(state['scan_jobs'], isEmpty);
+      },
+    );
+
+    test('finds the job though the scanner misnames itself', () async {
+      if (!await up) return markTestSkipped('The simulator is not running.');
+      await simulator('PATCH', '/sim/state', {'scan_location': 'wrong_host'});
+
+      final steps = await scan(const ScanRequest());
+
+      expect(steps.last.stage, ScanStage.completed);
+    });
+
+    test('says when the feeder is empty', () async {
+      if (!await up) return markTestSkipped('The simulator is not running.');
+      await simulator('PATCH', '/sim/state', {
+        'faults': {'adf_empty': true},
+      });
+
+      final steps = await scan(const ScanRequest(source: 'adf'));
+
+      expect(steps.last.stage, ScanStage.failed);
+      expect(steps.last.errorCode, 'scan.feeder_empty');
+    });
+
+    test('says when scanning is switched off on the device', () async {
+      if (!await up) return markTestSkipped('The simulator is not running.');
+      await simulator('PATCH', '/sim/state', {
+        'faults': {'escl_disabled': true},
+      });
+
+      final steps = await scan(const ScanRequest());
+
+      expect(steps.last.stage, ScanStage.failed);
+      expect(steps.last.errorCode, 'scan.not_available');
     });
   });
 }

@@ -113,6 +113,87 @@ class PrintChoices extends Equatable {
   ];
 }
 
+/// How something is to be scanned.
+class ScanChoices extends Equatable {
+  const new({
+    this.source = 'platen',
+    this.color = 'color',
+    this.duplex = false,
+    this.resolutionDpi = 300,
+    this.format = 'application/pdf',
+    this.mediaSize,
+  });
+
+  factory fromJson(Map<String, dynamic> json) {
+    return ScanChoices(
+      source: json['source'] as String? ?? 'platen',
+      color: json['color_mode'] as String? ?? 'color',
+      duplex: json['duplex'] as bool? ?? false,
+      resolutionDpi: json['resolution_dpi'] as int? ?? 300,
+      format: json['format'] as String? ?? 'application/pdf',
+      mediaSize: json['media_size'] as String?,
+    );
+  }
+
+  /// `platen` for the glass, `adf` for the document feeder.
+  final String source;
+
+  /// `color` or `grayscale`.
+  final String color;
+
+  /// Both sides of each sheet, from a feeder that can.
+  final bool duplex;
+  final int resolutionDpi;
+
+  /// What is kept at the end: `application/pdf` or `image/jpeg`.
+  final String format;
+
+  /// A PWG media name, such as `iso_a4_210x297mm`. Null scans A4.
+  final String? mediaSize;
+
+  bool get fromFeeder => source == 'adf';
+
+  ScanChoices copyWith({
+    String? source,
+    String? color,
+    bool? duplex,
+    int? resolutionDpi,
+    String? format,
+    String? Function()? mediaSize,
+  }) {
+    return ScanChoices(
+      source: source ?? this.source,
+      color: color ?? this.color,
+      duplex: duplex ?? this.duplex,
+      resolutionDpi: resolutionDpi ?? this.resolutionDpi,
+      format: format ?? this.format,
+      mediaSize: mediaSize == null ? this.mediaSize : mediaSize(),
+    );
+  }
+
+  /// The settings as the API records them.
+  ScanSettingsInput toApi() {
+    return ScanSettingsInput(
+      source: ScanSettingsInputSource.fromJson(source),
+      colorMode: ScanSettingsInputColorMode.fromJson(color),
+      duplex: duplex,
+      resolutionDpi: resolutionDpi,
+      format: ScanSettingsInputFormat.fromJson(format),
+      mediaSize: mediaSize,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    source,
+    color,
+    duplex,
+    resolutionDpi,
+    format,
+    mediaSize,
+  ];
+}
+
 /// A print, scan, or copy job and where it has got to.
 class Job extends Equatable {
   const new({
@@ -130,6 +211,7 @@ class Job extends Equatable {
     this.completedAt,
     this.retryOfJobId,
     this.print,
+    this.scan,
     this.waitingToSync = false,
   });
 
@@ -157,6 +239,9 @@ class Job extends Equatable {
       retryOfJobId: json['retry_of_job_id'] as String?,
       print: kind == 'print' && settings is Map<String, dynamic>
           ? PrintChoices.fromJson(settings)
+          : null,
+      scan: kind == 'scan' && settings is Map<String, dynamic>
+          ? ScanChoices.fromJson(settings)
           : null,
       waitingToSync: waitingToSync,
     );
@@ -192,6 +277,9 @@ class Job extends Equatable {
   /// How it was to be printed. Null for a scan or a copy.
   final PrintChoices? print;
 
+  /// How it was to be scanned. Null for a print or a copy.
+  final ScanChoices? scan;
+
   /// True for a job the backend has not been told about yet.
   final bool waitingToSync;
 
@@ -220,6 +308,7 @@ class Job extends Equatable {
     completedAt,
     retryOfJobId,
     print,
+    scan,
     waitingToSync,
   ];
 }

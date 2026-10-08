@@ -6,3 +6,4 @@ export 'src/device.dart';
 export 'src/device_probe.dart';
 export 'src/mapping.dart';
 export 'src/print_runner.dart';
+export 'src/scan_runner.dart';

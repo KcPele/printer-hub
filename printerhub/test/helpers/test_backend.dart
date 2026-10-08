@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:api_client/api_client.dart';
 import 'package:api_client/testing.dart';
@@ -55,6 +56,11 @@ class TestBackend {
         http: device,
         pause: (_) => Future<void>.delayed(const Duration(milliseconds: 10)),
       ),
+      scanner: ScanRunner(
+        http: device,
+        directory: scans,
+        pause: (_) => Future<void>.delayed(const Duration(milliseconds: 10)),
+      ),
       store: store,
     );
     jobs = JobsRepository(client: client, store: store);
@@ -76,6 +82,9 @@ class TestBackend {
   static const Key qrCameraKey = Key('qr-camera');
 
   final InMemorySecureStore store = InMemorySecureStore();
+
+  /// Where scanned pages are kept. Deleted by [close].
+  final Directory scans = Directory.systemTemp.createTempSync('test_backend');
   late final FakeApi network;
   late final PrinterHubClient client;
   late final AuthRepository auth;
@@ -417,6 +426,7 @@ class TestBackend {
   Future<void> close() async {
     await auth.close();
     await client.close();
+    if (scans.existsSync()) scans.deleteSync(recursive: true);
   }
 
   static String _key(RequestOptions request) {

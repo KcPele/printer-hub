@@ -53,6 +53,7 @@ void main() {
         client: client,
         probe: DeviceProbe(http: http),
         runner: PrintRunner(http: http),
+        scanner: ScanRunner(http: http),
         store: InMemorySecureStore(),
       );
       final password = 'live-${newIdempotencyKey()}';

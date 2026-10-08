@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:api_client/api_client.dart';
 import 'package:api_client/testing.dart';
@@ -62,12 +63,15 @@ void main() {
   late FakePrinterHttp device;
   late InMemorySecureStore store;
   late PrintersRepository repository;
+  late Directory scans;
 
   Map<String, dynamic> bodyOf(RequestOptions request) {
     return jsonDecode(jsonEncode(request.data)) as Map<String, dynamic>;
   }
 
   setUp(() {
+    scans = Directory.systemTemp.createTempSync('printers_repository_test');
+    addTearDown(() => scans.deleteSync(recursive: true));
     api = FakeApi((request) async {
       if (request.method == 'GET') {
         return FakeResponse(200, {
@@ -92,6 +96,7 @@ void main() {
       client: client,
       probe: DeviceProbe(http: device),
       runner: PrintRunner(http: device, pause: (_) async {}),
+      scanner: ScanRunner(http: device, directory: scans),
       store: store,
     );
   });
@@ -1011,6 +1016,71 @@ void main() {
       );
       expect(kept!.password, 'new');
       expect(api.requests, isEmpty);
+    });
+  });
+
+  group('scan', () {
+    const namespaces =
+        'xmlns:scan="http://schemas.hp.com/imaging/escl/2011/05/03" '
+        'xmlns:pwg="http://www.pwg.org/schemas/2010/12/sm"';
+
+    /// A scanner with a glass, which gives one page and then no more.
+    FakeDevice scanner() {
+      var served = false;
+      return (request) {
+        final path = request.uri.path;
+        if (path.endsWith('ScannerCapabilities')) {
+          return FakeAnswer.text(
+            200,
+            [
+              '<scan:ScannerCapabilities $namespaces><scan:Platen>',
+              '<scan:PlatenInputCaps><scan:ColorMode>RGB24</scan:ColorMode>',
+              '</scan:PlatenInputCaps></scan:Platen>',
+              '</scan:ScannerCapabilities>',
+            ].join(),
+          );
+        }
+        if (path.endsWith('ScanJobs')) {
+          return const FakeAnswer(
+            201,
+            headers: {'location': '/eSCL/ScanJobs/1'},
+          );
+        }
+        if (request.method == 'DELETE' || served) return const FakeAnswer(404);
+        served = true;
+        return FakeAnswer.text(200, 'a page');
+      };
+    }
+
+    test('scans over the saved connections, and names the one used', () async {
+      device.device = scanner();
+      final saved = PrinterRead.fromJson(printerBody().cast());
+
+      final scan = repository.scan(
+        printer: saved,
+        request: const ScanRequest(),
+      );
+      final steps = await scan.progress.toList();
+
+      expect(steps.last.stage, ScanStage.completed);
+      expect(steps.last.pages.single.file.readAsStringSync(), 'a page');
+      expect(scan.connectionIdOf(steps.last.connection), 'connection-escl-2');
+      expect(scan.connectionIdOf(null), isNull);
+      // The printing connection is not a way to scan.
+      expect(device.requests.map((r) => r.uri.scheme).toSet(), {'http'});
+    });
+
+    test('can be cancelled', () async {
+      device.device = scanner();
+      final saved = PrinterRead.fromJson(printerBody().cast());
+
+      final scan = repository.scan(
+        printer: saved,
+        request: const ScanRequest(),
+      );
+      await scan.cancel();
+
+      expect((await scan.progress.toList()).last.stage, ScanStage.cancelled);
     });
   });
 

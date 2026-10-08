@@ -39,7 +39,7 @@ class JobsRepository {
     String? title,
     int? pageCount,
     String? connectionId,
-  }) async {
+  }) {
     final now = _now().toUtc();
     final create = JobCreatePrintJobCreate(
       // The history is listed by identifier, so it begins with the time.
@@ -54,6 +54,35 @@ class JobsRepository {
       submittedAt: now,
       settings: choices.toApi(),
     );
+    return _start(organizationId, create);
+  }
+
+  /// Records a scan the phone is about to run, and returns the job.
+  Future<Job> startScan({
+    required String organizationId,
+    required String printerId,
+    required ScanChoices choices,
+    String? title,
+    String? connectionId,
+  }) {
+    final now = _now().toUtc();
+    final create = JobCreateScanJobCreate(
+      id: newRecordId(now),
+      type: 'scan',
+      printerId: printerId,
+      executionMode: ExecutionMode.local,
+      title: title,
+      documentId: null,
+      connectionId: connectionId,
+      pageCount: null,
+      submittedAt: now,
+      settings: choices.toApi(),
+    );
+    return _start(organizationId, create);
+  }
+
+  /// Keeps a new job to be sent, and sends it if the API can be reached.
+  Future<Job> _start(String organizationId, JobCreate create) async {
     final entry = _Entry(
       key: newIdempotencyKey(),
       job: _plain(create.toJson()),
