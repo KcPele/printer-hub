@@ -285,6 +285,205 @@ void main() {
     });
   });
 
+  group('probe looks where older printers listen', () {
+    test('finds IPP at another path when the usual one has none', () async {
+      network({
+        'http://192.168.1.40:631/ipp/print': (_) => const FakeAnswer(404),
+        'http://192.168.1.40:631/ipp/printer': (_) =>
+            FakeAnswer.ipp(ippResponse(status: IppStatus.clientErrorNotFound)),
+        'http://192.168.1.40:631/ipp': (_) => FakeAnswer.ipp(_printerAnswer()),
+      });
+
+      final device = await probe.probe('192.168.1.40');
+
+      expect(
+        device.connections.single.uri,
+        Uri.parse('ipp://192.168.1.40:631/ipp'),
+      );
+    });
+
+    test('finds IPP at the root, the last place to look', () async {
+      network({
+        'http://192.168.1.40:631/ipp': (_) => const FakeAnswer(404),
+        'http://192.168.1.40:631/': (_) => FakeAnswer.ipp(_printerAnswer()),
+      });
+
+      final device = await probe.probe('192.168.1.40');
+
+      expect(device.connections.single.uri.path, '/');
+    });
+
+    test('does not try other paths where nothing listens', () async {
+      await expectLater(
+        probe.probe('192.168.1.40'),
+        throwsA(isA<ProbeFailure>()),
+      );
+
+      // One try for each of the three places IPP can be, not one per path.
+      expect(
+        http.requests.where((r) => r.headers['Content-Type'] != null),
+        hasLength(3),
+      );
+    });
+
+    test('tries only the path that was typed', () async {
+      network({'http://192.168.1.40:631/': (_) => const FakeAnswer(404)});
+
+      await expectLater(
+        probe.probe('ipp://192.168.1.40:631/printers/office'),
+        throwsA(isA<ProbeFailure>()),
+      );
+
+      expect(
+        http.requests.where((r) => r.method == 'POST').map((r) => r.uri.path),
+        ['/printers/office'],
+      );
+    });
+  });
+
+  group('probe and a printer that wants a password', () {
+    const credentials = PrinterCredentials(userName: 'ada', password: 'pw');
+
+    FakeAnswer Function(SentRequest) locked(String challenge) {
+      return (request) => request.headers['Authorization'] == null
+          ? FakeAnswer(401, headers: {'www-authenticate': challenge})
+          : FakeAnswer.ipp(_printerAnswer());
+    }
+
+    Matcher failsAs(ProbeFailureKind kind) =>
+        throwsA(isA<ProbeFailure>().having((e) => e.kind, 'kind', kind));
+
+    test('says so, and does not add it as a scanner alone', () async {
+      network({
+        'http://192.168.1.40:631/': locked('Digest realm="x", nonce="n"'),
+        'http://192.168.1.40/eSCL': escl,
+      });
+
+      await expectLater(
+        probe.probe('192.168.1.40'),
+        failsAs(ProbeFailureKind.needsPassword),
+      );
+      // Asked once on the port: another path would want the password too.
+      expect(
+        http.requests.where((r) => r.uri.scheme == 'http' && r.uri.port == 631),
+        hasLength(1),
+      );
+    });
+
+    test('describes it once the password is given', () async {
+      network({
+        'http://192.168.1.40:631/': locked('Digest realm="x", nonce="n"'),
+      });
+
+      final device = await probe.probe(
+        '192.168.1.40',
+        credentials: credentials,
+      );
+
+      expect(device.model, 'VersaLink C7130');
+      expect(http.requests.last.headers['Authorization'], contains('Digest'));
+    });
+
+    test('says when the password is wrong', () async {
+      network({
+        'http://192.168.1.40:631/': (_) => const FakeAnswer(
+          401,
+          headers: {'www-authenticate': 'Digest realm="x", nonce="n"'},
+        ),
+      });
+
+      await expectLater(
+        probe.probe('192.168.1.40', credentials: credentials),
+        failsAs(ProbeFailureKind.wrongPassword),
+      );
+    });
+
+    test('takes a plain password to the secure address only', () async {
+      network({
+        'http://192.168.1.40:631/': locked('Basic realm="x"'),
+        'https://192.168.1.40:631/': locked('Basic realm="x"'),
+      });
+
+      final device = await probe.probe(
+        '192.168.1.40',
+        credentials: credentials,
+      );
+
+      expect(device.connections.single.type, 'ipps');
+      expect(
+        http.requests
+            .where((r) => r.headers['Authorization'] != null)
+            .map((r) => r.uri.scheme)
+            .toSet(),
+        {'https'},
+      );
+    });
+
+    test(
+      'says so when there is no secure address for a plain password',
+      () async {
+        network({'http://192.168.1.40:631/': locked('Basic realm="x"')});
+
+        await expectLater(
+          probe.probe('192.168.1.40', credentials: credentials),
+          failsAs(ProbeFailureKind.needsPassword),
+        );
+        expect(
+          http.requests.where((r) => r.headers['Authorization'] != null),
+          isEmpty,
+        );
+      },
+    );
+
+    test('moves to the secure address when told to upgrade', () async {
+      network({
+        'http://192.168.1.40:631/': (_) => const FakeAnswer(426),
+        'https://192.168.1.40:631/ipp/print': (_) =>
+            FakeAnswer.ipp(_printerAnswer()),
+      });
+
+      final device = await probe.probe('192.168.1.40');
+
+      expect(device.connections.single.type, 'ipps');
+      expect(
+        http.requests.where((r) => r.uri.scheme == 'http' && r.uri.port == 631),
+        hasLength(1),
+      );
+    });
+
+    test('gives an announced device its password too', () async {
+      network({
+        'https://printer.local:631/ipp/print': locked('Basic realm="x"'),
+      });
+
+      final device = await probe.probeAnnounced(
+        host: 'printer.local',
+        ipp: Uri.parse('ipps://printer.local:631/ipp/print'),
+        credentials: credentials,
+      );
+
+      expect(device.connections.single.type, 'ipps');
+    });
+
+    test('reads the status of a printer it has the password for', () async {
+      network({
+        'http://192.168.1.40:631/': locked('Digest realm="x", nonce="n"'),
+      });
+      final connections = [
+        DeviceConnection(
+          type: 'ipp',
+          uri: Uri.parse('ipp://192.168.1.40:631/ipp/print'),
+        ),
+      ];
+
+      expect((await probe.status(connections)).state, 'unreachable');
+      expect(
+        (await probe.status(connections, credentials: credentials)).state,
+        'online',
+      );
+    });
+  });
+
   group('probeAnnounced', () {
     test('goes straight to where the device said it is', () async {
       network({

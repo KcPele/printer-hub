@@ -10,6 +10,7 @@ class EsclInput {
     required this.colorModes,
     required this.documentFormats,
     required this.resolutionsDpi,
+    this.usesDocumentFormatExt = false,
   });
 
   /// eSCL measures in three-hundredths of an inch.
@@ -33,6 +34,7 @@ class EsclInput {
       resolutionsDpi: {
         for (final value in _texts(caps, 'XResolution')) ?int.tryParse(value),
       }.toList()..sort(),
+      usesDocumentFormatExt: _first(caps, 'DocumentFormatExt') != null,
     );
   }
 
@@ -45,6 +47,62 @@ class EsclInput {
   /// MIME types, such as `application/pdf` and `image/jpeg`.
   final List<String> documentFormats;
   final List<int> resolutionsDpi;
+
+  /// True when the scanner lists formats the newer way, and so expects to
+  /// be asked the newer way.
+  final bool usesDocumentFormatExt;
+
+  /// Settings this input will accept, as near to what is asked as it gets.
+  ///
+  /// A scanner refuses a resolution, colour mode, format, or area it did
+  /// not offer, so what the person chose is fitted to what was offered.
+  EsclScanSettings settings({
+    required bool fromFeeder,
+    bool color = true,
+    bool duplex = false,
+    int resolutionDpi = 300,
+    String documentFormat = 'application/pdf',
+    double widthMm = 210,
+    double heightMm = 297,
+  }) {
+    const colorOrder = ['RGB24', 'Grayscale8', 'BlackAndWhite1'];
+    const grayOrder = ['Grayscale8', 'BlackAndWhite1', 'RGB24'];
+    final mode = (color ? colorOrder : grayOrder).firstWhere(
+      colorModes.contains,
+      orElse: () => colorModes.firstOrNull ?? 'RGB24',
+    );
+
+    var dpi = resolutionDpi;
+    if (resolutionsDpi.isNotEmpty && !resolutionsDpi.contains(dpi)) {
+      dpi = resolutionsDpi.reduce(
+        (best, next) =>
+            (next - resolutionDpi).abs() < (best - resolutionDpi).abs()
+            ? next
+            : best,
+      );
+    }
+
+    final format =
+        documentFormats.isEmpty || documentFormats.contains(documentFormat)
+        ? documentFormat
+        : const ['image/jpeg', 'application/pdf'].firstWhere(
+            documentFormats.contains,
+            orElse: () => documentFormats.first,
+          );
+
+    return EsclScanSettings(
+      fromFeeder: fromFeeder,
+      duplex: fromFeeder && duplex,
+      colorMode: mode,
+      resolutionDpi: dpi,
+      documentFormat: format,
+      widthMm: maxWidthMm > 0 && widthMm > maxWidthMm ? maxWidthMm : widthMm,
+      heightMm: maxHeightMm > 0 && heightMm > maxHeightMm
+          ? maxHeightMm
+          : heightMm,
+      useDocumentFormatExt: usesDocumentFormatExt,
+    );
+  }
 }
 
 /// What the scanner can do, from `ScannerCapabilities`.
@@ -115,8 +173,10 @@ class EsclStatus {
   /// without a feeder.
   final String? feederState;
 
+  bool get feederLoaded => feederState == 'ScannerAdfLoaded';
   bool get feederEmpty => feederState == 'ScannerAdfEmpty';
   bool get feederJammed => feederState == 'ScannerAdfJam';
+  bool get feederOpen => feederState == 'ScannerAdfDoorOpen';
 }
 
 /// What to scan and how.
@@ -130,6 +190,7 @@ class EsclScanSettings {
     this.documentFormat = 'application/pdf',
     this.widthMm = 210,
     this.heightMm = 297,
+    this.useDocumentFormatExt = false,
   });
 
   /// False scans from the glass.
@@ -144,6 +205,11 @@ class EsclScanSettings {
   /// The area to scan, from the top left corner. A4 by default.
   final double widthMm;
   final double heightMm;
+
+  /// Names the format the newer way as well, for a scanner that lists its
+  /// formats that way. One that does not is not sent a word it may not
+  /// know.
+  final bool useDocumentFormatExt;
 
   static int _units(double mm) => (mm / 25.4 * 300).round();
 
@@ -160,30 +226,34 @@ class EsclScanSettings {
         'xmlns:pwg': 'http://www.pwg.org/schemas/2010/12/sm',
       },
       nest: () {
+        // The order below is the one scanners in use are known to accept;
+        // some read the settings in order and ignore what is out of place.
         builder
-          ..element('pwg:Version', nest: '2.6')
+          ..element('pwg:Version', nest: '2.0')
           ..element(
             'pwg:ScanRegions',
             nest: () => builder.element(
               'pwg:ScanRegion',
               nest: () => builder
-                ..element('pwg:XOffset', nest: 0)
-                ..element('pwg:YOffset', nest: 0)
-                ..element('pwg:Width', nest: _units(widthMm))
-                ..element('pwg:Height', nest: _units(heightMm))
                 ..element(
                   'pwg:ContentRegionUnits',
                   nest: 'escl:ThreeHundredthsOfInches',
-                ),
+                )
+                ..element('pwg:XOffset', nest: 0)
+                ..element('pwg:YOffset', nest: 0)
+                ..element('pwg:Width', nest: _units(widthMm))
+                ..element('pwg:Height', nest: _units(heightMm)),
             ),
           )
           ..element('pwg:InputSource', nest: fromFeeder ? 'Feeder' : 'Platen')
           ..element('scan:ColorMode', nest: colorMode)
+          ..element('pwg:DocumentFormat', nest: documentFormat);
+        if (useDocumentFormatExt) {
+          builder.element('scan:DocumentFormatExt', nest: documentFormat);
+        }
+        builder
           ..element('scan:XResolution', nest: resolutionDpi)
-          ..element('scan:YResolution', nest: resolutionDpi)
-          // Old firmware reads the first, new firmware the second.
-          ..element('pwg:DocumentFormat', nest: documentFormat)
-          ..element('scan:DocumentFormatExt', nest: documentFormat);
+          ..element('scan:YResolution', nest: resolutionDpi);
         if (fromFeeder) builder.element('scan:Duplex', nest: duplex);
       },
     );

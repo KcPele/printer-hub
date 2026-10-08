@@ -16,6 +16,7 @@ Backend-first, mobile-first printer and scanner platform. This repo is a monorep
 | Commands | `make help` |
 | Hosting, environment variables, push setup | `docs/deployment.md` |
 | Printer simulator endpoints and faults | `backend/simulator/README.md` |
+| What real printers and scanners do differently, and how the app copes | `docs/printer-compatibility.md` |
 | API contract | `backend/openapi.json`, or `/api/docs` on a running server |
 | Calling the API from the web app | `packages/api-client/README.md` |
 | Calling the API from the Flutter app | `printerhub/packages/api_client/README.md` |
@@ -71,6 +72,7 @@ A change is done when `make app-check` passes: formatting, `very_good_analysis` 
 - **Every way of finding a printer ends in the same place.** Nearby, address, QR, NFC, Wi-Fi Direct, and Bluetooth all lead to `AddPrinterCubit` asking the device what it is. Bluetooth and NFC only find a printer; the document always travels over the network. A new way is a new input to that cubit, not a new flow.
 - **Code that talks to a phone's radio through a plugin** lives in `printer_discovery/lib/src/platform/` behind an interface, is excluded from coverage with a comment saying why, and has a stand-in in that package's `testing.dart`. Decisions never go in those files.
 - **What a printer reports is worded in one place**, `lib/printers/printer_words.dart`: its standing, its alerts, what it can do. A screen never turns a status code into a sentence itself.
+- **Never assume what a printer takes or how it behaves.** A document's format comes from `choosePrintFormat`, never a hard-coded `application/pdf`. A new quirk of a real device goes into `printer_protocols` with a test, a matching knob in `backend/simulator` when it can be simulated, and a line in `docs/printer-compatibility.md` saying where it was learned.
 - **Three kinds of test reach further than unit tests**, and skip themselves when what they need is not running: `make app-simulator-test` (protocols and probe against the simulator), `make app-smoke` (the API client against a local backend), `make app-live-test` (adding the simulated printer through a real backend).
 
 ## Working in `backend/`

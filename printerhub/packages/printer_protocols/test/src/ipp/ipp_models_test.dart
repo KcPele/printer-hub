@@ -285,9 +285,16 @@ void main() {
       expect(attributes['copies']!.first, 2);
       expect(attributes['sides']!.first, 'two-sided-long-edge');
       expect(attributes['print-color-mode']!.first, 'monochrome');
-      expect(attributes['media']!.first, 'iso_a4_210x297mm');
-      expect(attributes['media-source']!.first, 'tray-1');
-      expect(attributes['media-type']!.first, 'stationery');
+      // A tray and a paper type travel inside media-col, with the size, and
+      // never beside a plain media name.
+      expect(attributes['media'], isNull);
+      final mediaCol =
+          attributes['media-col']!.first! as Map<String, IppAttribute>;
+      final size = mediaCol['media-size']!.first! as Map<String, IppAttribute>;
+      expect(size['x-dimension']!.first, 21000);
+      expect(size['y-dimension']!.first, 29700);
+      expect(mediaCol['media-source']!.first, 'tray-1');
+      expect(mediaCol['media-type']!.first, 'stationery');
       expect(attributes['print-quality']!.first, 5);
       expect(attributes['orientation-requested']!.first, 4);
       expect(attributes['page-ranges']!.first, const IppRange(1, 3));
@@ -296,6 +303,57 @@ void main() {
         'separate-documents-collated-copies',
       );
       expect(attributes['print-scaling']!.first, 'fit');
+    });
+
+    test('names the paper plainly when no tray or type is chosen', () {
+      final attributes = const IppJobOptions(media: 'na_letter_8.5x11in')
+          .toJobAttributes();
+
+      expect(attributes.single.name, 'media');
+      expect(attributes.single.first, 'na_letter_8.5x11in');
+    });
+
+    test('asks for a tray alone, or with a paper it cannot measure', () {
+      Map<String, IppAttribute> mediaCol(IppJobOptions options) {
+        return options.toJobAttributes().single.first!
+            as Map<String, IppAttribute>;
+      }
+
+      expect(mediaCol(const IppJobOptions(mediaSource: 'tray-2')).keys, [
+        'media-source',
+      ]);
+      expect(
+        mediaCol(
+          const IppJobOptions(media: 'letterhead', mediaType: 'cardstock'),
+        ).keys,
+        ['media-type'],
+      );
+    });
+
+    test('a request with a tray survives the trip to bytes and back', () {
+      final message = IppMessage(
+        code: IppOperation.validateJob,
+        requestId: 1,
+        groups: [
+          IppGroup(
+            IppGroupTag.job,
+            const IppJobOptions(
+              media: 'iso_a4_210x297mm',
+              mediaSource: 'tray-1',
+              copies: 3,
+            ).toJobAttributes(),
+          ),
+        ],
+      );
+
+      final job = decodeIpp(encodeIpp(message)).message.group(IppGroupTag.job)!;
+      final mediaCol = job['media-col']!.first! as Map<String, IppAttribute>;
+      final size = mediaCol['media-size']!.first! as Map<String, IppAttribute>;
+
+      expect(job['copies']!.first, 3);
+      expect(mediaCol['media-source']!.first, 'tray-1');
+      expect(size['x-dimension']!.first, 21000);
+      expect(size['y-dimension']!.first, 29700);
     });
 
     test('maps each quality and orientation, and skips unknown ones', () {

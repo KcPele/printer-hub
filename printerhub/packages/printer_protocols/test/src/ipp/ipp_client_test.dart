@@ -163,7 +163,7 @@ void main() {
       );
     });
 
-    test('printJob sends the document after the attributes', () async {
+    test('printJob asks first, then sends the document', () async {
       http.device = (_) =>
           FakeAnswer.ipp(ippResponse(groups: [jobGroup(id: 9)]));
       final document = Uint8List.fromList(List.generate(2000, (i) => i % 256));
@@ -177,7 +177,11 @@ void main() {
         options: options,
       );
 
-      final decoded = sent();
+      expect(http.requests, hasLength(2));
+      expect(sent().message.code, IppOperation.validateJob);
+      expect(sent().data, isEmpty);
+
+      final decoded = sent(1);
       final operation = decoded.message.group(IppGroupTag.operation)!;
       expect(job.id, 9);
       expect(job.state, IppJobState.pending);
@@ -185,26 +189,48 @@ void main() {
       expect(operation['job-name']!.first, 'Report');
       expect(operation['document-format']!.first, 'application/pdf');
       expect(decoded.data, document);
-      expect(
-        http.requests.single.contentLength,
-        http.requests.single.body.length,
-      );
+      // The printer is always told the size up front.
+      expect(http.requests[1].contentLength, http.requests[1].body.length);
     });
 
-    test('printJob leaves the size open when it is not known', () async {
-      await client.printJob(
+    test('printJob sends nothing when the printer would refuse', () async {
+      http.device = (_) => FakeAnswer.ipp(
+        ippResponse(status: IppStatus.clientErrorDocumentFormatNotSupported),
+      );
+
+      await expectLater(
+        client.printJob(
+          document: Stream.value([1, 2, 3]),
+          length: 3,
+          options: options,
+        ),
+        throwsA(isA<IppException>()),
+      );
+      expect(http.requests, hasLength(1));
+    });
+
+    test('printJob goes ahead on a printer too old to be asked', () async {
+      http.device = (request) => FakeAnswer.ipp(
+        decodeIpp(request.body).message.code == IppOperation.validateJob
+            ? ippResponse(status: IppStatus.serverErrorOperationNotSupported)
+            : ippResponse(groups: [jobGroup()]),
+      );
+
+      final job = await client.printJob(
         document: Stream.value([1, 2, 3]),
+        length: 3,
         options: const IppJobOptions(),
       );
 
-      expect(http.requests.single.contentLength, isNull);
-      expect(sent().message.group(IppGroupTag.job), isNull);
-      expect(sent().message.group(IppGroupTag.operation)!['job-name'], isNull);
+      expect(job.id, 5);
+      expect(sent(1).message.group(IppGroupTag.job), isNull);
+      expect(sent(1).message.group(IppGroupTag.operation)!['job-name'], isNull);
     });
 
     test('printJob tolerates an answer without a job', () async {
       final job = await client.printJob(
         document: const Stream.empty(),
+        length: 0,
         options: options,
       );
 
@@ -317,6 +343,46 @@ void main() {
       }
     });
 
+    test('falls back to IPP 1.1 for a printer that only speaks that', () async {
+      http.device = (request) {
+        final message = decodeIpp(request.body).message;
+        return FakeAnswer.ipp(
+          message.majorVersion == 2
+              ? ippResponse(status: IppStatus.serverErrorVersionNotSupported)
+              : ippResponse(),
+        );
+      };
+
+      await client.getPrinterAttributes();
+      await client.getJobs();
+
+      expect(
+        [
+          for (var i = 0; i < 3; i++)
+            '${sent(i).message.majorVersion}.${sent(i).message.minorVersion}',
+        ],
+        ['2.0', '1.1', '1.1'],
+      );
+    });
+
+    test('a printer that speaks no version at all says so', () async {
+      http.device = (_) => FakeAnswer.ipp(
+        ippResponse(status: IppStatus.serverErrorVersionNotSupported),
+      );
+
+      await expectLater(
+        client.getPrinterAttributes(),
+        throwsA(
+          isA<IppException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            IppStatus.serverErrorVersionNotSupported,
+          ),
+        ),
+      );
+      expect(http.requests, hasLength(2));
+    });
+
     test('a web page at the address means IPP is not available here', () async {
       http.device = (_) => FakeAnswer.text(200, '<html>Printer home</html>');
 
@@ -336,6 +402,203 @@ void main() {
           isA<PrinterUnreachable>()
               .having((e) => e.uri, 'uri', uri)
               .having((e) => '$e', 'toString', contains('timed out')),
+        ),
+      );
+    });
+  });
+  group('a printer that asks who is printing', () {
+    const credentials = PrinterCredentials(userName: 'ada', password: 's3cret');
+    const digest =
+        'Digest realm="Xerox", nonce="abc123", qop="auth", opaque="xyz"';
+
+    IppClient signedIn({bool secure = false}) => IppClient.forHost(
+      '192.168.1.40',
+      http: http,
+      secure: secure,
+      credentials: credentials,
+    );
+
+    /// Refuses requests without an `Authorization` header.
+    void requireSignIn(String challenge, {bool Function(String)? accept}) {
+      http.device = (request) {
+        final given = request.headers['Authorization'];
+        if (given == null || !(accept?.call(given) ?? true)) {
+          return FakeAnswer(401, headers: {'www-authenticate': challenge});
+        }
+        return FakeAnswer.ipp(ippResponse(groups: [jobGroup()]));
+      };
+    }
+
+    test('is told so when there is no password to give', () async {
+      requireSignIn(digest);
+
+      await expectLater(
+        client.getPrinterAttributes(),
+        throwsA(
+          isA<IppNotAvailable>()
+              .having((e) => e.needsAuthentication, 'needsAuth', isTrue)
+              .having((e) => e.credentialsRefused, 'refused', isFalse)
+              .having((e) => e.needsTls, 'needsTls', isFalse),
+        ),
+      );
+      expect(http.requests, hasLength(1));
+    });
+
+    test('signs in with Digest, which never sends the password', () async {
+      requireSignIn(digest);
+      final printer = signedIn();
+
+      await printer.getPrinterAttributes();
+      await printer.getJobs();
+
+      expect(http.requests, hasLength(3));
+      final first = http.requests[1].headers['Authorization']!;
+      final second = http.requests[2].headers['Authorization']!;
+      expect(first, startsWith('Digest username="ada", realm="Xerox"'));
+      expect(first, contains('uri="/ipp/print"'));
+      expect(first, contains('nc=00000001'));
+      expect(first, contains('opaque="xyz"'));
+      expect(first, isNot(contains('s3cret')));
+      // The same challenge serves the next request, counted up.
+      expect(second, contains('nc=00000002'));
+      expect(
+        sent(1).message
+            .group(IppGroupTag.operation)!['requesting-user-name']!
+            .first,
+        'ada',
+      );
+    });
+
+    test('signs in before a document is sent, never during', () async {
+      requireSignIn(digest);
+      final printer = signedIn();
+
+      final job = await printer.printJob(
+        document: Stream.value([1, 2, 3]),
+        length: 3,
+        options: const IppJobOptions(),
+      );
+
+      expect(job.id, 5);
+      expect(
+        [for (var i = 0; i < 3; i++) sent(i).message.code],
+        [
+          IppOperation.validateJob,
+          IppOperation.validateJob,
+          IppOperation.printJob,
+        ],
+      );
+      expect(http.requests[2].headers['Authorization'], contains('Digest'));
+      expect(sent(2).data, [1, 2, 3]);
+    });
+
+    test('sends a Basic password only over a secure connection', () async {
+      requireSignIn('Basic realm="Printer"');
+
+      await signedIn(secure: true).getPrinterAttributes();
+      expect(
+        http.requests.last.headers['Authorization'],
+        'Basic YWRhOnMzY3JldA==',
+      );
+
+      http.requests.clear();
+      await expectLater(
+        signedIn().getPrinterAttributes(),
+        throwsA(
+          isA<IppNotAvailable>()
+              .having((e) => e.passwordNeedsTls, 'passwordNeedsTls', isTrue)
+              .having((e) => e.needsTls, 'needsTls', isTrue),
+        ),
+      );
+      expect(http.requests.single.headers, isNot(contains('Authorization')));
+    });
+
+    test('says when the password is wrong', () async {
+      requireSignIn(digest, accept: (_) => false);
+
+      await expectLater(
+        signedIn().getPrinterAttributes(),
+        throwsA(
+          isA<IppNotAvailable>().having(
+            (e) => e.credentialsRefused,
+            'refused',
+            isTrue,
+          ),
+        ),
+      );
+      expect(http.requests, hasLength(2));
+    });
+
+    test('signs again when the printer only wants a fresh signature', () async {
+      var asked = 0;
+      http.device = (request) {
+        final given = request.headers['Authorization'];
+        if (given != null && given.contains('nonce="fresh"')) {
+          return FakeAnswer.ipp(ippResponse());
+        }
+        asked++;
+        return FakeAnswer(
+          401,
+          headers: {
+            'www-authenticate': given == null
+                ? 'Digest realm="X", nonce="old"'
+                : 'Digest realm="X", nonce="fresh", stale=true',
+          },
+        );
+      };
+
+      await signedIn().getPrinterAttributes();
+
+      expect(asked, 2);
+      expect(http.requests, hasLength(3));
+    });
+
+    test('cannot sign a document again once it has gone', () async {
+      final printer = signedIn();
+      requireSignIn('Digest realm="X", nonce="n"');
+      await printer.getPrinterAttributes();
+
+      // The printer forgets the session between the check and the document.
+      var requests = 0;
+      http.device = (request) {
+        requests++;
+        return requests == 1
+            ? FakeAnswer.ipp(ippResponse())
+            : const FakeAnswer(
+                401,
+                headers: {
+                  'www-authenticate': 'Digest realm="X", nonce="m", stale=true',
+                },
+              );
+      };
+
+      await expectLater(
+        printer.printJob(
+          document: Stream.value([1]),
+          length: 1,
+          options: const IppJobOptions(),
+        ),
+        throwsA(
+          isA<IppNotAvailable>().having(
+            (e) => e.credentialsRefused,
+            'refused',
+            isFalse,
+          ),
+        ),
+      );
+    });
+
+    test('is told so when the printer asks in a way the app cannot answer', () {
+      requireSignIn('Negotiate');
+
+      expect(
+        signedIn().getPrinterAttributes(),
+        throwsA(
+          isA<IppNotAvailable>().having(
+            (e) => e.needsAuthentication,
+            'needsAuth',
+            isTrue,
+          ),
         ),
       );
     });

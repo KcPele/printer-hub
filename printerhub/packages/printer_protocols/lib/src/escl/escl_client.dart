@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:meta/meta.dart';
 import 'package:printer_protocols/src/escl/escl_models.dart';
 import 'package:printer_protocols/src/http/printer_http.dart';
 import 'package:xml/xml.dart';
@@ -36,13 +37,85 @@ class EsclDocument {
   final String? contentType;
 }
 
+/// A scan the scanner has agreed to make.
+class EsclScan {
+  new({required this.uri, required this.fromFeeder});
+
+  /// Where its pages are fetched from, and where it is cancelled.
+  final Uri uri;
+  final bool fromFeeder;
+
+  /// How many pages have been handed over so far.
+  int pagesReceived = 0;
+
+  /// Runs from when the last page was asked for.
+  final Stopwatch _sinceLastPage = Stopwatch();
+}
+
+/// Things particular scanners need done differently. The list is the one
+/// the SANE project's `sane-airscan` driver has gathered from scanners in
+/// use; see `docs/printer-compatibility.md`.
+@immutable
+class EsclQuirks {
+  const new({
+    this.retryWhenNotFound = false,
+    this.statusBeforeNextPage = false,
+    this.pauseBetweenPages = false,
+    this.localhostHostHeader = false,
+  });
+
+  /// What the scanner called [makeAndModel] needs.
+  factory forModel(String? makeAndModel) {
+    final model = makeAndModel?.trim() ?? '';
+    final lower = model.toLowerCase();
+    return EsclQuirks(
+      // Xerox B205 and B215 answer "not found" while a page is still on
+      // its way, where others answer "busy".
+      retryWhenNotFound: const {
+        'B205',
+        'B215',
+        'WorkCentre 3345',
+      }.contains(model),
+      // Some Ricoh scanners leave the job pending until asked how they are.
+      statusBeforeNextPage: model == 'RICOH',
+      // Brother feeders lose pages when asked for the next one at once.
+      pauseBetweenPages: lower.startsWith('brother '),
+      // These HP models refuse a scan addressed to them by anything else.
+      localhostHostHeader: const {
+        'HP LaserJet MFP M630',
+        'HP Color LaserJet FlowMFP M578',
+      }.contains(model),
+    );
+  }
+
+  static const EsclQuirks none = EsclQuirks();
+
+  final bool retryWhenNotFound;
+  final bool statusBeforeNextPage;
+  final bool pauseBetweenPages;
+  final bool localhostHostHeader;
+}
+
 /// Sends eSCL (AirScan) requests to one scanner.
 class EsclClient {
   /// [baseUri] is the scanner's eSCL root, usually `http://<host>/eSCL`.
-  new({required Uri baseUri, required this._http})
-    : baseUri = baseUri.replace(
-        path: baseUri.path.replaceFirst(RegExp(r'/+$'), ''),
-      );
+  ///
+  /// A scanner that is warming up or still moving its lamp answers "busy".
+  /// It is asked again after [retryPause], up to [startAttempts] times to
+  /// begin a scan and [pageAttempts] times for a page. [pause] is how the
+  /// client waits; tests pass their own.
+  new({
+    required Uri baseUri,
+    required this._http,
+    this.quirks = EsclQuirks.none,
+    this.retryPause = const Duration(seconds: 1),
+    this.startAttempts = 10,
+    this.pageAttempts = 30,
+    Future<void> Function(Duration)? pause,
+  }) : baseUri = baseUri.replace(
+         path: baseUri.path.replaceFirst(RegExp(r'/+$'), ''),
+       ),
+       _pause = pause ?? Future<void>.delayed;
 
   /// The usual place a scanner offers eSCL on [host].
   factory forHost(
@@ -50,6 +123,7 @@ class EsclClient {
     required PrinterHttp http,
     int port = 80,
     bool secure = false,
+    EsclQuirks quirks = EsclQuirks.none,
   }) {
     return EsclClient(
       baseUri: Uri(
@@ -59,11 +133,17 @@ class EsclClient {
         path: '/eSCL',
       ),
       http: http,
+      quirks: quirks,
     );
   }
 
   final Uri baseUri;
+  final EsclQuirks quirks;
+  final Duration retryPause;
+  final int startAttempts;
+  final int pageAttempts;
   final PrinterHttp _http;
+  final Future<void> Function(Duration) _pause;
 
   Uri _at(String path) => baseUri.replace(path: '${baseUri.path}/$path');
 
@@ -77,52 +157,115 @@ class EsclClient {
     return _parse<EsclStatus>(xml, EsclStatus.parse);
   }
 
-  /// Starts a scan and returns where its pages are fetched from.
-  Future<Uri> startScan(EsclScanSettings settings) async {
+  /// Starts a scan.
+  Future<EsclScan> startScan(EsclScanSettings settings) async {
     final body = utf8.encode(settings.toXml());
-    final response = await _http.send(
-      'POST',
-      _at('ScanJobs'),
-      headers: const {'Content-Type': 'text/xml'},
-      body: Stream.value(body),
-      contentLength: body.length,
-    );
-    final message = await _drain(response);
-    final location = response.headers['location'];
-    if (response.statusCode != 201 || location == null) {
-      throw EsclException(response.statusCode, message);
+    for (var attempt = 1; ; attempt++) {
+      final response = await _http.send(
+        'POST',
+        _at('ScanJobs'),
+        headers: {
+          'Content-Type': 'text/xml',
+          if (quirks.localhostHostHeader) 'Host': 'localhost',
+        },
+        body: Stream.value(body),
+        contentLength: body.length,
+      );
+      final message = await _drain(response);
+      if (response.statusCode == 503 && attempt < startAttempts) {
+        await _pause(retryPause);
+        continue;
+      }
+      final location = response.headers['location'];
+      if (response.statusCode != 201 || location == null || location.isEmpty) {
+        throw EsclException(response.statusCode, message);
+      }
+      return EsclScan(uri: _jobUri(location), fromFeeder: settings.fromFeeder);
     }
-    // Some scanners answer with a path, others with a full address.
-    return baseUri.resolve(location);
   }
 
-  /// The next page of [job], or null when there are no more.
+  /// Where the job is, from the `Location` the scanner answered with.
+  ///
+  /// Only its path is believed. A scanner does not reliably know its own
+  /// name: some answer with a host the phone cannot find, and some with an
+  /// address cut short. The job is on the device the request went to.
+  Uri _jobUri(String location) {
+    var path = location;
+    final scheme = location.indexOf('://');
+    if (scheme >= 0) {
+      final slash = location.indexOf('/', scheme + 3);
+      path = slash < 0 ? '' : location.substring(slash);
+    } else if (!location.startsWith('/')) {
+      path = '${baseUri.path}/ScanJobs/$location';
+    }
+    final end = path.indexOf(RegExp('[?#]'));
+    if (end >= 0) path = path.substring(0, end);
+    return baseUri.replace(path: path.replaceFirst(RegExp(r'/+$'), ''));
+  }
+
+  /// The next page of [scan], or null when there are no more.
   ///
   /// A scan from the glass has one. A scan from the feeder has one per
-  /// sheet: call this until it returns null.
-  Future<EsclDocument?> nextDocument(Uri job) async {
-    final response = await _http.send(
-      'GET',
-      job.replace(path: '${job.path}/NextDocument'),
-    );
-    if (response.statusCode == 404) {
-      await response.body.drain<void>();
-      return null;
+  /// sheet: call this until it returns null, then [cancel] to let the
+  /// scanner forget the job.
+  Future<EsclDocument?> nextDocument(EsclScan scan) async {
+    // The glass gives one page. Once it is here, anything but another page
+    // is the end, and there is nothing to wait for.
+    final done = !scan.fromFeeder && scan.pagesReceived > 0;
+    final uri = scan.uri.replace(path: '${scan.uri.path}/NextDocument');
+
+    if (quirks.pauseBetweenPages && scan.fromFeeder && scan.pagesReceived > 0) {
+      // Half the time the last page took, and no more than one pause.
+      final half = scan._sinceLastPage.elapsed ~/ 2;
+      await _pause(half > retryPause ? retryPause : half);
     }
-    if (response.statusCode != 200) {
-      throw EsclException(response.statusCode, await _drain(response));
+    scan._sinceLastPage
+      ..reset()
+      ..start();
+
+    if (quirks.statusBeforeNextPage) {
+      try {
+        await status();
+      } on EsclException {
+        // Asked for the scanner's sake; the answer does not matter.
+      }
     }
-    return EsclDocument(
-      bytes: response.body,
-      contentType: response.headers['content-type'],
-    );
+
+    for (var attempt = 1; ; attempt++) {
+      final response = await _http.send('GET', uri);
+      final code = response.statusCode;
+      if (code == 200) {
+        scan.pagesReceived++;
+        return EsclDocument(
+          bytes: response.body,
+          contentType: response.headers['content-type'],
+        );
+      }
+
+      final message = await _drain(response);
+      final gone = code == 404 || code == 410;
+      final busy = code == 503 || (gone && quirks.retryWhenNotFound);
+      if (busy && !done && attempt < pageAttempts) {
+        await _pause(retryPause);
+        continue;
+      }
+      // After a page, or from a feeder, "not found" is how a scanner says
+      // there are no more. From the glass with nothing yet, the job failed.
+      if (done || (gone && (scan.fromFeeder || scan.pagesReceived > 0))) {
+        return null;
+      }
+      throw EsclException(code, message);
+    }
   }
 
-  /// Stops [job]. A job that has already ended is not an error.
-  Future<void> cancel(Uri job) async {
-    final response = await _http.send('DELETE', job);
+  /// Ends [scan], whether it is running or finished. A job the scanner has
+  /// already forgotten is not an error.
+  Future<void> cancel(EsclScan scan) async {
+    final response = await _http.send('DELETE', scan.uri);
     final message = await _drain(response);
-    if (response.statusCode >= 400 && response.statusCode != 404) {
+    if (response.statusCode >= 400 &&
+        response.statusCode != 404 &&
+        response.statusCode != 410) {
       throw EsclException(response.statusCode, message);
     }
   }

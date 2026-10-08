@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:typed_data';
 
+import 'package:printer_protocols/src/http/http_auth.dart';
 import 'package:printer_protocols/src/http/printer_http.dart';
 import 'package:printer_protocols/src/ipp/ipp_codec.dart';
 import 'package:printer_protocols/src/ipp/ipp_constants.dart';
@@ -30,16 +32,29 @@ class IppException implements Exception {
 /// Something answered at the address, but not with IPP: the wrong path, a
 /// printer that wants a secure connection, or one that wants a password.
 class IppNotAvailable implements Exception {
-  const new(this.uri, this.httpStatus);
+  const new(
+    this.uri,
+    this.httpStatus, {
+    this.credentialsRefused = false,
+    this.passwordNeedsTls = false,
+  });
 
   final Uri uri;
   final int httpStatus;
+
+  /// True when a user name and password were sent and the printer did not
+  /// accept them.
+  final bool credentialsRefused;
+
+  /// True when the printer asked for the password in a form that must not
+  /// travel over an open connection. The secure address is the one to use.
+  final bool passwordNeedsTls;
 
   /// True when the printer asked for a user name and password.
   bool get needsAuthentication => httpStatus == 401;
 
   /// True when the printer only accepts IPP over TLS.
-  bool get needsTls => httpStatus == 426;
+  bool get needsTls => httpStatus == 426 || passwordNeedsTls;
 
   @override
   String toString() => 'IppNotAvailable($uri answered HTTP $httpStatus)';
@@ -52,6 +67,7 @@ class IppClient {
     required this.printerUri,
     required this._http,
     this.userName = 'PrinterHub',
+    this.credentials,
   });
 
   /// The usual place a printer listens for IPP on [host].
@@ -61,6 +77,7 @@ class IppClient {
     int port = 631,
     bool secure = false,
     String path = '/ipp/print',
+    PrinterCredentials? credentials,
   }) {
     return IppClient(
       printerUri: Uri(
@@ -70,6 +87,7 @@ class IppClient {
         path: path,
       ),
       http: http,
+      credentials: credentials,
     );
   }
 
@@ -77,8 +95,19 @@ class IppClient {
 
   /// Shown on the printer's panel and in its job log.
   final String userName;
+
+  /// For a printer that asks who is printing. Null prints as anyone.
+  final PrinterCredentials? credentials;
   final PrinterHttp _http;
   int _requestId = 0;
+
+  /// IPP 2.0 until the printer says it only speaks 1.1.
+  int _majorVersion = 2;
+  int _minorVersion = 0;
+
+  /// How the printer asked to be signed in to, once it has asked.
+  AuthChallenge? _challenge;
+  int _challengeUses = 0;
 
   /// The `ipp://` or `ipps://` form, which goes inside the message.
   Uri get _ippUri => printerUri.replace(
@@ -131,13 +160,27 @@ class IppClient {
 
   /// Sends [document] to be printed and returns the job the printer made.
   ///
-  /// The document is streamed, never held in memory. Pass [length] when it
-  /// is known, so the printer is told the size up front.
+  /// The document is streamed, never held in memory. [length] is its size
+  /// in bytes: a printer is always told the size up front, because not every
+  /// printer can read a document that arrives without one.
+  ///
+  /// The printer is first asked whether it would accept the job. That
+  /// refuses a bad request before megabytes are sent, and it is when a
+  /// printer that wants a password asks for it, while the request can still
+  /// be sent again.
   Future<IppJob> printJob({
     required Stream<List<int>> document,
+    required int length,
     required IppJobOptions options,
-    int? length,
   }) async {
+    try {
+      await validateJob(options);
+    } on IppException catch (error) {
+      // An old printer without Validate-Job is sent the job regardless.
+      if (error.statusCode != IppStatus.serverErrorOperationNotSupported) {
+        rethrow;
+      }
+    }
     final response = await _send(
       IppOperation.printJob,
       operation: _documentAttributes(options),
@@ -208,73 +251,133 @@ class IppClient {
     Stream<List<int>>? document,
     int? documentLength,
   }) async {
-    final header = encodeIpp(
-      IppMessage(
-        code: operationId,
-        requestId: ++_requestId,
-        groups: [
-          IppGroup(IppGroupTag.operation, [
-            // These three come first, in this order. Printers insist on it.
-            IppAttribute.single(
-              'attributes-charset',
-              IppValueTag.charset,
-              'utf-8',
-            ),
-            IppAttribute.single(
-              'attributes-natural-language',
-              IppValueTag.naturalLanguage,
-              'en',
-            ),
-            IppAttribute.single(
-              'printer-uri',
-              IppValueTag.uri,
-              _ippUri.toString(),
-            ),
-            IppAttribute.single(
-              'requesting-user-name',
-              IppValueTag.name,
-              userName,
-            ),
-            ...operation,
-          ]),
-          if (job.isNotEmpty) IppGroup(IppGroupTag.job, job),
-        ],
-      ),
-    );
+    final requestId = ++_requestId;
 
-    Stream<List<int>> body() async* {
-      yield header;
-      if (document != null) yield* document;
+    Uint8List header() {
+      return encodeIpp(
+        IppMessage(
+          code: operationId,
+          requestId: requestId,
+          majorVersion: _majorVersion,
+          minorVersion: _minorVersion,
+          groups: [
+            IppGroup(IppGroupTag.operation, [
+              // These three come first, in this order. Printers insist on
+              // it.
+              IppAttribute.single(
+                'attributes-charset',
+                IppValueTag.charset,
+                'utf-8',
+              ),
+              IppAttribute.single(
+                'attributes-natural-language',
+                IppValueTag.naturalLanguage,
+                'en',
+              ),
+              IppAttribute.single(
+                'printer-uri',
+                IppValueTag.uri,
+                _ippUri.toString(),
+              ),
+              IppAttribute.single(
+                'requesting-user-name',
+                IppValueTag.name,
+                credentials?.userName ?? userName,
+              ),
+              ...operation,
+            ]),
+            if (job.isNotEmpty) IppGroup(IppGroupTag.job, job),
+          ],
+        ),
+      );
     }
 
     final uri = _httpUri;
-    final response = await _http.send(
-      'POST',
-      uri,
-      headers: const {'Content-Type': 'application/ipp'},
-      body: body(),
-      contentLength: document == null
-          ? header.length
-          : documentLength == null
-          ? null
-          : header.length + documentLength,
-    );
-    if (response.statusCode != 200) {
-      await response.body.drain<void>();
-      throw IppNotAvailable(uri, response.statusCode);
-    }
+    // A request with a document can be sent once: its bytes are gone after.
+    // Anything else is sent again when the printer asks for a password or
+    // for an older version of IPP.
+    for (var attempt = 0; ; attempt++) {
+      final bytes = header();
+      final authorization = _authorization(uri);
+      final response = await _http.send(
+        'POST',
+        uri,
+        headers: {
+          'Content-Type': 'application/ipp',
+          'Authorization': ?authorization,
+        },
+        body: document == null ? Stream.value(bytes) : _concat(bytes, document),
+        contentLength: bytes.length + (documentLength ?? 0),
+      );
+      final canRepeat = document == null && attempt < 3;
 
-    final IppMessage message;
-    try {
-      message = decodeIpp(await response.bytes()).message;
-    } on IppFormatException {
-      // HTTP 200 with something that is not IPP: a web page at this path.
-      throw IppNotAvailable(uri, response.statusCode);
+      if (response.statusCode == 401) {
+        await response.body.drain<void>();
+        final challenge = AuthChallenge.best(
+          AuthChallenge.parse(response.headers['www-authenticate']),
+        );
+        if (credentials == null || challenge == null) {
+          throw IppNotAvailable(uri, 401);
+        }
+        if (!challenge.digest && uri.scheme != 'https') {
+          throw IppNotAvailable(uri, 401, passwordNeedsTls: true);
+        }
+        _challenge = challenge;
+        _challengeUses = 0;
+        // Signed in and refused: the password is wrong, unless the printer
+        // says it only wants the request signed afresh.
+        final refused = authorization != null && !challenge.stale;
+        if (refused || !canRepeat) {
+          throw IppNotAvailable(uri, 401, credentialsRefused: refused);
+        }
+        continue;
+      }
+      if (response.statusCode != 200) {
+        await response.body.drain<void>();
+        throw IppNotAvailable(uri, response.statusCode);
+      }
+
+      final IppMessage message;
+      try {
+        message = decodeIpp(await response.bytes()).message;
+      } on IppFormatException {
+        // HTTP 200 with something that is not IPP: a web page at this path.
+        throw IppNotAvailable(uri, response.statusCode);
+      }
+      if (message.code == IppStatus.serverErrorVersionNotSupported &&
+          _majorVersion == 2 &&
+          canRepeat) {
+        _majorVersion = 1;
+        _minorVersion = 1;
+        continue;
+      }
+      if (message.code > IppStatus.lastSuccess) {
+        final text = message.group(IppGroupTag.operation)?['status-message'];
+        throw IppException(message.code, text?.first as String?);
+      }
+      return message;
     }
-    if (message.code > IppStatus.lastSuccess) {
-      final text = message.group(IppGroupTag.operation)?['status-message'];
-      throw IppException(message.code, text?.first as String?);
-    }
-    return message;
+  }
+
+  /// The `Authorization` header for the next request, once the printer has
+  /// said how it wants to be signed in to.
+  String? _authorization(Uri uri) {
+    final challenge = _challenge;
+    final credentials = this.credentials;
+    if (challenge == null || credentials == null) return null;
+    return challenge.authorize(
+      credentials,
+      method: 'POST',
+      uri: uri,
+      count: ++_challengeUses,
+    );
+  }
+
+  static Stream<List<int>> _concat(
+    Uint8List header,
+    Stream<List<int>> document,
+  ) async* {
+    yield header;
+    yield* document;
   }
 }

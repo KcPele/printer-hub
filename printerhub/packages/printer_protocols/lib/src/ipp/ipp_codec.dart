@@ -151,6 +151,9 @@ void _writeValue(BytesBuilder out, String name, IppValue item) {
   final value = item.value;
   final Uint8List raw;
   switch (value) {
+    case final Map<String, IppAttribute> members:
+      _writeCollection(out, name, members);
+      return;
     case final int number:
       raw = _uint32(number);
     case final bool flag:
@@ -174,6 +177,33 @@ void _writeValue(BytesBuilder out, String name, IppValue item) {
     ..add(nameBytes)
     ..add(_uint16(raw.length))
     ..add(raw);
+}
+
+/// A collection is its opening tag, then for each member a name and its
+/// values, all with empty attribute names, then a closing tag.
+void _writeCollection(
+  BytesBuilder out,
+  String name,
+  Map<String, IppAttribute> members,
+) {
+  void entry(int tag, String name, List<int> raw) {
+    final nameBytes = utf8.encode(name);
+    out
+      ..addByte(tag)
+      ..add(_uint16(nameBytes.length))
+      ..add(nameBytes)
+      ..add(_uint16(raw.length))
+      ..add(raw);
+  }
+
+  entry(IppValueTag.beginCollection, name, const []);
+  for (final MapEntry(key: member, value: attribute) in members.entries) {
+    entry(IppValueTag.memberName, '', utf8.encode(member));
+    for (final value in attribute.values) {
+      _writeValue(out, '', value);
+    }
+  }
+  entry(IppValueTag.endCollection, '', const []);
 }
 
 Uint8List _uint16(int value) {

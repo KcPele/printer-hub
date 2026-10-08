@@ -121,9 +121,18 @@ void main() {
 
       expect(empty.feederEmpty, isTrue);
       expect(empty.feederJammed, isFalse);
+      expect(empty.feederLoaded, isFalse);
       expect(jammed.feederJammed, isTrue);
       expect(none.feederState, isNull);
       expect(none.feederEmpty, isFalse);
+      expect(
+        EsclStatus.parse(_status('Idle', 'ScannerAdfLoaded')).feederLoaded,
+        isTrue,
+      );
+      expect(
+        EsclStatus.parse(_status('Stopped', 'ScannerAdfDoorOpen')).feederOpen,
+        isTrue,
+      );
     });
   });
 
@@ -131,6 +140,7 @@ void main() {
     test('asks for an A4 colour PDF from the glass by default', () {
       final xml = const EsclScanSettings().toXml();
 
+      expect(xml, contains('<pwg:Version>2.0</pwg:Version>'));
       expect(xml, contains('<pwg:InputSource>Platen</pwg:InputSource>'));
       expect(xml, contains('<scan:ColorMode>RGB24</scan:ColorMode>'));
       expect(xml, contains('<scan:XResolution>300</scan:XResolution>'));
@@ -140,14 +150,35 @@ void main() {
         xml,
         contains('<pwg:DocumentFormat>application/pdf</pwg:DocumentFormat>'),
       );
-      expect(
-        xml,
-        contains(
-          '<scan:DocumentFormatExt>application/pdf</scan:DocumentFormatExt>',
-        ),
-      );
+      expect(xml, isNot(contains('DocumentFormatExt')));
       expect(xml, isNot(contains('Duplex')));
       expect(xml, contains('xmlns:scan='));
+    });
+
+    test('puts the settings in the order scanners read them in', () {
+      final xml = const EsclScanSettings(
+        fromFeeder: true,
+        useDocumentFormatExt: true,
+      ).toXml();
+      final order = [
+        'pwg:Version',
+        'pwg:ScanRegions',
+        'pwg:ContentRegionUnits',
+        'pwg:XOffset',
+        'pwg:YOffset',
+        'pwg:Width',
+        'pwg:Height',
+        'pwg:InputSource',
+        'scan:ColorMode',
+        'pwg:DocumentFormat',
+        'scan:DocumentFormatExt',
+        'scan:XResolution',
+        'scan:YResolution',
+        'scan:Duplex',
+      ].map((name) => xml.indexOf('<$name>')).toList();
+
+      expect(order, everyElement(isNonNegative));
+      expect(order, [...order]..sort());
     });
 
     test('asks for both sides from the feeder', () {
@@ -167,17 +198,167 @@ void main() {
     });
   });
 
+  group('EsclInput.settings fits a choice to what the scanner offers', () {
+    final platen = EsclCapabilities.parse(_capabilities).platen!;
+
+    test('keeps a choice the scanner offers', () {
+      final settings = platen.settings(fromFeeder: false);
+
+      expect(settings.colorMode, 'RGB24');
+      expect(settings.resolutionDpi, 300);
+      expect(settings.documentFormat, 'application/pdf');
+      expect(settings.widthMm, 210);
+      expect(settings.heightMm, closeTo(297, 0.1));
+      expect(settings.useDocumentFormatExt, isTrue);
+      expect(settings.duplex, isFalse);
+    });
+
+    test('takes the nearest resolution and the largest area', () {
+      final settings = platen.settings(
+        fromFeeder: true,
+        duplex: true,
+        resolutionDpi: 400,
+        widthMm: 300,
+        heightMm: 500,
+      );
+
+      expect(settings.resolutionDpi, 300);
+      expect(settings.widthMm, closeTo(215.9, 0.01));
+      expect(settings.heightMm, closeTo(297, 0.1));
+      expect(settings.duplex, isTrue);
+      expect(
+        platen.settings(fromFeeder: false, resolutionDpi: 1200).resolutionDpi,
+        600,
+      );
+    });
+
+    test('never asks the glass for both sides', () {
+      expect(platen.settings(fromFeeder: false, duplex: true).duplex, isFalse);
+    });
+
+    test('falls back to grey, and to a format the scanner has', () {
+      const basic = EsclInput(
+        maxWidthMm: 0,
+        maxHeightMm: 0,
+        colorModes: ['BlackAndWhite1', 'Grayscale8'],
+        documentFormats: ['image/jpeg', 'image/tiff'],
+        resolutionsDpi: [],
+      );
+
+      final settings = basic.settings(fromFeeder: false, resolutionDpi: 200);
+
+      expect(settings.colorMode, 'Grayscale8');
+      expect(settings.documentFormat, 'image/jpeg');
+      expect(settings.resolutionDpi, 200);
+      expect(settings.widthMm, 210);
+      expect(settings.useDocumentFormatExt, isFalse);
+      expect(
+        basic.settings(fromFeeder: false, color: false).colorMode,
+        'Grayscale8',
+      );
+    });
+
+    test('copes with a scanner that lists almost nothing', () {
+      const bare = EsclInput(
+        maxWidthMm: 100,
+        maxHeightMm: 100,
+        colorModes: [],
+        documentFormats: ['image/tiff'],
+        resolutionsDpi: [150],
+      );
+
+      final settings = bare.settings(fromFeeder: false);
+
+      expect(settings.colorMode, 'RGB24');
+      expect(settings.documentFormat, 'image/tiff');
+      expect(settings.resolutionDpi, 150);
+      expect(settings.widthMm, 100);
+
+      const only = EsclInput(
+        maxWidthMm: 100,
+        maxHeightMm: 100,
+        colorModes: ['Other'],
+        documentFormats: [],
+        resolutionsDpi: [],
+      );
+      expect(only.settings(fromFeeder: false).colorMode, 'Other');
+      expect(
+        only.settings(fromFeeder: false).documentFormat,
+        'application/pdf',
+      );
+    });
+  });
+
+  group('EsclQuirks', () {
+    test('most scanners need nothing special', () {
+      for (final model in ['Xerox VersaLink C7130', null, '']) {
+        final quirks = EsclQuirks.forModel(model);
+        expect(quirks.retryWhenNotFound, isFalse);
+        expect(quirks.statusBeforeNextPage, isFalse);
+        expect(quirks.pauseBetweenPages, isFalse);
+        expect(quirks.localhostHostHeader, isFalse);
+      }
+    });
+
+    test('knows the scanners that do', () {
+      expect(EsclQuirks.forModel('B215').retryWhenNotFound, isTrue);
+      expect(EsclQuirks.forModel('WorkCentre 3345').retryWhenNotFound, isTrue);
+      expect(EsclQuirks.forModel('RICOH').statusBeforeNextPage, isTrue);
+      expect(
+        EsclQuirks.forModel('Brother MFC-L2710DW series').pauseBetweenPages,
+        isTrue,
+      );
+      expect(
+        EsclQuirks.forModel('HP LaserJet MFP M630').localhostHostHeader,
+        isTrue,
+      );
+    });
+  });
+
   group('EsclClient', () {
     late FakePrinterHttp http;
     late EsclClient client;
+    late List<Duration> pauses;
+
+    EsclClient make({EsclQuirks quirks = EsclQuirks.none}) {
+      return EsclClient(
+        baseUri: Uri.parse('http://192.168.1.40/eSCL'),
+        http: http,
+        quirks: quirks,
+        startAttempts: 3,
+        pageAttempts: 4,
+        pause: (duration) async => pauses.add(duration),
+      );
+    }
+
+    EsclScan scan({bool fromFeeder = false, int pagesReceived = 0}) {
+      return EsclScan(
+        uri: Uri.parse('http://192.168.1.40/eSCL/ScanJobs/job-1'),
+        fromFeeder: fromFeeder,
+      )..pagesReceived = pagesReceived;
+    }
+
+    FakeAnswer page() => FakeAnswer(
+      200,
+      body: utf8.encode('%PDF-page'),
+      headers: const {'content-type': 'application/pdf'},
+    );
+
+    /// Answers with each of [answers] in turn, then the last one for ever.
+    void answerInTurn(List<FakeAnswer> answers) {
+      var next = 0;
+      http.device = (_) =>
+          answers[next < answers.length ? next++ : answers.length - 1];
+    }
 
     setUp(() {
+      pauses = [];
       http = FakePrinterHttp((_) => FakeAnswer.text(200, _capabilities));
-      client = EsclClient.forHost('192.168.1.40', http: http);
+      client = make();
     });
 
     test('finds eSCL at the usual place on a host', () async {
-      await client.capabilities();
+      await EsclClient.forHost('192.168.1.40', http: http).capabilities();
 
       expect(
         http.requests.single.uri,
@@ -242,112 +423,311 @@ void main() {
       await expectLater(client.status(), throwsA(isA<EsclException>()));
     });
 
-    test('startScan posts the settings and returns the job address', () async {
-      http.device = (_) => const FakeAnswer(
-        201,
-        headers: {'location': 'http://192.168.1.40/eSCL/ScanJobs/job-1'},
-      );
+    group('startScan', () {
+      test('posts the settings and returns the job', () async {
+        http.device = (_) => const FakeAnswer(
+          201,
+          headers: {'location': 'http://192.168.1.40/eSCL/ScanJobs/job-1'},
+        );
 
-      final job = await client.startScan(const EsclScanSettings());
+        final job = await client.startScan(
+          const EsclScanSettings(fromFeeder: true),
+        );
 
-      final request = http.requests.single;
-      expect(job, Uri.parse('http://192.168.1.40/eSCL/ScanJobs/job-1'));
-      expect(request.method, 'POST');
-      expect(request.uri.path, '/eSCL/ScanJobs');
-      expect(request.headers['Content-Type'], 'text/xml');
-      expect(
-        request.text,
-        contains('<pwg:InputSource>Platen</pwg:InputSource>'),
-      );
-      expect(request.contentLength, request.body.length);
+        final request = http.requests.single;
+        expect(job.uri, Uri.parse('http://192.168.1.40/eSCL/ScanJobs/job-1'));
+        expect(job.fromFeeder, isTrue);
+        expect(job.pagesReceived, 0);
+        expect(request.method, 'POST');
+        expect(request.uri.path, '/eSCL/ScanJobs');
+        expect(request.headers, {'Content-Type': 'text/xml'});
+        expect(
+          request.text,
+          contains('<pwg:InputSource>Feeder</pwg:InputSource>'),
+        );
+        expect(request.contentLength, request.body.length);
+      });
+
+      test('believes only the path of the address it is given', () async {
+        Future<Uri> jobAt(String location) async {
+          http.device = (_) => FakeAnswer(201, headers: {'location': location});
+          return (await client.startScan(const EsclScanSettings())).uri;
+        }
+
+        final expected = Uri.parse('http://192.168.1.40/eSCL/ScanJobs/job-2');
+        // A path.
+        expect(await jobAt('/eSCL/ScanJobs/job-2'), expected);
+        // A name the phone cannot find, on another port.
+        expect(
+          await jobAt('https://XRX9C934E5E.local:8443/eSCL/ScanJobs/job-2/'),
+          expected,
+        );
+        // An address cut short, as the Xerox B215 sends.
+        expect(await jobAt('http://[fe80/eSCL/ScanJobs/job-2'), expected);
+        // Only the job's own name.
+        expect(await jobAt('job-2'), expected);
+        expect(await jobAt('/eSCL/ScanJobs/job-2?x=1'), expected);
+      });
+
+      test('asks again while the scanner is busy', () async {
+        answerInTurn([
+          const FakeAnswer(503),
+          const FakeAnswer(503),
+          const FakeAnswer(201, headers: {'location': '/eSCL/ScanJobs/j'}),
+        ]);
+
+        final job = await client.startScan(const EsclScanSettings());
+
+        expect(job.uri.path, '/eSCL/ScanJobs/j');
+        expect(http.requests, hasLength(3));
+        expect(pauses, [
+          const Duration(seconds: 1),
+          const Duration(seconds: 1),
+        ]);
+      });
+
+      test('gives up on a scanner that stays busy', () async {
+        http.device = (_) => const FakeAnswer(503);
+
+        await expectLater(
+          client.startScan(const EsclScanSettings()),
+          throwsA(
+            isA<EsclException>()
+                .having((e) => e.busy, 'busy', isTrue)
+                .having((e) => e.message, 'message', isNull)
+                .having((e) => '$e', 'toString', 'EsclException(HTTP 503)'),
+          ),
+        );
+        expect(http.requests, hasLength(3));
+      });
+
+      test('reports why the scanner refused', () async {
+        http.device = (_) =>
+            FakeAnswer.text(409, 'The document feeder is empty');
+        await expectLater(
+          client.startScan(const EsclScanSettings(fromFeeder: true)),
+          throwsA(
+            isA<EsclException>()
+                .having((e) => e.notReady, 'notReady', isTrue)
+                .having(
+                  (e) => e.message,
+                  'message',
+                  contains('feeder is empty'),
+                ),
+          ),
+        );
+        expect(pauses, isEmpty);
+
+        // Created, but without saying where: nothing to fetch pages from.
+        http.device = (_) => const FakeAnswer(201);
+        await expectLater(
+          client.startScan(const EsclScanSettings()),
+          throwsA(isA<EsclException>()),
+        );
+        http.device = (_) => const FakeAnswer(201, headers: {'location': ''});
+        await expectLater(
+          client.startScan(const EsclScanSettings()),
+          throwsA(isA<EsclException>()),
+        );
+      });
+
+      test('addresses the HP models that insist on it as localhost', () async {
+        http.device = (_) =>
+            const FakeAnswer(201, headers: {'location': '/eSCL/ScanJobs/j'});
+
+        await make(quirks: EsclQuirks.forModel('HP LaserJet MFP M630'))
+            .startScan(const EsclScanSettings());
+
+        expect(http.requests.single.headers['Host'], 'localhost');
+      });
     });
 
-    test('startScan accepts a job address given as a path', () async {
-      http.device = (_) =>
-          const FakeAnswer(201, headers: {'location': '/eSCL/ScanJobs/job-2'});
+    group('nextDocument', () {
+      test('streams a page and counts it', () async {
+        http.device = (_) => page();
+        final job = scan();
 
-      expect(
-        await client.startScan(const EsclScanSettings()),
-        Uri.parse('http://192.168.1.40/eSCL/ScanJobs/job-2'),
-      );
+        final document = await client.nextDocument(job);
+        final bytes = await document!.bytes.expand((chunk) => chunk).toList();
+
+        expect(utf8.decode(bytes), '%PDF-page');
+        expect(document.contentType, 'application/pdf');
+        expect(job.pagesReceived, 1);
+        expect(
+          http.requests.single.uri.path,
+          '/eSCL/ScanJobs/job-1/NextDocument',
+        );
+      });
+
+      test('waits for a page that is still being scanned', () async {
+        answerInTurn([const FakeAnswer(503), const FakeAnswer(503), page()]);
+
+        expect(await client.nextDocument(scan()), isNotNull);
+        expect(pauses, hasLength(2));
+      });
+
+      test('gives up on a page that never comes', () async {
+        http.device = (_) => const FakeAnswer(503);
+
+        await expectLater(
+          client.nextDocument(scan()),
+          throwsA(isA<EsclException>().having((e) => e.busy, 'busy', isTrue)),
+        );
+        expect(http.requests, hasLength(4));
+        expect(pauses, hasLength(3));
+      });
+
+      test('the feeder is finished when the scanner has no more', () async {
+        http.device = (_) => const FakeAnswer(404);
+        expect(
+          await client.nextDocument(scan(fromFeeder: true, pagesReceived: 3)),
+          isNull,
+        );
+
+        // An empty feeder is no pages, not a failure.
+        http.device = (_) => const FakeAnswer(410);
+        expect(await client.nextDocument(scan(fromFeeder: true)), isNull);
+        expect(pauses, isEmpty);
+      });
+
+      test('the glass is finished after its one page', () async {
+        // Whatever the scanner answers, and without waiting on it.
+        for (final status in [404, 410, 503, 500]) {
+          http.device = (_) => FakeAnswer(status);
+          expect(
+            await client.nextDocument(scan(pagesReceived: 1)),
+            isNull,
+            reason: 'HTTP $status',
+          );
+        }
+        expect(pauses, isEmpty);
+      });
+
+      test('a scan from the glass that yields nothing has failed', () async {
+        http.device = (_) => const FakeAnswer(404);
+
+        await expectLater(
+          client.nextDocument(scan()),
+          throwsA(
+            isA<EsclException>().having((e) => e.httpStatus, 'status', 404),
+          ),
+        );
+      });
+
+      test('reports a scanner error', () async {
+        http.device = (_) => FakeAnswer.text(500, 'Lamp failure');
+
+        await expectLater(
+          client.nextDocument(scan(fromFeeder: true)),
+          throwsA(
+            isA<EsclException>()
+                .having((e) => e.httpStatus, 'status', 500)
+                .having((e) => e.message, 'message', 'Lamp failure'),
+          ),
+        );
+      });
+
+      test('waits on "not found" for the scanners that mean busy', () async {
+        final patient = make(quirks: EsclQuirks.forModel('B215'));
+        answerInTurn([const FakeAnswer(404), const FakeAnswer(410), page()]);
+
+        expect(await patient.nextDocument(scan(fromFeeder: true)), isNotNull);
+        expect(pauses, hasLength(2));
+
+        // Still "not found" after every try: the feeder is empty.
+        http.device = (_) => const FakeAnswer(404);
+        expect(
+          await patient.nextDocument(scan(fromFeeder: true, pagesReceived: 1)),
+          isNull,
+        );
+      });
+
+      test('asks a Ricoh how it is before each page', () async {
+        final ricoh = make(quirks: EsclQuirks.forModel('RICOH'));
+        http.device = (request) => request.uri.path.endsWith('ScannerStatus')
+            ? FakeAnswer.text(200, _status('Processing'))
+            : page();
+
+        await ricoh.nextDocument(scan());
+
+        expect(http.requests.map((r) => r.uri.path), [
+          '/eSCL/ScannerStatus',
+          '/eSCL/ScanJobs/job-1/NextDocument',
+        ]);
+
+        // A status that fails does not stop the scan.
+        http.device = (request) => request.uri.path.endsWith('ScannerStatus')
+            ? const FakeAnswer(500)
+            : page();
+        expect(await ricoh.nextDocument(scan()), isNotNull);
+      });
+
+      test('gives a Brother feeder a moment between pages', () async {
+        final brother = make(
+          quirks: EsclQuirks.forModel('Brother MFC-L2710DW series'),
+        );
+        http.device = (_) => page();
+        final job = scan(fromFeeder: true);
+
+        await brother.nextDocument(job);
+        expect(pauses, isEmpty);
+        await brother.nextDocument(job);
+        expect(pauses, hasLength(1));
+        expect(pauses.single, lessThanOrEqualTo(const Duration(seconds: 1)));
+
+        // Not from the glass, which has no next page.
+        pauses.clear();
+        await brother.nextDocument(scan());
+        expect(pauses, isEmpty);
+      });
+
+      test('never pauses longer than one retry between pages', () async {
+        final brother = EsclClient(
+          baseUri: Uri.parse('http://192.168.1.40/eSCL'),
+          http: http,
+          quirks: EsclQuirks.forModel('Brother DCP'),
+          retryPause: Duration.zero,
+          pause: (duration) async => pauses.add(duration),
+        );
+        http.device = (_) => page();
+        final job = scan(fromFeeder: true);
+
+        await brother.nextDocument(job);
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        await brother.nextDocument(job);
+
+        expect(pauses, [Duration.zero]);
+      });
     });
 
-    test('startScan reports why the scanner refused', () async {
-      http.device = (_) => FakeAnswer.text(409, 'The document feeder is empty');
-      await expectLater(
-        client.startScan(const EsclScanSettings(fromFeeder: true)),
-        throwsA(
-          isA<EsclException>()
-              .having((e) => e.notReady, 'notReady', isTrue)
-              .having((e) => e.message, 'message', contains('feeder is empty')),
-        ),
-      );
-
-      http.device = (_) => const FakeAnswer(503);
-      await expectLater(
-        client.startScan(const EsclScanSettings()),
-        throwsA(
-          isA<EsclException>()
-              .having((e) => e.busy, 'busy', isTrue)
-              .having((e) => e.message, 'message', isNull)
-              .having((e) => '$e', 'toString', 'EsclException(HTTP 503)'),
-        ),
-      );
-
-      // Created, but without saying where: nothing to fetch pages from.
-      http.device = (_) => const FakeAnswer(201);
-      await expectLater(
-        client.startScan(const EsclScanSettings()),
-        throwsA(isA<EsclException>()),
-      );
-    });
-
-    test('nextDocument streams a page, then says there are no more', () async {
-      final job = Uri.parse('http://192.168.1.40/eSCL/ScanJobs/job-1');
-      http.device = (_) => FakeAnswer(
-        200,
-        body: utf8.encode('%PDF-page'),
-        headers: const {'content-type': 'application/pdf'},
-      );
-
-      final page = await client.nextDocument(job);
-      final bytes = await page!.bytes.expand((chunk) => chunk).toList();
-
-      expect(utf8.decode(bytes), '%PDF-page');
-      expect(page.contentType, 'application/pdf');
-      expect(
-        http.requests.single.uri.path,
-        '/eSCL/ScanJobs/job-1/NextDocument',
-      );
-
-      http.device = (_) => const FakeAnswer(404);
-      expect(await client.nextDocument(job), isNull);
-    });
-
-    test('nextDocument reports a scanner error', () async {
-      http.device = (_) => FakeAnswer.text(500, 'Lamp failure');
-
-      await expectLater(
-        client.nextDocument(Uri.parse('http://h/eSCL/ScanJobs/j')),
-        throwsA(
-          isA<EsclException>().having((e) => e.httpStatus, 'status', 500),
-        ),
-      );
-    });
-
-    test('cancel stops a job, and a finished job is not an error', () async {
-      final job = Uri.parse('http://192.168.1.40/eSCL/ScanJobs/job-1');
+    test('cancel ends a job, and a forgotten job is not an error', () async {
+      final job = scan();
 
       http.device = (_) => const FakeAnswer(200);
       await client.cancel(job);
       expect(http.requests.single.method, 'DELETE');
-      expect(http.requests.single.uri, job);
+      expect(http.requests.single.uri, job.uri);
 
-      http.device = (_) => const FakeAnswer(404);
-      await client.cancel(job);
+      for (final status in [404, 410]) {
+        http.device = (_) => FakeAnswer(status);
+        await client.cancel(job);
+      }
 
       http.device = (_) => const FakeAnswer(500);
       await expectLater(client.cancel(job), throwsA(isA<EsclException>()));
+    });
+
+    test('waits a real moment when no other way to wait is given', () async {
+      final real = EsclClient(
+        baseUri: Uri.parse('http://192.168.1.40/eSCL'),
+        http: http,
+        retryPause: const Duration(milliseconds: 1),
+      );
+      answerInTurn([const FakeAnswer(503), page()]);
+
+      expect(await real.nextDocument(scan()), isNotNull);
+      expect(real.startAttempts, 10);
+      expect(real.pageAttempts, 30);
     });
   });
 }

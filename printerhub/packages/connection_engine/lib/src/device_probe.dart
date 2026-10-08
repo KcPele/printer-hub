@@ -11,6 +11,12 @@ enum ProbeFailureKind {
 
   /// Something answered, but not a printer or scanner the app can talk to.
   notAPrinter,
+
+  /// The printer wants a user name and password before it says anything.
+  needsPassword,
+
+  /// The printer did not accept the user name and password it was given.
+  wrongPassword,
 }
 
 /// A device could not be found, or is not one the app can use.
@@ -49,12 +55,18 @@ class DeviceProbe {
   /// or a full `ipp://`, `ipps://`, `http://`, or `https://` address.
   ///
   /// Throws [ProbeFailure] when it cannot.
-  Future<DeviceDescription> probe(String address) async {
+  ///
+  /// [credentials] are for a printer that asks who is printing. Without
+  /// them such a printer fails as [ProbeFailureKind.needsPassword].
+  Future<DeviceDescription> probe(
+    String address, {
+    PrinterCredentials? credentials,
+  }) async {
     final target = _parse(address);
     if (target == null) {
       throw ProbeFailure(ProbeFailureKind.invalidAddress, address);
     }
-    return await _describe(target, address);
+    return await _describe(target, address, credentials);
   }
 
   /// Describes a device that announced where it prints and scans, as one
@@ -64,18 +76,35 @@ class DeviceProbe {
     required String host,
     Uri? ipp,
     Uri? escl,
+    PrinterCredentials? credentials,
   }) {
-    return _describe(_Target.announced(host, ipp: ipp, escl: escl), host);
+    return _describe(
+      _Target.announced(host, ipp: ipp, escl: escl),
+      host,
+      credentials,
+    );
   }
 
-  Future<DeviceDescription> _describe(_Target target, String address) async {
+  Future<DeviceDescription> _describe(
+    _Target target,
+    String address,
+    PrinterCredentials? credentials,
+  ) async {
     final attempt = _Attempt();
     // Printing and scanning are asked about at the same time: a device that
     // has one and not the other should not take twice as long.
     final (printing, scanning) = await (
-      _findIpp(target, attempt),
+      _findIpp(target, attempt, credentials),
       _findEscl(target, attempt),
     ).wait;
+    // A printer that would not say what it is without a password is not
+    // added as a scanner alone: the person is asked for the password.
+    if (printing == null && attempt.passwordRefused) {
+      throw ProbeFailure(ProbeFailureKind.wrongPassword, address);
+    }
+    if (printing == null && attempt.passwordAsked) {
+      throw ProbeFailure(ProbeFailureKind.needsPassword, address);
+    }
     if (printing == null && scanning == null) {
       throw ProbeFailure(
         attempt.somethingAnswered
@@ -113,7 +142,10 @@ class DeviceProbe {
   /// Reads what a known device is doing, through its saved [connections].
   ///
   /// Never throws: a device that does not answer is `unreachable`.
-  Future<DeviceStatus> status(List<DeviceConnection> connections) async {
+  Future<DeviceStatus> status(
+    List<DeviceConnection> connections, {
+    PrinterCredentials? credentials,
+  }) async {
     IppPrinterAttributes? printer;
     EsclStatus? scanner;
     var reached = false;
@@ -129,6 +161,7 @@ class DeviceProbe {
           printer ??= await IppClient(
             printerUri: connection.uri,
             http: _http,
+            credentials: credentials,
           ).getPrinterAttributes(requested: _statusAttributes);
         }
         reached = true;
@@ -155,26 +188,43 @@ class DeviceProbe {
   Future<(DeviceConnection, IppPrinterAttributes)?> _findIpp(
     _Target target,
     _Attempt attempt,
+    PrinterCredentials? credentials,
   ) async {
-    for (final uri in target.ippCandidates) {
-      try {
-        final printer = await IppClient(
-          printerUri: uri,
-          http: _http,
-        ).getPrinterAttributes();
-        return (
-          DeviceConnection(
-            type: uri.scheme == 'ipps' ? 'ipps' : 'ipp',
-            uri: uri,
-          ),
-          printer,
-        );
-      } on PrinterUnreachable {
-        continue;
-      } on IppNotAvailable {
-        attempt.somethingAnswered = true;
-      } on IppException {
-        attempt.somethingAnswered = true;
+    for (final endpoint in target.ippEndpoints) {
+      paths:
+      for (final path in target.ippPaths) {
+        final uri = endpoint.replace(path: path);
+        try {
+          final printer = await IppClient(
+            printerUri: uri,
+            http: _http,
+            credentials: credentials,
+          ).getPrinterAttributes();
+          return (
+            DeviceConnection(
+              type: uri.scheme == 'ipps' ? 'ipps' : 'ipp',
+              uri: uri,
+            ),
+            printer,
+          );
+        } on PrinterUnreachable {
+          // Nothing listens here, whatever the path.
+          break paths;
+        } on IppNotAvailable catch (error) {
+          attempt.somethingAnswered = true;
+          // Asked for here, whatever the path. That includes a password
+          // this address is not safe to send to: the secure one is next.
+          if (error.needsAuthentication) {
+            attempt
+              ..passwordAsked = true
+              ..passwordRefused |= error.credentialsRefused;
+            break paths;
+          }
+          if (error.needsTls) break paths;
+          // Not at this path: older printers listen at another.
+        } on IppException {
+          attempt.somethingAnswered = true;
+        }
       }
     }
     return null;
@@ -221,7 +271,13 @@ class DeviceProbe {
 
 class _Attempt {
   bool somethingAnswered = false;
+  bool passwordAsked = false;
+  bool passwordRefused = false;
 }
+
+/// Where printers listen for IPP. The first is the standard; the rest are
+/// where printers from before it, and print servers, put theirs.
+const List<String> _ippPaths = ['/ipp/print', '/ipp/printer', '/ipp', '/'];
 
 /// An address as typed, and the places worth trying for it.
 class _Target {
@@ -243,19 +299,24 @@ class _Target {
     return Uri(scheme: scheme, host: host, port: port, path: path);
   }
 
-  List<Uri> get ippCandidates {
+  /// The paths to try, in order. A path that was typed or announced is the
+  /// only one.
+  List<String> get ippPaths {
+    if (_ipp != null) return [_ipp.path];
+    return _uri.path.isEmpty || _uri.path == '/' ? _ippPaths : [_uri.path];
+  }
+
+  /// The ports to try, in order, without their paths.
+  List<Uri> get ippEndpoints {
     if (_ipp != null) return [_ipp];
-    final path = _uri.path.isEmpty || _uri.path == '/'
-        ? '/ipp/print'
-        : _uri.path;
     // A port was given: that is where to look, and nowhere else.
     if (_hasPort) {
-      return [_build(_secure ? 'ipps' : 'ipp', _uri.port, path)];
+      return [_build(_secure ? 'ipps' : 'ipp', _uri.port, '')];
     }
     return [
-      if (!_secure) _build('ipp', 631, path),
-      _build('ipps', 631, path),
-      _build('ipps', 443, path),
+      if (!_secure) _build('ipp', 631, ''),
+      _build('ipps', 631, ''),
+      _build('ipps', 443, ''),
     ];
   }
 

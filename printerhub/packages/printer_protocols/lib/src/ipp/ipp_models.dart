@@ -1,6 +1,8 @@
 import 'package:meta/meta.dart';
 import 'package:printer_protocols/src/ipp/ipp_constants.dart';
 import 'package:printer_protocols/src/ipp/ipp_message.dart';
+import 'package:printer_protocols/src/ipp/pwg_media.dart';
+import 'package:printer_protocols/src/raster/raster_encoder.dart';
 
 /// What the printer as a whole is doing.
 enum IppPrinterState {
@@ -182,6 +184,49 @@ class IppPrinterAttributes {
   bool get supportsAirPrint =>
       group['urf-supported'] != null || documentFormats.contains('image/urf');
 
+  /// What the printer says about the Apple Raster it takes.
+  UrfSupport get urf => UrfSupport.parse(_texts('urf-supported'));
+
+  /// The pixel layouts the printer takes in PWG Raster, such as `srgb_8`
+  /// and `sgray_8`.
+  List<String> get pwgRasterTypes =>
+      _texts('pwg-raster-document-type-supported');
+
+  /// The resolutions the printer takes PWG Raster at, ascending. Only those
+  /// that are the same across and down.
+  List<int> get pwgRasterResolutionsDpi {
+    final values =
+        group['pwg-raster-document-resolution-supported']?.values ?? const [];
+    final found = <int>{
+      for (final item in values)
+        if (item.value case final IppResolution resolution)
+          if (resolution.x == resolution.y) resolution.dpi,
+    };
+    return found.toList()..sort();
+  }
+
+  /// How the back of a sheet is delivered in PWG Raster.
+  SheetBack get pwgRasterSheetBack =>
+      SheetBack.fromKeyword(_text('pwg-raster-document-sheet-back'));
+
+  /// How the printer checks who is printing, one entry per address it
+  /// listens on: `none`, `basic`, `digest`, `requesting-user-name`.
+  List<String> get authenticationSchemes =>
+      _texts('uri-authentication-supported');
+
+  /// True when the printer wants a user name and password.
+  bool get requiresAuthentication => authenticationSchemes.any(
+    (scheme) => scheme == 'basic' || scheme == 'digest',
+  );
+
+  /// The members of `media-col` the printer reads, such as `media-size`,
+  /// `media-source`, `media-type`.
+  List<String> get mediaColMembers => _texts('media-col-supported');
+
+  /// The job attributes the printer acts on. Empty when it does not say.
+  List<String> get jobCreationAttributes =>
+      _texts('job-creation-attributes-supported');
+
   /// Supplies, matched up across the four `marker-*` attributes.
   List<IppMarker> get markers {
     final names = _texts('marker-names');
@@ -199,6 +244,51 @@ class IppPrinterAttributes {
         ),
     ];
   }
+}
+
+/// What a printer's `urf-supported` says about the Apple Raster it takes.
+///
+/// The values are short codes: `W8` for grey, `SRGB24` for colour,
+/// `RS300-600` for resolutions, `DM1` to `DM4` for how the back of a sheet
+/// is delivered.
+@immutable
+class UrfSupport {
+  const new({
+    this.color = false,
+    this.resolutionsDpi = const [300],
+    this.sheetBack = SheetBack.normal,
+  });
+
+  factory parse(List<String> codes) {
+    var color = false;
+    var resolutions = const <int>[300];
+    var sheetBack = SheetBack.normal;
+    for (final code in codes.map((code) => code.toUpperCase())) {
+      if (code == 'SRGB24') color = true;
+      if (code.startsWith('RS')) {
+        final found = [
+          for (final part in code.substring(2).split('-')) ?int.tryParse(part),
+        ]..sort();
+        if (found.isNotEmpty) resolutions = found;
+      }
+      sheetBack = switch (code) {
+        'DM2' => SheetBack.flipped,
+        'DM3' => SheetBack.rotated,
+        'DM4' => SheetBack.manualTumble,
+        _ => sheetBack,
+      };
+    }
+    return UrfSupport(
+      color: color,
+      resolutionsDpi: resolutions,
+      sheetBack: sheetBack,
+    );
+  }
+
+  /// True when the printer takes colour. Every AirPrint printer takes grey.
+  final bool color;
+  final List<int> resolutionsDpi;
+  final SheetBack sheetBack;
 }
 
 /// A print job as the printer reports it.
@@ -304,15 +394,41 @@ class IppJobOptions {
       _ => null,
     };
     final ranges = pageRanges;
+    final size = media == null ? null : PwgMedia.parse(media!);
 
     return [
       if (copies != null)
         IppAttribute.single('copies', IppValueTag.integer, copies),
       if (sides != null) keyword('sides', sides!),
       if (colorMode != null) keyword('print-color-mode', colorMode!),
-      if (media != null) keyword('media', media!),
-      if (mediaSource != null) keyword('media-source', mediaSource!),
-      if (mediaType != null) keyword('media-type', mediaType!),
+      // A tray or a paper type can only be asked for inside `media-col`,
+      // and a request carries `media` or `media-col`, never both.
+      if (mediaSource != null || mediaType != null)
+        IppAttribute.single('media-col', IppValueTag.beginCollection, {
+          if (size != null)
+            'media-size': IppAttribute.single(
+              'media-size',
+              IppValueTag.beginCollection,
+              {
+                'x-dimension': IppAttribute.single(
+                  'x-dimension',
+                  IppValueTag.integer,
+                  size.widthHundredthsMm,
+                ),
+                'y-dimension': IppAttribute.single(
+                  'y-dimension',
+                  IppValueTag.integer,
+                  size.heightHundredthsMm,
+                ),
+              },
+            ),
+          if (mediaSource != null)
+            'media-source': keyword('media-source', mediaSource!),
+          if (mediaType != null)
+            'media-type': keyword('media-type', mediaType!),
+        })
+      else if (media != null)
+        keyword('media', media!),
       if (qualityCode != null)
         IppAttribute.single(
           'print-quality',
