@@ -124,6 +124,26 @@ void main() {
         expect(find.byType(HomePage), findsOneWidget);
       });
 
+      testWidgets('keeps a file another app handed over until they are '
+          'signed in, then opens printing', (tester) async {
+        backend
+          ..workspaces = [organizationBody()]
+          ..printerList = [printerBody()];
+        await pump(tester);
+
+        backend.otherApps.open(pickedPdf(name: 'Boarding pass.pdf'));
+        await tester.pumpAndSettle();
+        expect(find.byType(SignInPage), findsOneWidget);
+
+        await tester.fill('Email', 'ada@example.com');
+        await tester.fill('Password', 'correct horse');
+        await tester.tap(find.text('Sign in'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PrintPage), findsOneWidget);
+        expect(find.text('Boarding pass.pdf'), findsOneWidget);
+      });
+
       testWidgets('walks through password reset back to sign-in', (
         tester,
       ) async {
@@ -276,6 +296,104 @@ void main() {
         expect(find.byType(PrintPage), findsOneWidget);
         expect(find.text('Scan today.pdf'), findsOneWidget);
         expect(find.text('How to print it'), findsOneWidget);
+      });
+
+      group('with a file another app hands over', () {
+        testWidgets('opens printing on the only printer', (tester) async {
+          backend.printerList = [printerBody()];
+          await pump(tester);
+
+          backend.otherApps.open(pickedPdf(name: 'Boarding pass.pdf'));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(PrintPage), findsOneWidget);
+          expect(find.text('Boarding pass.pdf'), findsOneWidget);
+          expect(find.text('How to print it'), findsOneWidget);
+        });
+
+        testWidgets('opens printing when the file is what started the app', (
+          tester,
+        ) async {
+          backend.printerList = [printerBody()];
+          backend.otherApps.open(pickedPdf(name: 'Boarding pass.pdf'));
+
+          await pump(tester);
+
+          expect(find.byType(PrintPage), findsOneWidget);
+          expect(find.text('Boarding pass.pdf'), findsOneWidget);
+        });
+
+        testWidgets('asks which printer when there are several', (
+          tester,
+        ) async {
+          backend.printerList = [
+            printerBody(),
+            printerBody(id: 'printer-2', name: 'Back office'),
+          ];
+          await pump(tester);
+
+          backend.otherApps.open(pickedPdf(name: 'Boarding pass.pdf'));
+          await tester.pumpAndSettle();
+          expect(find.text('Which printer?'), findsOneWidget);
+          expect(find.byType(PrintPage), findsNothing);
+
+          await tester.tap(
+            find.descendant(
+              of: find.byType(BottomSheet),
+              matching: find.text('Back office'),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(PrintPage), findsOneWidget);
+          expect(find.text('Boarding pass.pdf'), findsOneWidget);
+          expect(
+            tester.widget<PrintPage>(find.byType(PrintPage)).printerId,
+            'printer-2',
+          );
+        });
+
+        testWidgets('stays where it was when no printer is chosen', (
+          tester,
+        ) async {
+          backend.printerList = [
+            printerBody(),
+            printerBody(id: 'printer-2', name: 'Back office'),
+          ];
+          await pump(tester);
+          backend.otherApps.open(pickedPdf());
+          await tester.pumpAndSettle();
+
+          await tester.tapAt(const Offset(20, 20));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Which printer?'), findsNothing);
+          expect(find.byType(HomePage), findsOneWidget);
+        });
+
+        testWidgets('opens the printers when there is none to print on', (
+          tester,
+        ) async {
+          await pump(tester);
+
+          backend.otherApps.open(pickedPdf());
+          await tester.pumpAndSettle();
+
+          expect(find.byType(PrintersPage), findsOneWidget);
+          expect(find.byType(PrintPage), findsNothing);
+        });
+
+        testWidgets('leaves alone a kind of file it cannot print', (
+          tester,
+        ) async {
+          backend.printerList = [printerBody()];
+          await pump(tester);
+
+          backend.otherApps.open(pickedPdf(name: 'Budget.xlsx'));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(HomePage), findsOneWidget);
+        });
       });
 
       testWidgets('opens scanning from a printer’s page', (tester) async {

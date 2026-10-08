@@ -16,6 +16,7 @@ import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/notifications/notifications.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
+import 'package:printerhub/printers/widgets/printer_choice_sheet.dart';
 import 'package:printerhub/scan/scan.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
@@ -35,6 +36,7 @@ class App extends StatelessWidget {
     required this.finders,
     required this.documents,
     required this.scanSharer,
+    required this.incoming,
     this.keptOrganizations,
     super.key,
   });
@@ -56,6 +58,9 @@ class App extends StatelessWidget {
 
   /// The way this phone hands a finished scan on.
   final ScanSharer scanSharer;
+
+  /// The files other apps hand to this one to print.
+  final IncomingDocuments incoming;
 
   /// The workspace list from the last launch, read before the first frame.
   final List<Organization>? keptOrganizations;
@@ -118,6 +123,11 @@ class App extends StatelessWidget {
               unawaited(cubit.load());
               return cubit;
             },
+          ),
+          BlocProvider(
+            // Listening from the start: a file may be what opened the app.
+            lazy: false,
+            create: (_) => IncomingCubit(incoming: incoming),
           ),
           BlocProvider(
             lazy: false,
@@ -199,6 +209,28 @@ class _AppViewState extends State<AppView> {
 
   late final StreamSubscription<String?> _workspaces;
 
+  /// Sends the waiting document to the print screen of a printer: the
+  /// only one, or the one the person picks. With no printer to print on,
+  /// it opens the printers, where one can be added.
+  Future<void> _printIncoming() async {
+    final incoming = context.read<IncomingCubit>();
+    final document = incoming.state;
+    final ready =
+        context.read<SessionCubit>().state.stage == SessionStage.ready &&
+        context.read<PrintersCubit>().state.status == PrintersStatus.ready;
+    final navigator = _router.routerDelegate.navigatorKey.currentContext;
+    if (document == null || !ready || navigator == null) return;
+    incoming.taken();
+
+    if (printersThatPrint(navigator).isEmpty) {
+      return _router.go(AppRoutes.printers);
+    }
+    final printer = await choosePrinter(navigator);
+    if (printer != null) {
+      _router.go(AppRoutes.printOn(printer.id), extra: document);
+    }
+  }
+
   void _recover(String? organizationId) {
     if (organizationId == null) return;
     unawaited(context.read<JobRecovery>().recover(organizationId));
@@ -219,12 +251,29 @@ class _AppViewState extends State<AppView> {
       (cubit) => cubit.state,
     );
 
-    return MaterialApp.router(
-      onGenerateTitle: (context) => context.l10n.appName,
-      routerConfig: _router,
-      theme: AppTheme.of(theme).data(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
+    // A document another app handed over is printed as soon as there is
+    // someone signed in and the printers are known, whichever comes last.
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<IncomingCubit, PickedDocument?>(
+          listener: (_, _) => _printIncoming(),
+        ),
+        BlocListener<SessionCubit, SessionState>(
+          listenWhen: (previous, current) => previous.stage != current.stage,
+          listener: (_, _) => _printIncoming(),
+        ),
+        BlocListener<PrintersCubit, PrintersState>(
+          listenWhen: (previous, current) => previous.status != current.status,
+          listener: (_, _) => _printIncoming(),
+        ),
+      ],
+      child: MaterialApp.router(
+        onGenerateTitle: (context) => context.l10n.appName,
+        routerConfig: _router,
+        theme: AppTheme.of(theme).data(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
     );
   }
 }

@@ -95,3 +95,11 @@ class PrintDocuments {
   final DocumentPicker picker;
   final PageRenderer renderer;
 }
+
+/// The files other apps hand to this one to print: shared to it, or
+/// opened with it.
+// One member, but a class so the app can be given a stand-in for it.
+abstract interface class IncomingDocuments {
+  /// Each file as it arrives. One that started the app is the first.
+  Stream<PickedDocument> get documents;
+}

@@ -16,6 +16,7 @@ Future<void> main() async {
       finders: dependencies.finders,
       documents: dependencies.documents,
       scanSharer: dependencies.scanSharer,
+      incoming: dependencies.incoming,
       keptOrganizations: dependencies.keptOrganizations,
     ),
   );

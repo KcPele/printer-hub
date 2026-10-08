@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -87,6 +88,19 @@ final Uint8List oddJpeg = base64Decode(
   'CgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/yQALCAABAAEBAREA/8wABgAQ'
   'EAX/2gAIAQEAAD8A0s8g/9k=',
 );
+
+/// Stands in for the other apps on the phone: a test hands a file over
+/// with [open].
+class FakeIncomingDocuments implements IncomingDocuments {
+  final StreamController<PickedDocument> _documents =
+      StreamController<PickedDocument>();
+
+  @override
+  Stream<PickedDocument> get documents => _documents.stream;
+
+  /// Another app shares [document] to this one.
+  void open(PickedDocument document) => _documents.add(document);
+}
 
 /// Stands in for the phone's share sheet, and keeps what it was handed.
 class FakeScanSharer implements ScanSharer {

@@ -17,6 +17,7 @@ import 'package:printer_protocols/printer_protocols.dart';
 import 'package:printerhub/app/config/app_config.dart';
 import 'package:printerhub/app/device/phone_details_reader.dart';
 import 'package:printerhub/print/documents.dart';
+import 'package:printerhub/print/platform/channel_incoming_documents.dart';
 import 'package:printerhub/print/platform/file_picker_document_picker.dart';
 import 'package:printerhub/print/platform/printing_page_renderer.dart';
 import 'package:printerhub/printers/finders.dart';
@@ -54,6 +55,7 @@ typedef AppDependencies = ({
   PrinterFinders finders,
   PrintDocuments documents,
   ScanSharer scanSharer,
+  IncomingDocuments incoming,
   List<Organization>? keptOrganizations,
 });
 
@@ -119,6 +121,7 @@ Future<void> bootstrap(
         transfer: IoFileTransfer(),
       ),
       scanSharer: const SharePlusScanSharer(),
+      incoming: ChannelIncomingDocuments(),
       documents: const PrintDocuments(
         picker: FilePickerDocumentPicker(),
         renderer: PrintingPageRenderer(),

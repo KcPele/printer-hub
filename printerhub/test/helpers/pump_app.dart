@@ -183,6 +183,7 @@ extension PumpApp on WidgetTester {
         finders: backend.finders,
         documents: backend.documents,
         scanSharer: backend.sharer,
+        incoming: backend.otherApps,
         keptOrganizations: await backend.organizations.kept(),
       ),
     );
