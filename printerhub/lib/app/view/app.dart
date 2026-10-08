@@ -7,10 +7,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:notifications_repository/notifications_repository.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/notifications/notifications.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/scan/scan.dart';
@@ -27,6 +29,7 @@ class App extends StatelessWidget {
     required this.jobsRepository,
     required this.presetsRepository,
     required this.documentsRepository,
+    required this.notificationsRepository,
     required this.finders,
     required this.documents,
     required this.scanSharer,
@@ -41,6 +44,7 @@ class App extends StatelessWidget {
   final JobsRepository jobsRepository;
   final PresetsRepository presetsRepository;
   final DocumentsRepository documentsRepository;
+  final NotificationsRepository notificationsRepository;
 
   /// The ways this phone can find a printer.
   final PrinterFinders finders;
@@ -65,6 +69,7 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: jobsRepository),
         RepositoryProvider.value(value: presetsRepository),
         RepositoryProvider.value(value: documentsRepository),
+        RepositoryProvider.value(value: notificationsRepository),
         RepositoryProvider.value(value: finders),
         RepositoryProvider.value(value: documents),
         RepositoryProvider.value(value: scanSharer),
@@ -106,6 +111,23 @@ class App extends StatelessWidget {
               return cubit;
             },
           ),
+          BlocProvider(
+            // Counted with the app, so the badge is right on the first
+            // screen.
+            lazy: false,
+            create: (context) {
+              final session = context.read<SessionCubit>();
+              final cubit = UnreadCubit(
+                notificationsRepository: notificationsRepository,
+                signedIn: session.state.user != null,
+                signedInChanges: session.stream
+                    .map((state) => state.user != null)
+                    .distinct(),
+              );
+              unawaited(cubit.refresh());
+              return cubit;
+            },
+          ),
         ],
         child: const AppView(),
       ),
@@ -130,8 +152,20 @@ class _AppViewState extends State<AppView> {
     refresh: _session,
   );
 
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    // Whatever happened while the app was away is counted as it returns.
+    _lifecycle = AppLifecycleListener(
+      onResume: () => unawaited(context.read<UnreadCubit>().refresh()),
+    );
+  }
+
   @override
   void dispose() {
+    _lifecycle.dispose();
     _router.dispose();
     _session.dispose();
     super.dispose();

@@ -10,6 +10,7 @@ import 'package:documents_repository/testing.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:local_store/local_store.dart';
+import 'package:notifications_repository/notifications_repository.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:printer_discovery/testing.dart';
 import 'package:printer_protocols/printer_protocols.dart';
@@ -67,6 +68,7 @@ class TestBackend {
     );
     jobs = JobsRepository(client: client, store: store);
     presets = PresetsRepository(client: client);
+    notifications = NotificationsRepository(client: client);
     documentsKept = DocumentsRepository(
       client: client,
       transfer: storage,
@@ -99,6 +101,13 @@ class TestBackend {
   late final PrintersRepository printers;
   late final JobsRepository jobs;
   late final PresetsRepository presets;
+
+  /// What the account has been told, newest first.
+  late final NotificationsRepository notifications;
+  List<Map<String, Object?>> notificationList = [];
+
+  /// How many notifications the list gives at a time.
+  int notificationPageSize = 20;
 
   /// The documents the workspace keeps, and the storage their files are in.
   late final DocumentsRepository documentsKept;
@@ -595,6 +604,13 @@ class TestBackend {
           ? FakeResponse.problem(404, 'connection.not_found')
           : FakeResponse(200, {...secrets, 'extra': <String, String>{}});
     }
+    final notificationRoute = _notificationRoute.firstMatch(key);
+    if (notificationRoute != null) {
+      return _answerNotifications(
+        notificationRoute,
+        request.uri.queryParameters,
+      );
+    }
     final documentRoute = _documentRoute.firstMatch(key);
     if (documentRoute != null) {
       return _answerDocuments(documentRoute, body, request.uri.queryParameters);
@@ -627,6 +643,51 @@ class TestBackend {
     '^(GET|POST|PUT|PATCH|DELETE) /organizations/([^/]+)/printers'
     r'(?:/([^/]+))?(/status|/pairing-tokens|/capabilities)?$',
   );
+
+  static final RegExp _notificationRoute = RegExp(
+    r'^(GET|POST) /notifications(?:/([^/]+))?(/read)?$',
+  );
+
+  /// What the account was told: listing it, counting the unread, and
+  /// marking it read.
+  FakeResponse _answerNotifications(
+    RegExpMatch route,
+    Map<String, String> query,
+  ) {
+    final id = route.group(2);
+    const now = '2026-10-07T11:00:00Z';
+    if (id == null) {
+      final wanted = [
+        for (final one in notificationList)
+          if (query['unread_only'] != 'true' || one['read_at'] == null) one,
+      ];
+      final from = int.parse(query['cursor'] ?? '0');
+      final to = from + notificationPageSize;
+      return FakeResponse(200, {
+        'items': wanted.skip(from).take(notificationPageSize).toList(),
+        'next_cursor': to < wanted.length ? '$to' : null,
+      });
+    }
+    if (id == 'unread-count') {
+      return FakeResponse(200, {
+        'unread': notificationList
+            .where((one) => one['read_at'] == null)
+            .length,
+      });
+    }
+    if (id == 'read-all') {
+      notificationList = [
+        for (final one in notificationList)
+          {...one, 'read_at': one['read_at'] ?? now},
+      ];
+      return const FakeResponse(204);
+    }
+    final index = notificationList.indexWhere((one) => one['id'] == id);
+    if (index < 0) return FakeResponse.problem(404, 'notification.not_found');
+    final read = {...notificationList[index], 'read_at': now};
+    notificationList = [...notificationList]..[index] = read;
+    return FakeResponse(200, read);
+  }
 
   static final RegExp _documentRoute = RegExp(
     '^(GET|POST|PATCH|DELETE) /organizations/[^/]+/documents'

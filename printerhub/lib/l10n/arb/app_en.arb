@@ -2202,5 +2202,33 @@
                 "type": "String"
             }
         }
+    },
+    "notificationsTitle": "Notifications",
+    "@notificationsTitle": {
+        "description": "Title of the notifications screen, and tooltip of the bell"
+    },
+    "notificationsReadAll": "Mark all read",
+    "@notificationsReadAll": {
+        "description": "Button that marks every notification read"
+    },
+    "notificationsEmptyTitle": "Nothing to tell you yet",
+    "@notificationsEmptyTitle": {
+        "description": "Heading when there are no notifications"
+    },
+    "notificationsEmptyBody": "When a job finishes or someone invites you, you will find it here.",
+    "@notificationsEmptyBody": {
+        "description": "Under the no-notifications heading"
+    },
+    "notificationsFailedTitle": "Your notifications could not be read",
+    "@notificationsFailedTitle": {
+        "description": "Heading when notifications failed to load"
+    },
+    "notificationsMore": "Show earlier",
+    "@notificationsMore": {
+        "description": "Button that loads older notifications"
+    },
+    "notificationUnread": "Not read yet",
+    "@notificationUnread": {
+        "description": "Screen reader label of the dot on an unread notification"
     }
 }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/notifications/notifications.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printers_repository/printers_repository.dart';
@@ -23,12 +24,26 @@ class HomePage extends StatelessWidget {
     final printers = context.select<PrintersCubit, List<PrinterRead>>(
       (cubit) => cubit.state.printers,
     );
+    final unread = context.watch<UnreadCubit>().state;
     final needsVerification = context.select<SessionCubit, bool>(
       (cubit) => cubit.state.user?.emailVerified == false,
     );
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.appName)),
+      appBar: AppBar(
+        title: Text(l10n.appName),
+        actions: [
+          IconButton(
+            tooltip: l10n.notificationsTitle,
+            onPressed: () => context.push(AppRoutes.notifications),
+            icon: Badge.count(
+              count: unread,
+              isLabelVisible: unread > 0,
+              child: const Icon(Icons.notifications_none),
+            ),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.page,

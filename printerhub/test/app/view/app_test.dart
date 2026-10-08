@@ -11,6 +11,7 @@ import 'package:printerhub/catalogue/catalogue.dart';
 import 'package:printerhub/documents/documents.dart';
 import 'package:printerhub/gallery/gallery.dart';
 import 'package:printerhub/home/home.dart';
+import 'package:printerhub/notifications/notifications.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/scan/scan.dart';
@@ -282,6 +283,36 @@ void main() {
 
         expect(find.byType(ScanPage), findsOneWidget);
         expect(find.text('How to scan it'), findsOneWidget);
+      });
+
+      testWidgets('counts what is unread, again as the app comes back, and '
+          'opens it', (tester) async {
+        backend.notificationList = [notificationBody()];
+        await pump(tester);
+        final badge = find.byType(Badge);
+        expect(
+          find.descendant(of: badge, matching: find.text('1')),
+          findsOneWidget,
+        );
+
+        backend.notificationList = [
+          notificationBody(id: 'notification-2', title: 'Scan ready'),
+          ...backend.notificationList,
+        ];
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pumpAndSettle();
+        expect(
+          find.descendant(of: badge, matching: find.text('2')),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byTooltip('Notifications'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(NotificationsPage), findsOneWidget);
+        expect(find.text('Scan ready'), findsOneWidget);
       });
 
       testWidgets('opens the documents from Activity', (tester) async {

@@ -12,6 +12,7 @@ Future<void> main() async {
       jobsRepository: dependencies.jobsRepository,
       presetsRepository: dependencies.presetsRepository,
       documentsRepository: dependencies.documentsRepository,
+      notificationsRepository: dependencies.notificationsRepository,
       finders: dependencies.finders,
       documents: dependencies.documents,
       scanSharer: dependencies.scanSharer,

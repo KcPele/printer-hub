@@ -291,6 +291,32 @@ Map<String, Object?> profileBody({
   'updated_at': '2026-10-07T10:00:00Z',
 };
 
+/// A `NotificationRead` body: a print that finished, not yet read.
+Map<String, Object?> notificationBody({
+  String id = 'notification-1',
+  String type = 'job.completed',
+  String title = 'Print finished',
+  String body = 'Report.pdf was printed on Front desk.',
+  Map<String, String> data = const {
+    'job_id': 'job-1',
+    'organization_id': 'org-1',
+    'printer_id': 'printer-1',
+    'job_type': 'print',
+    'status': 'completed',
+  },
+  String? readAt,
+  String createdAt = '2026-10-07T10:00:00Z',
+}) => {
+  'id': id,
+  'organization_id': data['organization_id'],
+  'type': type,
+  'title': title,
+  'body': body,
+  'data': data,
+  'read_at': readAt,
+  'created_at': createdAt,
+};
+
 /// A `DocumentRead` body: a scan kept in the workspace's storage.
 Map<String, Object?> documentBody({
   String id = 'document-1',

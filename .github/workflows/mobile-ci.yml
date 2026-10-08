@@ -33,6 +33,7 @@ jobs:
           - auth_repository
           - jobs_repository
           - documents_repository
+          - notifications_repository
           - local_store
           - organizations_repository
           - preferences_repository

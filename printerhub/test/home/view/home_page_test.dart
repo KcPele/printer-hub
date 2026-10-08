@@ -1,9 +1,12 @@
 import 'package:api_client/testing.dart';
 import 'package:app_ui/app_ui.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printerhub/app/app.dart';
 import 'package:printerhub/home/home.dart';
+import 'package:printerhub/notifications/notifications.dart';
 import 'package:printerhub/printers/printers.dart';
 
 import '../../helpers/helpers.dart';
@@ -33,6 +36,36 @@ void main() {
       for (final number in ['1', '2', '3']) {
         expect(find.text(number), findsOneWidget);
       }
+    });
+
+    testWidgets('counts what has not been read, and opens it', (tester) async {
+      final router = recordingRouter();
+      backend.notificationList = [
+        notificationBody(),
+        notificationBody(id: 'notification-2'),
+        notificationBody(id: 'notification-3', readAt: '2026-10-07T09:00:00Z'),
+      ];
+      await tester.runAsync(backend.signedInBefore);
+      await tester.pumpApp(const HomePage(), backend: backend, router: router);
+      await tester.pumpAndSettle();
+      // Nothing is counted until the app asks.
+      final count = find.descendant(
+        of: find.byType(Badge),
+        matching: find.text('2'),
+      );
+      expect(find.byType(Badge), findsOneWidget);
+      expect(count, findsNothing);
+
+      await tester.runAsync(
+        BlocProvider.of<UnreadCubit>(tester.element(find.byType(HomePage)))
+            .refresh,
+      );
+      await tester.pump();
+      expect(count, findsOneWidget);
+
+      await tester.tap(find.byTooltip('Notifications'));
+
+      verify(() => router.push<Object?>(AppRoutes.notifications)).called(1);
     });
 
     testWidgets('reminds an unverified user to verify their email', (

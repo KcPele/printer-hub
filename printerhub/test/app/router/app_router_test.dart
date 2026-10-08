@@ -9,6 +9,7 @@ import 'package:printerhub/app/app.dart';
 import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/home/home.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/notifications/notifications.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
@@ -70,6 +71,12 @@ void main() {
                   printersRepository: backend.printers,
                   organizationId: session.state.organization?.id,
                   organizationChanges: const Stream.empty(),
+                ),
+              ),
+              BlocProvider(
+                create: (_) => UnreadCubit(
+                  notificationsRepository: backend.notifications,
+                  signedInChanges: const Stream.empty(),
                 ),
               ),
             ],

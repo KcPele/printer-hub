@@ -7,10 +7,12 @@ import 'package:go_router/go_router.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:notifications_repository/notifications_repository.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printerhub/app/app.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/notifications/notifications.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/scan/scan.dart';
@@ -98,6 +100,12 @@ extension PumpApp on WidgetTester {
               .distinct(),
         );
     if (printersCubit == null) addTearDown(printers.close);
+    final unread = UnreadCubit(
+      notificationsRepository: api.notifications,
+      signedIn: session.state.user != null,
+      signedInChanges: const Stream.empty(),
+    );
+    addTearDown(unread.close);
 
     await pumpWidget(
       MultiRepositoryProvider(
@@ -113,6 +121,9 @@ extension PumpApp on WidgetTester {
           RepositoryProvider<DocumentsRepository>.value(
             value: api.documentsKept,
           ),
+          RepositoryProvider<NotificationsRepository>.value(
+            value: api.notifications,
+          ),
           RepositoryProvider<PrinterFinders>.value(value: api.finders),
           RepositoryProvider<PrintDocuments>.value(value: api.documents),
           RepositoryProvider<ScanSharer>.value(value: api.sharer),
@@ -122,6 +133,7 @@ extension PumpApp on WidgetTester {
             BlocProvider.value(value: theme),
             BlocProvider.value(value: session),
             BlocProvider.value(value: printers),
+            BlocProvider.value(value: unread),
           ],
           child: BlocBuilder<ThemeCubit, AppThemeId>(
             builder: (context, theme) => MaterialApp(
@@ -152,6 +164,7 @@ extension PumpApp on WidgetTester {
         jobsRepository: backend.jobs,
         presetsRepository: backend.presets,
         documentsRepository: backend.documentsKept,
+        notificationsRepository: backend.notifications,
         finders: backend.finders,
         documents: backend.documents,
         scanSharer: backend.sharer,

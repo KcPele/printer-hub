@@ -36,6 +36,8 @@ dependencies:
   material_ui: ^1.1.1
   meta: ^1.19.0
   mobile_scanner: ^7.4.2
+  notifications_repository:
+    path: packages/notifications_repository
   organizations_repository:
     path: packages/organizations_repository
   package_info_plus: ^10.2.2

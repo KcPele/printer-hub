@@ -9,6 +9,7 @@ import 'package:documents_repository/documents_repository.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:local_store/local_store.dart';
+import 'package:notifications_repository/notifications_repository.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printer_discovery/printer_discovery.dart';
@@ -49,6 +50,7 @@ typedef AppDependencies = ({
   JobsRepository jobsRepository,
   PresetsRepository presetsRepository,
   DocumentsRepository documentsRepository,
+  NotificationsRepository notificationsRepository,
   PrinterFinders finders,
   PrintDocuments documents,
   ScanSharer scanSharer,
@@ -111,6 +113,7 @@ Future<void> bootstrap(
       printersRepository: printersRepository,
       jobsRepository: JobsRepository(client: client, store: secureStore),
       presetsRepository: PresetsRepository(client: client),
+      notificationsRepository: NotificationsRepository(client: client),
       documentsRepository: DocumentsRepository(
         client: client,
         transfer: IoFileTransfer(),

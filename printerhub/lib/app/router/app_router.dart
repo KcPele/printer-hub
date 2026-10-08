@@ -9,6 +9,7 @@ import 'package:printerhub/catalogue/catalogue.dart';
 import 'package:printerhub/documents/documents.dart';
 import 'package:printerhub/gallery/gallery.dart';
 import 'package:printerhub/home/home.dart';
+import 'package:printerhub/notifications/notifications.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/scan/scan.dart';
@@ -29,6 +30,7 @@ abstract final class AppRoutes {
   static const String newWorkspace = '/workspace/new';
   static const String verifyEmail = '/verify-email';
   static const String home = '/home';
+  static const String notifications = '/home/notifications';
   static const String printers = '/printers';
   static const String addPrinter = '/printers/add';
   static const String catalogue = '/printers/catalogue';
@@ -158,6 +160,12 @@ GoRouter createAppRouter({
               GoRoute(
                 path: AppRoutes.home,
                 builder: (context, state) => const HomePage(),
+                routes: [
+                  GoRoute(
+                    path: 'notifications',
+                    builder: (context, state) => const NotificationsPage(),
+                  ),
+                ],
               ),
             ],
           ),
