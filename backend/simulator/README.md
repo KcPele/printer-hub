@@ -28,7 +28,7 @@ Interactive docs: <http://localhost:8631/docs>.
 - **IPP errors arrive inside HTTP 200.** That is how IPP works: read the status code in the IPP response, not the HTTP status.
 - **Print jobs take time.** A job is `pending`, then `processing`, then `completed` over `job_duration_seconds` (default 4). Poll Get-Job-Attributes to watch it.
 - **A feeder scan has several pages.** Call `NextDocument` until it returns `404`. A platen scan has one page.
-- **Scanned pages are generated.** PDF pages carry a line of text saying which page they are; JPEG pages are a small grey picture of a page, 248 by 350.
+- **Scanned pages are generated.** PDF pages carry a line of text saying which page they are; JPEG pages are a small picture of a page, 496 by 702, with a heading and four lines of real words on it ("Invoice 42", "Total due 118.00"), so a client that reads the text of a scan has some to read.
 - **Raster print jobs are read.** A job sent as `image/pwg-raster` or `image/urf` is decoded the way a printer would. One that is cut short, or is the other format under the wrong name, is refused with `client-error-document-format-error`. The page count appears in `/sim/state` and as `job-impressions`.
 
 ## Injecting faults
