@@ -19,6 +19,8 @@ import 'package:printerhub/print/platform/file_picker_document_picker.dart';
 import 'package:printerhub/print/platform/printing_page_renderer.dart';
 import 'package:printerhub/printers/finders.dart';
 import 'package:printerhub/printers/widgets/qr_camera.dart';
+import 'package:printerhub/scan/platform/share_plus_scan_sharer.dart';
+import 'package:printerhub/scan/scan_output.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 class AppBlocObserver extends BlocObserver {
@@ -47,6 +49,7 @@ typedef AppDependencies = ({
   PresetsRepository presetsRepository,
   PrinterFinders finders,
   PrintDocuments documents,
+  ScanSharer scanSharer,
   List<Organization>? keptOrganizations,
 });
 
@@ -106,6 +109,7 @@ Future<void> bootstrap(
       printersRepository: printersRepository,
       jobsRepository: JobsRepository(client: client, store: secureStore),
       presetsRepository: PresetsRepository(client: client),
+      scanSharer: const SharePlusScanSharer(),
       documents: const PrintDocuments(
         picker: FilePickerDocumentPicker(),
         renderer: PrintingPageRenderer(),

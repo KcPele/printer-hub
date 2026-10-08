@@ -1860,5 +1860,240 @@
     "presetDelete": "Delete",
     "@presetDelete": {
         "description": "Menu entry that deletes saved settings"
+    },
+    "scanAction": "Scan",
+    "@scanAction": {
+        "description": "Button that opens scanning on a printer, and that starts a scan"
+    },
+    "scanTitle": "Scan",
+    "@scanTitle": {
+        "description": "Title of the scan screen"
+    },
+    "scanOptionsTitle": "How to scan it",
+    "@scanOptionsTitle": {
+        "description": "Heading above the scan options"
+    },
+    "scanSource": "Scan from",
+    "@scanSource": {
+        "description": "Label of the choice between the glass and the feeder"
+    },
+    "scanSourceGlass": "The glass",
+    "@scanSourceGlass": {
+        "description": "The flatbed of a scanner"
+    },
+    "scanSourceFeeder": "The feeder",
+    "@scanSourceFeeder": {
+        "description": "The document feeder of a scanner"
+    },
+    "scanColor": "Colour",
+    "@scanColor": {
+        "description": "Switch for scanning in colour"
+    },
+    "scanColorBody": "Off scans in grey",
+    "@scanColorBody": {
+        "description": "Under the colour switch"
+    },
+    "scanDuplex": "Both sides",
+    "@scanDuplex": {
+        "description": "Switch for scanning both sides of each sheet"
+    },
+    "scanDuplexBody": "The feeder turns each sheet over",
+    "@scanDuplexBody": {
+        "description": "Under the both-sides switch"
+    },
+    "scanResolution": "Detail",
+    "@scanResolution": {
+        "description": "Label of the resolution choice"
+    },
+    "scanPaper": "Paper size",
+    "@scanPaper": {
+        "description": "Label of the scan area choice"
+    },
+    "scanFormat": "Keep it as",
+    "@scanFormat": {
+        "description": "Label of the choice of what the scan is saved as"
+    },
+    "scanFormatPdf": "One PDF",
+    "@scanFormatPdf": {
+        "description": "Scan saved as a single PDF document"
+    },
+    "scanFormatPictures": "Pictures, one a page",
+    "@scanFormatPictures": {
+        "description": "Scan saved as a JPEG per page"
+    },
+    "scanStageConnecting": "Reaching the scanner…",
+    "@scanStageConnecting": {
+        "description": "Shown while the scanner is contacted"
+    },
+    "scanStageScanning": "Scanning…",
+    "@scanStageScanning": {
+        "description": "Shown while the first page is scanned"
+    },
+    "scanCancel": "Stop scanning",
+    "@scanCancel": {
+        "description": "Button that stops a scan"
+    },
+    "scanNameLabel": "Name",
+    "@scanNameLabel": {
+        "description": "Label of the field that names a scan"
+    },
+    "scanPagesTitle": "Pages",
+    "@scanPagesTitle": {
+        "description": "Heading above the scanned pages"
+    },
+    "scanPagesHint": "Hold and drag a page to move it.",
+    "@scanPagesHint": {
+        "description": "Says how to reorder scanned pages"
+    },
+    "scanRemovePage": "Remove this page",
+    "@scanRemovePage": {
+        "description": "Tooltip of the button that removes a scanned page"
+    },
+    "scanMore": "Scan more pages",
+    "@scanMore": {
+        "description": "Button that scans again and adds the pages"
+    },
+    "scanSave": "Save",
+    "@scanSave": {
+        "description": "Button that puts the scanned pages together as a file"
+    },
+    "scanStartOver": "Start over",
+    "@scanStartOver": {
+        "description": "Button that throws the scanned pages away"
+    },
+    "scanKeptPages": "The pages that arrived are kept.",
+    "@scanKeptPages": {
+        "description": "Added after the reason a scan stopped part way"
+    },
+    "scanSavedTitle": "Your scan is ready",
+    "@scanSavedTitle": {
+        "description": "Heading once a scan is saved as a file"
+    },
+    "scanSavedBody": "Share it to save it to your files, send it, or open it in another app.",
+    "@scanSavedBody": {
+        "description": "Under the scan-is-ready heading"
+    },
+    "scanShare": "Share",
+    "@scanShare": {
+        "description": "Button that opens the share sheet with the scan"
+    },
+    "scanEdit": "Back to the pages",
+    "@scanEdit": {
+        "description": "Button that returns from a saved scan to its pages"
+    },
+    "scanDone": "Done",
+    "@scanDone": {
+        "description": "Button that leaves the scan screen"
+    },
+    "scanFailedUnreachable": "The scanner did not answer. Check that it is on, and that your phone is on the same network.",
+    "@scanFailedUnreachable": {
+        "description": "Scan failure: nothing answered"
+    },
+    "scanFailedNotAvailable": "This device is not offering scanning over the network. Switch on AirPrint or Mopria scanning in its settings.",
+    "@scanFailedNotAvailable": {
+        "description": "Scan failure: eSCL is off"
+    },
+    "scanFailedNoConnection": "No way to scan on this printer is saved. Ask it again what it can do, from its page.",
+    "@scanFailedNoConnection": {
+        "description": "Scan failure: the printer has no scan connection"
+    },
+    "scanFailedNoFeeder": "This scanner has no document feeder.",
+    "@scanFailedNoFeeder": {
+        "description": "Scan failure: feeder asked for but absent"
+    },
+    "scanFailedFeederEmpty": "The feeder is empty. Put the pages in and scan again.",
+    "@scanFailedFeederEmpty": {
+        "description": "Scan failure: nothing in the feeder"
+    },
+    "scanFailedFeederJam": "Paper is jammed in the feeder.",
+    "@scanFailedFeederJam": {
+        "description": "Scan failure: feeder jam"
+    },
+    "scanFailedFeederOpen": "The feeder's cover is open.",
+    "@scanFailedFeederOpen": {
+        "description": "Scan failure: feeder cover open"
+    },
+    "scanFailedNotReady": "The scanner is not ready. Look at its panel.",
+    "@scanFailedNotReady": {
+        "description": "Scan failure: the scanner refused without saying why"
+    },
+    "scanFailedBusy": "The scanner is busy. Try again in a moment.",
+    "@scanFailedBusy": {
+        "description": "Scan failure: scanner busy"
+    },
+    "scanFailedConnectionLost": "The connection to the scanner dropped.",
+    "@scanFailedConnectionLost": {
+        "description": "Scan failure: connection lost mid-scan"
+    },
+    "scanFailedStorage": "The scan could not be kept on your phone. Free some space and try again.",
+    "@scanFailedStorage": {
+        "description": "Scan failure: file could not be written"
+    },
+    "scanFailedRefused": "The scanner refused the scan.",
+    "@scanFailedRefused": {
+        "description": "Scan failure: any other reason"
+    },
+    "scanName": "Scan {date}",
+    "@scanName": {
+        "description": "What a new scan is called",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "scanResolutionDpi": "{dpi} dpi",
+    "@scanResolutionDpi": {
+        "description": "A scan resolution",
+        "placeholders": {
+            "dpi": {
+                "type": "int"
+            }
+        }
+    },
+    "scanResolutionQuick": "Quick ({dpi} dpi)",
+    "@scanResolutionQuick": {
+        "description": "A low scan resolution",
+        "placeholders": {
+            "dpi": {
+                "type": "int"
+            }
+        }
+    },
+    "scanResolutionStandard": "Standard ({dpi} dpi)",
+    "@scanResolutionStandard": {
+        "description": "The usual scan resolution",
+        "placeholders": {
+            "dpi": {
+                "type": "int"
+            }
+        }
+    },
+    "scanResolutionFine": "Fine ({dpi} dpi)",
+    "@scanResolutionFine": {
+        "description": "A high scan resolution",
+        "placeholders": {
+            "dpi": {
+                "type": "int"
+            }
+        }
+    },
+    "scanStagePages": "{count, plural, =1{Scanning… 1 page so far} other{Scanning… {count} pages so far}}",
+    "@scanStagePages": {
+        "description": "Shown while more pages are scanned",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "scanPageNumber": "Page {number}",
+    "@scanPageNumber": {
+        "description": "Label of one scanned page",
+        "placeholders": {
+            "number": {
+                "type": "int"
+            }
+        }
     }
 }

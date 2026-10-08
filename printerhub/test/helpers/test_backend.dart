@@ -121,6 +121,21 @@ class TestBackend {
   /// The IPP status the printer answers Validate-Job with, when not OK.
   int? printerRefuses;
 
+  /// The pages the plugged-in scanner gives a scan, each a picture.
+  List<List<int>> scanPages = [tinyJpeg];
+
+  /// The settings of each scan the scanner was asked for.
+  final List<String> scansStarted = [];
+
+  /// The HTTP status the scanner answers a new scan with, when not 201.
+  int? scannerRefuses;
+
+  /// What the scanner says of its feeder.
+  String scannerFeeder = 'ScannerAdfLoaded';
+
+  /// The phone's share sheet.
+  final FakeScanSharer sharer = FakeScanSharer();
+
   /// The local network. Nothing answers on it until [plugInPrinter].
   late final FakePrinterHttp device;
 
@@ -271,11 +286,30 @@ class TestBackend {
     PrinterCredentials? signIn,
     List<String> formats = const ['application/pdf', 'image/pwg-raster'],
   }) {
+    var served = 0;
     device.device = (request) {
-      if (request.uri.path.endsWith('ScannerStatus')) {
-        return FakeAnswer.text(200, _scannerStatus);
+      final path = request.uri.path;
+      if (path.endsWith('ScannerStatus')) {
+        return FakeAnswer.text(200, _scannerStatus(scannerFeeder));
       }
-      if (request.uri.path.contains('eSCL')) {
+      if (path.endsWith('/ScanJobs')) {
+        scansStarted.add(String.fromCharCodes(request.body));
+        served = 0;
+        final refused = scannerRefuses;
+        return refused != null
+            ? FakeAnswer(refused)
+            : const FakeAnswer(201, headers: {'location': '/eSCL/ScanJobs/1'});
+      }
+      if (path.endsWith('/NextDocument')) {
+        if (served >= scanPages.length) return const FakeAnswer(404);
+        return FakeAnswer(
+          200,
+          body: scanPages[served++],
+          headers: const {'content-type': 'image/jpeg'},
+        );
+      }
+      if (path.contains('/ScanJobs/')) return const FakeAnswer(200);
+      if (path.contains('eSCL')) {
         return FakeAnswer.text(200, _scannerCapabilities);
       }
       if (signIn != null && !_signedIn(request, signIn)) {
@@ -672,6 +706,7 @@ class TestBackend {
       final settings = create['settings'] as Map<String, dynamic>?;
       final job = jobBody(
         id: create['id'] as String,
+        type: create['type'] as String? ?? 'print',
         title: create['title'] as String?,
         printerId: create['printer_id'] as String,
         copies: settings?['copies'] as int? ?? 1,
@@ -959,8 +994,10 @@ const _escl =
     'xmlns:scan="http://schemas.hp.com/imaging/escl/2011/05/03" '
     'xmlns:pwg="http://www.pwg.org/schemas/2010/12/sm"';
 
-const _scannerStatus =
-    '<scan:ScannerStatus $_escl><pwg:State>Idle</pwg:State></scan:ScannerStatus>';
+String _scannerStatus(String feeder) => [
+  '<scan:ScannerStatus $_escl><pwg:State>Idle</pwg:State>',
+  '<scan:AdfState>$feeder</scan:AdfState></scan:ScannerStatus>',
+].join();
 
 final String _scannerCapabilities = [
   '<scan:ScannerCapabilities $_escl>',
@@ -969,6 +1006,7 @@ final String _scannerCapabilities = [
   '<scan:MaxWidth>2550</scan:MaxWidth><scan:MaxHeight>3508</scan:MaxHeight>',
   '<scan:ColorMode>RGB24</scan:ColorMode>',
   '<pwg:DocumentFormat>application/pdf</pwg:DocumentFormat>',
+  '<pwg:DocumentFormat>image/jpeg</pwg:DocumentFormat>',
   '<scan:XResolution>300</scan:XResolution>',
   '</scan:PlatenInputCaps></scan:Platen>',
   '<scan:Adf><scan:AdfSimplexInputCaps>',

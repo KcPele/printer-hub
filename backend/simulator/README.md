@@ -16,7 +16,7 @@ From a phone or emulator, use your computer's LAN address instead of `localhost`
 | eSCL | `GET /eSCL/ScannerCapabilities` | Platen and document feeder, 150 to 600 DPI, PDF and JPEG. |
 | eSCL | `GET /eSCL/ScannerStatus` | Scanner and feeder state, running jobs. |
 | eSCL | `POST /eSCL/ScanJobs` | Starts a scan; the job URL comes back in `Location`. |
-| eSCL | `GET /eSCL/ScanJobs/{id}/NextDocument` | One page per call, then `404`. |
+| eSCL | `GET /eSCL/ScanJobs/{id}/NextDocument` | One page per call, then `404`. A JPEG scan gives a small picture of a page; a PDF scan a one-page PDF. |
 | eSCL | `DELETE /eSCL/ScanJobs/{id}` | Cancels a scan. |
 | Control | `GET`, `PATCH /sim/state` | Inspect and change the simulated device. |
 | Control | `POST /sim/reset` | Back to factory state. |
@@ -28,7 +28,7 @@ Interactive docs: <http://localhost:8631/docs>.
 - **IPP errors arrive inside HTTP 200.** That is how IPP works: read the status code in the IPP response, not the HTTP status.
 - **Print jobs take time.** A job is `pending`, then `processing`, then `completed` over `job_duration_seconds` (default 4). Poll Get-Job-Attributes to watch it.
 - **A feeder scan has several pages.** Call `NextDocument` until it returns `404`. A platen scan has one page.
-- **Scanned pages are generated.** PDF pages carry a line of text saying which page they are; JPEG pages are a 1×1 image.
+- **Scanned pages are generated.** PDF pages carry a line of text saying which page they are; JPEG pages are a small grey picture of a page, 248 by 350.
 - **Raster print jobs are read.** A job sent as `image/pwg-raster` or `image/urf` is decoded the way a printer would. One that is cut short, or is the other format under the wrong name, is refused with `client-error-document-format-error`. The page count appears in `/sim/state` and as `job-impressions`.
 
 ## Injecting faults

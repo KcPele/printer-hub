@@ -300,6 +300,14 @@ class PrinterDetailView extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.sm),
               ],
+              if (printer.capabilities?.scan.supported ?? false) ...[
+                OutlinedButton.icon(
+                  onPressed: () => context.push(AppRoutes.scanOn(printer.id)),
+                  icon: const Icon(Icons.document_scanner_outlined),
+                  label: Text(l10n.scanAction),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
               OutlinedButton.icon(
                 onPressed: checking
                     ? null

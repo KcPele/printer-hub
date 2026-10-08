@@ -12,6 +12,7 @@ import 'package:printerhub/gallery/gallery.dart';
 import 'package:printerhub/home/home.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
+import 'package:printerhub/scan/scan.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/settings/settings.dart';
 import 'package:printerhub/theme/theme.dart';
@@ -253,6 +254,33 @@ void main() {
 
         expect(find.byType(PrintPage), findsOneWidget);
         expect(find.text('What would you like to print?'), findsOneWidget);
+      });
+
+      testWidgets('opens scanning from a printer’s page', (tester) async {
+        backend.printerList = [printerBody()];
+        await pump(tester);
+        await openArea(tester, 'Printers');
+        await tester.tap(find.text('Front desk'));
+        await tester.pumpAndSettle();
+
+        final scan = find.widgetWithText(OutlinedButton, 'Scan');
+        await tester.scrollUntilVisible(
+          scan,
+          200,
+          scrollable: find
+              .descendant(
+                of: find.byType(PrinterDetailPage),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.ensureVisible(scan);
+        await tester.pumpAndSettle();
+        await tester.tap(scan);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ScanPage), findsOneWidget);
+        expect(find.text('How to scan it'), findsOneWidget);
       });
 
       testWidgets('opens a job from Activity, and prints it again', (

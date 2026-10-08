@@ -11,7 +11,7 @@ from fastapi import Body, FastAPI, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
 from simulator import auth, escl, printer
-from simulator.fixtures import TINY_JPEG, make_pdf
+from simulator.fixtures import PAGE_JPEG, make_pdf
 from simulator.ipp import IppDecodeError, Message, Status, decode, encode
 from simulator.state import MODEL, Faults, PrinterState
 
@@ -120,7 +120,7 @@ async def next_document(job_id: str) -> Response:
     job.busy_left = current.scan_busy_responses
     job.pages_served += 1
     if job.document_format == "image/jpeg":
-        return Response(TINY_JPEG, media_type="image/jpeg")
+        return Response(PAGE_JPEG, media_type="image/jpeg")
     page = make_pdf(
         [
             "PrinterHub simulated scan",

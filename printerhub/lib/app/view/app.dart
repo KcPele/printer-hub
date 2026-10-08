@@ -12,6 +12,7 @@ import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
+import 'package:printerhub/scan/scan.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
 import 'package:printers_repository/printers_repository.dart';
@@ -26,6 +27,7 @@ class App extends StatelessWidget {
     required this.presetsRepository,
     required this.finders,
     required this.documents,
+    required this.scanSharer,
     this.keptOrganizations,
     super.key,
   });
@@ -43,6 +45,9 @@ class App extends StatelessWidget {
   /// The ways this phone gets at documents to print.
   final PrintDocuments documents;
 
+  /// The way this phone hands a finished scan on.
+  final ScanSharer scanSharer;
+
   /// The workspace list from the last launch, read before the first frame.
   final List<Organization>? keptOrganizations;
 
@@ -58,6 +63,7 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: presetsRepository),
         RepositoryProvider.value(value: finders),
         RepositoryProvider.value(value: documents),
+        RepositoryProvider.value(value: scanSharer),
       ],
       child: MultiBlocProvider(
         providers: [

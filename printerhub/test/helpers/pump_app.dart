@@ -12,6 +12,7 @@ import 'package:printerhub/app/app.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
+import 'package:printerhub/scan/scan.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
 import 'package:printers_repository/printers_repository.dart';
@@ -110,6 +111,7 @@ extension PumpApp on WidgetTester {
           RepositoryProvider<PresetsRepository>.value(value: api.presets),
           RepositoryProvider<PrinterFinders>.value(value: api.finders),
           RepositoryProvider<PrintDocuments>.value(value: api.documents),
+          RepositoryProvider<ScanSharer>.value(value: api.sharer),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -147,6 +149,7 @@ extension PumpApp on WidgetTester {
         presetsRepository: backend.presets,
         finders: backend.finders,
         documents: backend.documents,
+        scanSharer: backend.sharer,
         keptOrganizations: await backend.organizations.kept(),
       ),
     );

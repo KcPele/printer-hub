@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:printerhub/print/print.dart';
+import 'package:printerhub/scan/scan.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 /// A PDF on the phone, as the file browser would hand it over.
@@ -64,5 +66,34 @@ class FakePageRenderer implements PageRenderer {
   Future<bool> systemPrint(PickedDocument document) async {
     systemPrinted.add(document);
     return systemAccepts;
+  }
+}
+
+/// A small picture, as a scanner would deliver a page: a JPEG two pixels
+/// square.
+final Uint8List tinyJpeg = base64Decode(
+  '/9j/4AAQSkZJRgABAQAASABIAAD/wAALCAACAAIBAREA/8QAHwAAAQUBAQEBAQEAAAAAAAAA'
+  'AAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKB'
+  'kaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNk'
+  'ZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXG'
+  'x8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9sAQwAGBgYGBgYKBgYKDgoKCg4S'
+  'Dg4ODhIXEhISEhIXHBcXFxcXFxwcHBwcHBwcIiIiIiIiJycnJycsLCwsLCwsLCws/90ABAAB'
+  '/9oACAEBAAA/APqmv//Z',
+);
+
+/// A JPEG of a kind the app's PDF writer cannot read.
+final Uint8List oddJpeg = base64Decode(
+  '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgK'
+  'CgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/yQALCAABAAEBAREA/8wABgAQ'
+  'EAX/2gAIAQEAAD8A0s8g/9k=',
+);
+
+/// Stands in for the phone's share sheet, and keeps what it was handed.
+class FakeScanSharer implements ScanSharer {
+  final List<({List<File> files, String name})> shared = [];
+
+  @override
+  Future<void> share(List<File> files, {required String name}) async {
+    shared.add((files: files, name: name));
   }
 }

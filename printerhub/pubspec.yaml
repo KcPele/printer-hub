@@ -37,6 +37,7 @@ dependencies:
   organizations_repository:
     path: packages/organizations_repository
   package_info_plus: ^10.2.2
+  pdf: ^3.13.1
   preferences_repository:
     path: packages/preferences_repository
   printer_discovery:
@@ -47,6 +48,7 @@ dependencies:
     path: packages/printers_repository
   printing: ^5.15.1
   qr_flutter: ^4.1.0
+  share_plus: ^13.3.1
 
 dev_dependencies:
   bloc_lint: ^0.4.2

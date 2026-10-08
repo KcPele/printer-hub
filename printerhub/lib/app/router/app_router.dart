@@ -10,6 +10,7 @@ import 'package:printerhub/gallery/gallery.dart';
 import 'package:printerhub/home/home.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
+import 'package:printerhub/scan/scan.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/settings/settings.dart';
 import 'package:printerhub/shell/shell.dart';
@@ -36,6 +37,9 @@ abstract final class AppRoutes {
 
   /// Printing a document on one printer.
   static String printOn(String id) => '/printers/$id/print';
+
+  /// Scanning on one printer.
+  static String scanOn(String id) => '/printers/$id/scan';
 
   /// The ways one printer is reached.
   static String printerConnections(String id) => '/printers/$id/connections';
@@ -178,6 +182,12 @@ GoRouter createAppRouter({
                         builder: (context, state) => PrintPage(
                           printerId: state.pathParameters['printerId']!,
                           retryOf: state.extra as Job?,
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'scan',
+                        builder: (context, state) => ScanPage(
+                          printerId: state.pathParameters['printerId']!,
                         ),
                       ),
                       GoRoute(

@@ -13,6 +13,7 @@ Future<void> main() async {
       presetsRepository: dependencies.presetsRepository,
       finders: dependencies.finders,
       documents: dependencies.documents,
+      scanSharer: dependencies.scanSharer,
       keptOrganizations: dependencies.keptOrganizations,
     ),
   );

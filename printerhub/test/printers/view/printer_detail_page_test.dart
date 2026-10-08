@@ -94,6 +94,27 @@ void main() {
           .called(1);
     });
 
+    testWidgets('opens scanning', (tester) async {
+      await pump(tester);
+
+      final scan = find.widgetWithText(OutlinedButton, 'Scan');
+      await scrollTo(tester, scan);
+      await tester.tap(scan);
+
+      verify(() => router.push<Object?>(AppRoutes.scanOn('printer-1')))
+          .called(1);
+    });
+
+    testWidgets('does not offer scanning on a printer without a scanner', (
+      tester,
+    ) async {
+      backend.printerList = [printerBody(scans: false)];
+      await pump(tester);
+
+      await scrollTo(tester, find.text('Check status'));
+      expect(find.widgetWithText(OutlinedButton, 'Scan'), findsNothing);
+    });
+
     testWidgets('does not offer printing on a device that only scans', (
       tester,
     ) async {

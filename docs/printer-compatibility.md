@@ -72,7 +72,16 @@ A printer with IPP authentication switched on answers HTTP 401. On the Xerox Ver
 | End a feeder scan with 404, or 410. | Both mean "no more pages". An empty feeder is no pages, not an error. |
 | Give one page from the glass, then anything at all. | After the glass's page, any answer but another page ends the scan, without waiting. |
 
-Known models that need more, from `sane-airscan` (`EsclQuirks.forModel`):
+### What a scan is kept as
+
+The app asks the scanner for a JPEG a page, which every eSCL scanner the standard describes can give, and writes each to a file as it arrives (`ScanRunner`). The phone puts the pages together as one PDF, at the paper size that was scanned (`assembleScan`), or keeps them as pictures when that was asked for.
+
+- A scanner that only gives PDF is asked for PDF. Its pages are kept as the files it made, one each: the app does not merge PDFs.
+- A picture the PDF writer cannot read does not lose the scan: the pages are kept as pictures.
+- A scan that stops part way keeps the pages that arrived. A scan is never started a second time on another connection once the scanner has taken the job.
+- When a scanner answers "not ready" (409), the app asks `ScannerStatus` why, and says whether the feeder is empty, jammed, or open.
+
+Known models that need more, from `sane-airscan` (`EsclQuirks.forModel`). The app goes by the name the scanner gives itself in `ScannerCapabilities`, which is what that list is keyed on:
 
 | Model (as `MakeAndModel`) | What it needs |
 |---|---|
@@ -107,7 +116,7 @@ Run these in order, and note the model and firmware beside each result.
 5. `dart run` the smoke script against it (to be written with A3): Get-Printer-Attributes, and record `document-format-supported`, `pwg-raster-document-*`, `urf-supported`, `uri-authentication-supported`, and `ipp-versions-supported`.
 6. Print a one-page PDF. Then two pages on both sides, long edge and short edge: the back is the right way up.
 7. Print the same pages as PWG Raster and as Apple Raster, on a printer that lists them.
-8. Scan from the glass to PDF and to JPEG. Scan three sheets from the feeder. Scan with the feeder empty.
+8. Scan from the glass, kept as a PDF and as a picture. Scan three sheets from the feeder, and both sides of them. Scan with the feeder empty. Note what `ScannerCapabilities` lists for `DocumentFormat`, and whether a JPEG scan from the feeder gives one page per request.
 9. Switch on IPP authentication, add the printer again, and print.
 10. Switch on HTTPS-only, and repeat 1 and 6.
 11. On a phone: NFC tap, QR code, and Bluetooth sighting, none of which has run on hardware.

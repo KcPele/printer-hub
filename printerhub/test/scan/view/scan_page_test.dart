@@ -1,0 +1,458 @@
+import 'package:api_client/testing.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:printer_protocols/testing.dart';
+import 'package:printerhub/printers/printers.dart';
+import 'package:printerhub/scan/scan.dart';
+
+import '../../helpers/helpers.dart';
+
+const _org = '0198c0de-0000-7000-8000-00000000000b';
+
+void main() {
+  late TestBackend backend;
+  late MockGoRouter router;
+  late PrintersCubit printers;
+
+  setUp(() async {
+    backend = TestBackend()
+      ..printerList = [printerBody()]
+      ..plugInPrinter();
+    router = recordingRouter();
+    await backend.signedInBefore();
+    printers = PrintersCubit(
+      printersRepository: backend.printers,
+      organizationId: _org,
+      organizationChanges: const Stream.empty(),
+    );
+  });
+  tearDown(() async {
+    await printers.close();
+    await backend.close();
+  });
+
+  Future<void> pump(
+    WidgetTester tester, {
+    String printerId = 'printer-1',
+  }) async {
+    final listed = await tester.runAsync(() => backend.printers.list(_org));
+    printers.emit(
+      PrintersState(status: PrintersStatus.ready, printers: listed!),
+    );
+    await tester.pumpApp(
+      ScanPage(printerId: printerId),
+      backend: backend,
+      printersCubit: printers,
+      router: router,
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> press(WidgetTester tester, Finder target) async {
+    await tester.ensureVisible(target);
+    await tester.pump();
+    await tester.tap(target);
+  }
+
+  /// Lets the scanner and the phone's files, which take real time, and
+  /// the screen, which takes the test's, get on until [done].
+  Future<void> until(WidgetTester tester, bool Function() done) async {
+    for (var i = 0; i < 100 && !done(); i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 5)),
+      );
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+  }
+
+  /// Waits until nothing is at work any more.
+  Future<void> settle(WidgetTester tester) async {
+    await tester.pump();
+    await until(
+      tester,
+      () => find.byType(CircularProgressIndicator).evaluate().isEmpty,
+    );
+    await tester.pumpAndSettle();
+  }
+
+  /// Presses Scan and lets the scanner, and the files it writes, finish.
+  Future<void> scan(WidgetTester tester, {String button = 'Scan'}) async {
+    await press(
+      tester,
+      button == 'Scan'
+          ? find.widgetWithText(FilledButton, 'Scan')
+          : find.text(button),
+    );
+    await settle(tester);
+  }
+
+  ScanCubit cubitOf(WidgetTester tester) =>
+      BlocProvider.of<ScanCubit>(tester.element(find.byType(ScanView)));
+
+  group('ScanPage', () {
+    testWidgets('offers what the scanner can do', (tester) async {
+      await pump(tester);
+
+      expect(find.text('How to scan it'), findsOneWidget);
+      expect(find.text('The glass'), findsOneWidget);
+      expect(find.text('The feeder'), findsOneWidget);
+      expect(find.text('Colour'), findsOneWidget);
+      // Both sides is for the feeder.
+      expect(find.text('Both sides'), findsNothing);
+      expect(find.text('Standard (300 dpi)'), findsOneWidget);
+      expect(find.text('A4'), findsOneWidget);
+      expect(find.text('One PDF'), findsOneWidget);
+    });
+
+    testWidgets('says when a printer is no longer in the workspace', (
+      tester,
+    ) async {
+      await pump(tester, printerId: 'gone');
+
+      expect(find.byType(ScanView), findsNothing);
+      expect(find.textContaining('no longer'), findsOneWidget);
+    });
+
+    testWidgets('shows only what a simpler scanner offers', (tester) async {
+      final body = printerBody();
+      final capabilities = body['capabilities']! as Map<String, Object?>;
+      backend.printerList = [
+        {
+          ...body,
+          'capabilities': {
+            ...capabilities,
+            'scan': {
+              ...capabilities['scan']! as Map<String, Object?>,
+              'sources': ['platen'],
+              'color_modes': ['grayscale'],
+              'resolutions_dpi': [300],
+              'max_width_mm': 150.0,
+              'max_height_mm': 212.0,
+            },
+          },
+        },
+      ];
+
+      await pump(tester);
+
+      expect(find.text('The glass'), findsNothing);
+      expect(find.text('Colour'), findsNothing);
+      expect(find.text('Detail'), findsNothing);
+      expect(find.text('Paper size'), findsNothing);
+      expect(find.text('Keep it as'), findsOneWidget);
+    });
+
+    testWidgets('shows what is left when a scanner has said nothing', (
+      tester,
+    ) async {
+      backend.printerList = [
+        {...printerBody(), 'capabilities': null},
+      ];
+
+      await pump(tester);
+
+      expect(find.text('The glass'), findsNothing);
+      expect(find.text('Paper size'), findsOneWidget);
+      expect(find.text('Keep it as'), findsOneWidget);
+    });
+
+    testWidgets('changes each choice', (tester) async {
+      await pump(tester);
+
+      await tester.tap(find.text('The feeder'));
+      await tester.pump();
+      await press(tester, find.text('Both sides'));
+      await tester.pump();
+      await press(tester, find.text('Colour'));
+      await tester.pump();
+
+      await press(tester, find.text('Standard (300 dpi)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Fine (600 dpi)').last);
+      await tester.pumpAndSettle();
+
+      await press(tester, find.text('A4'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('A5').last);
+      await tester.pumpAndSettle();
+
+      await press(tester, find.text('One PDF'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pictures, one a page').last);
+      await tester.pumpAndSettle();
+
+      final choices = cubitOf(tester).state.choices;
+      expect(choices.source, 'adf');
+      expect(choices.duplex, isTrue);
+      expect(choices.color, 'grayscale');
+      expect(choices.resolutionDpi, 600);
+      expect(choices.mediaSize, 'iso_a5_148x210mm');
+      expect(choices.format, 'image/jpeg');
+    });
+
+    testWidgets('scans, and shows the page that arrived', (tester) async {
+      await pump(tester);
+
+      await scan(tester);
+
+      expect(find.text('Pages'), findsOneWidget);
+      expect(find.text('Page 1'), findsOneWidget);
+      expect(find.text('Scan more pages'), findsOneWidget);
+      // One page has nothing to be moved past.
+      expect(find.textContaining('Hold and drag'), findsNothing);
+      expect(backend.jobList.single['status'], 'completed');
+    });
+
+    testWidgets('says where the scan has got to, and stops it', (tester) async {
+      backend.scanPages = [tinyJpeg, tinyJpeg, tinyJpeg];
+      var asked = 0;
+      final behaving = backend.device.device;
+      backend.device.device = (request) async {
+        // The scanner takes its time over the second page.
+        if (request.uri.path.endsWith('NextDocument') && ++asked == 2) {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+        }
+        return await behaving(request);
+      };
+      await pump(tester);
+      await tester.tap(find.text('The feeder'));
+      await tester.pump();
+
+      await press(tester, find.widgetWithText(FilledButton, 'Scan'));
+      await tester.pump();
+      expect(find.text('Reaching the scanner…'), findsOneWidget);
+
+      final onePage = find.text('Scanning… 1 page so far');
+      await until(tester, () => onePage.evaluate().isNotEmpty);
+      expect(onePage, findsOneWidget);
+
+      await tester.tap(find.text('Stop scanning'));
+      await settle(tester);
+
+      expect(find.text('Pages'), findsOneWidget);
+      expect(backend.jobList.single['status'], 'cancelled');
+    });
+
+    testWidgets('says scanning before the first page is in', (tester) async {
+      final behaving = backend.device.device;
+      backend.device.device = (request) async {
+        if (request.uri.path.endsWith('NextDocument')) {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+        }
+        return await behaving(request);
+      };
+      await pump(tester);
+
+      await press(tester, find.widgetWithText(FilledButton, 'Scan'));
+      final scanning = find.text('Scanning…');
+      await until(tester, () => scanning.evaluate().isNotEmpty);
+
+      expect(scanning, findsOneWidget);
+      await settle(tester);
+    });
+
+    testWidgets('says why a scan did not start', (tester) async {
+      backend
+        ..scannerRefuses = 409
+        ..scannerFeeder = 'ScannerAdfEmpty';
+      await pump(tester);
+      await tester.tap(find.text('The feeder'));
+      await tester.pump();
+
+      await scan(tester);
+
+      expect(find.textContaining('The feeder is empty'), findsOneWidget);
+      expect(find.text('How to scan it'), findsOneWidget);
+    });
+
+    testWidgets('says why the backend will not record the scan', (
+      tester,
+    ) async {
+      backend.fail(
+        'POST /organizations/$_org/jobs',
+        403,
+        'permission.denied',
+        detail: 'Your role does not allow this action.',
+      );
+      await pump(tester);
+
+      await scan(tester);
+
+      expect(find.text('Your role does not allow this action.'), findsOne);
+    });
+
+    testWidgets('keeps the pages when a later scan fails, and says so', (
+      tester,
+    ) async {
+      await pump(tester);
+      await scan(tester);
+      backend
+        ..unplugPrinter()
+        ..fail(
+          'POST /organizations/$_org/jobs',
+          403,
+          'permission.denied',
+          detail: 'Your role does not allow this action.',
+        );
+
+      await scan(tester, button: 'Scan more pages');
+      expect(find.text('Your role does not allow this action.'), findsOne);
+
+      backend.routes.clear();
+      await scan(tester, button: 'Scan more pages');
+
+      expect(find.text('Page 1'), findsOneWidget);
+      expect(
+        find.textContaining('The pages that arrived are kept.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('adds pages, moves them, and takes one out', (tester) async {
+      await pump(tester);
+      await scan(tester);
+
+      await scan(tester, button: 'Scan more pages');
+      expect(find.text('Page 2'), findsOneWidget);
+      expect(find.textContaining('Hold and drag'), findsOneWidget);
+      final [first, second] = cubitOf(tester).state.pages;
+
+      // Held, then dragged below the other.
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('Page 1')),
+      );
+      await tester.pump(const Duration(seconds: 1));
+      for (var i = 0; i < 8; i++) {
+        await gesture.moveBy(const Offset(0, 20));
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(cubitOf(tester).state.pages, [second, first]);
+
+      await tester.tap(find.byTooltip('Remove this page').first);
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+
+      expect(cubitOf(tester).state.pages, [first]);
+      expect(find.text('Page 2'), findsNothing);
+    });
+
+    testWidgets('names the scan, saves it, and shares it', (tester) async {
+      await pump(tester);
+      await scan(tester);
+
+      await tester.enterText(find.byType(TextFormField), 'Receipts');
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+
+      expect(find.text('Your scan is ready'), findsOneWidget);
+      expect(find.text('Receipts.pdf'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Share'));
+      await tester.pump();
+      expect(backend.sharer.shared.single.name, 'Receipts');
+
+      await tester.tap(find.text('Done'));
+      verify(router.pop).called(1);
+    });
+
+    testWidgets('goes back from a saved scan to its pages', (tester) async {
+      await pump(tester);
+      await scan(tester);
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+
+      await tester.tap(find.text('Back to the pages'));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pages'), findsOneWidget);
+    });
+
+    testWidgets('says when the scan cannot be kept on the phone', (
+      tester,
+    ) async {
+      await pump(tester);
+      await scan(tester);
+      // Nowhere is left to write to.
+      await tester.runAsync(() async {
+        final page = cubitOf(tester).state.pages.single.file;
+        final bytes = page.readAsBytesSync();
+        backend.scans.deleteSync(recursive: true);
+        // The page itself is put back, out of the way of the test's end.
+        backend.scans.createSync();
+        page.writeAsBytesSync(bytes);
+        backend.scans.deleteSync(recursive: true);
+      });
+
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+
+      expect(
+        find.textContaining('could not be kept on your phone'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('are kept'), findsNothing);
+    });
+
+    testWidgets('starts over', (tester) async {
+      await pump(tester);
+      await scan(tester);
+
+      await press(tester, find.text('Start over'));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+
+      expect(find.text('How to scan it'), findsOneWidget);
+    });
+
+    testWidgets('shows a page the scanner made as a PDF', (tester) async {
+      final behaving = backend.device.device;
+      backend.device.device = (request) async {
+        final answer = await behaving(request);
+        if (!request.uri.path.endsWith('NextDocument')) return answer;
+        return FakeAnswer(
+          answer.statusCode,
+          body: answer.body,
+          headers: const {'content-type': 'application/pdf'},
+        );
+      };
+      await pump(tester);
+
+      await scan(tester);
+
+      expect(find.byIcon(Icons.picture_as_pdf_outlined), findsOneWidget);
+    });
+
+    testWidgets('shows a page it cannot draw as a page all the same', (
+      tester,
+    ) async {
+      backend.scanPages = ['not a picture'.codeUnits];
+      await pump(tester);
+
+      await scan(tester);
+      final placeholder = find.byIcon(Icons.image_outlined);
+      await until(tester, () => placeholder.evaluate().isNotEmpty);
+
+      expect(placeholder, findsOneWidget);
+      expect(find.text('Page 1'), findsOneWidget);
+    });
+
+    testWidgets('cannot be left while the scanner is at work', (tester) async {
+      await pump(tester);
+      PopScope<Object?> scope() =>
+          tester.widget(find.byWidgetPredicate((widget) => widget is PopScope));
+      expect(scope().canPop, isTrue);
+
+      await press(tester, find.widgetWithText(FilledButton, 'Scan'));
+      await tester.pump();
+      expect(scope().canPop, isFalse);
+
+      await settle(tester);
+      expect(scope().canPop, isTrue);
+    });
+  });
+}
