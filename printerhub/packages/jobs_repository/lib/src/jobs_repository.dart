@@ -40,8 +40,10 @@ class JobsRepository {
     int? pageCount,
     String? connectionId,
   }) async {
+    final now = _now().toUtc();
     final create = JobCreatePrintJobCreate(
-      id: newIdempotencyKey(),
+      // The history is listed by identifier, so it begins with the time.
+      id: newRecordId(now),
       type: 'print',
       printerId: printerId,
       executionMode: ExecutionMode.local,
@@ -49,7 +51,7 @@ class JobsRepository {
       documentId: null,
       connectionId: connectionId,
       pageCount: pageCount,
-      submittedAt: _now().toUtc(),
+      submittedAt: now,
       settings: choices.toApi(),
     );
     final entry = _Entry(

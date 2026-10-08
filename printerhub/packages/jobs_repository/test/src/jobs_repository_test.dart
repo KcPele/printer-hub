@@ -125,6 +125,8 @@ void main() {
         expect(request.headers['Idempotency-Key'], hasLength(36));
         expect(sent['id'], job.id);
         expect(sent['id'], isNot(request.headers['Idempotency-Key']));
+        // It begins with the time, so the history lists it in its place.
+        expect(job.id, startsWith('01a11ad9-21c0-7'));
         expect(sent['type'], 'print');
         expect(sent['printer_id'], 'printer-1');
         expect(sent['execution_mode'], 'local');

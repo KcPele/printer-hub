@@ -36,7 +36,7 @@ class ScanJobCreate {
   @JsonKey(name: 'execution_mode')
   final ExecutionMode executionMode;
 
-  /// Client-generated ID, so a job created offline keeps its identity
+  /// Client-generated ID, so a job created offline keeps its identity. Make it a UUID of version 7: the history is listed by ID, newest first
   final String? id;
   @JsonKey(name: 'page_count')
   final int? pageCount;

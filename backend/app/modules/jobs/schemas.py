@@ -79,7 +79,10 @@ class CopySettings(_Settings):
 class _JobCreateBase(ApiModel):
     id: uuid.UUID | None = Field(
         default=None,
-        description="Client-generated ID, so a job created offline keeps its identity",
+        description=(
+            "Client-generated ID, so a job created offline keeps its identity. "
+            "Make it a UUID of version 7: the history is listed by ID, newest first"
+        ),
     )
     printer_id: uuid.UUID
     execution_mode: ExecutionMode = ExecutionMode.LOCAL

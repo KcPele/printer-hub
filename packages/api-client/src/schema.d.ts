@@ -1671,7 +1671,7 @@ export interface components {
             execution_mode?: components["schemas"]["ExecutionMode"];
             /**
              * Id
-             * @description Client-generated ID, so a job created offline keeps its identity
+             * @description Client-generated ID, so a job created offline keeps its identity. Make it a UUID of version 7: the history is listed by ID, newest first
              */
             id?: string | null;
             /** Page Count */
@@ -2836,7 +2836,7 @@ export interface components {
             execution_mode?: components["schemas"]["ExecutionMode"];
             /**
              * Id
-             * @description Client-generated ID, so a job created offline keeps its identity
+             * @description Client-generated ID, so a job created offline keeps its identity. Make it a UUID of version 7: the history is listed by ID, newest first
              */
             id?: string | null;
             /** Page Count */
@@ -3462,7 +3462,7 @@ export interface components {
             execution_mode?: components["schemas"]["ExecutionMode"];
             /**
              * Id
-             * @description Client-generated ID, so a job created offline keeps its identity
+             * @description Client-generated ID, so a job created offline keeps its identity. Make it a UUID of version 7: the history is listed by ID, newest first
              */
             id?: string | null;
             /** Page Count */
