@@ -2007,7 +2007,10 @@ export interface components {
             installation_id: string;
             /** Model */
             model?: string | null;
-            /** Name */
+            /**
+             * Name
+             * @description Leave out to keep the name the device already has
+             */
             name?: string | null;
             /** Os Version */
             os_version?: string | null;

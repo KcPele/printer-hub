@@ -54,6 +54,26 @@ async def test_registering_the_same_installation_updates_it(
     assert len(listing.json()) == 1
 
 
+async def test_registering_again_without_a_name_keeps_the_one_its_owner_gave(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    user = await create_user(session)
+    headers = await auth_headers(session, user)
+    unnamed = {key: value for key, value in IPHONE.items() if key != "name"}
+    first = await client.post(f"{API}/devices", headers=headers, json=unnamed)
+    assert first.json()["name"] is None
+
+    renamed = await client.patch(
+        f"{API}/devices/{first.json()['id']}", headers=headers, json={"name": "Work phone"}
+    )
+    again = await client.post(f"{API}/devices", headers=headers, json=unnamed)
+
+    assert renamed.json()["name"] == "Work phone"
+    # Naming it changed nothing else: push is still on.
+    assert renamed.json()["push_enabled"] is True
+    assert again.json()["name"] == "Work phone"
+
+
 async def test_push_fields_must_be_sent_together(
     client: httpx.AsyncClient, session: AsyncSession
 ) -> None:

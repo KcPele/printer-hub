@@ -30,6 +30,8 @@ class DeviceRegister {
   @JsonKey(name: 'installation_id')
   final String installationId;
   final String? model;
+
+  /// Leave out to keep the name the device already has
   final String? name;
   @JsonKey(name: 'os_version')
   final String? osVersion;

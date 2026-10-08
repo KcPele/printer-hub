@@ -22,7 +22,11 @@ class _PushFields(ApiModel):
 class DeviceRegister(_PushFields):
     installation_id: str = Field(min_length=8, max_length=128)
     platform: DevicePlatform
-    name: str | None = Field(default=None, max_length=200)
+    name: str | None = Field(
+        default=None,
+        max_length=200,
+        description="Leave out to keep the name the device already has",
+    )
     model: str | None = Field(default=None, max_length=200)
     os_version: str | None = Field(default=None, max_length=64)
     app_version: str | None = Field(default=None, max_length=64)

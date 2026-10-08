@@ -2125,6 +2125,7 @@
                 "type": "null"
               }
             ],
+            "description": "Leave out to keep the name the device already has",
             "title": "Name"
           },
           "os_version": {

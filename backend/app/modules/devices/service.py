@@ -28,7 +28,10 @@ async def register(
         session.add(device)
 
     device.platform = payload.platform
-    device.name = payload.name
+    # The name is its owner's to give (PATCH). An app that registers again at
+    # each sign-in, without one, must not take it away.
+    if payload.name is not None:
+        device.name = payload.name
     device.model = payload.model
     device.os_version = payload.os_version
     device.app_version = payload.app_version
