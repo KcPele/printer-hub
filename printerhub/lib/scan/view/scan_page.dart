@@ -1,4 +1,5 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:documents_repository/documents_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jobs_repository/jobs_repository.dart';
@@ -40,6 +41,7 @@ class ScanPage extends StatelessWidget {
       create: (context) => ScanCubit(
         printersRepository: context.read<PrintersRepository>(),
         jobsRepository: context.read<JobsRepository>(),
+        documentsRepository: context.read<DocumentsRepository>(),
         sharer: context.read<ScanSharer>(),
         organizationId: context.read<SessionCubit>().state.organization!.id,
         printer: printer,
@@ -298,11 +300,9 @@ class _Saved extends StatelessWidget {
     final l10n = context.l10n;
     final textTheme = context.textTheme;
     final cubit = context.read<ScanCubit>();
-    final files = context.select<ScanCubit, List<String>>(
-      (cubit) => [
-        for (final file in cubit.state.files) file.uri.pathSegments.last,
-      ],
-    );
+    final state = context.watch<ScanCubit>().state;
+    final files = [for (final file in state.files) file.uri.pathSegments.last];
+    final keeping = state.kept == ScanKept.keeping;
     final tone = context.semanticColors.status(AppStatus.success);
 
     return SingleChildScrollView(
@@ -343,9 +343,40 @@ class _Saved extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
+          if (state.failure != null) ...[
+            AppNotice(message: ScanWords.failure(l10n, state.failure)),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          if (state.error != null) ...[
+            AppNotice(message: errorMessage(l10n, state.error)),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           AppSubmitButton(label: l10n.scanShare, onPressed: cubit.share),
           const SizedBox(height: AppSpacing.sm),
-          OutlinedButton(onPressed: cubit.edit, child: Text(l10n.scanEdit)),
+          if (state.kept == ScanKept.yes)
+            Center(
+              child: StatusPill(
+                status: AppStatus.success,
+                label: l10n.scanKeptInWorkspace,
+                icon: Icons.cloud_done_outlined,
+              ),
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: keeping ? null : cubit.keep,
+              icon: keeping
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.cloud_upload_outlined),
+              label: Text(l10n.scanKeep),
+            ),
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton(
+            onPressed: keeping ? null : cubit.edit,
+            child: Text(l10n.scanEdit),
+          ),
           const SizedBox(height: AppSpacing.sm),
           TextButton(
             onPressed: () => context.pop(),

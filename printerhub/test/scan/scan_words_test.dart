@@ -66,6 +66,7 @@ void main() {
       'scan.busy',
       'scan.connection_lost',
       'scan.storage',
+      'scan.keep_interrupted',
       'escl.http_500',
     ];
 

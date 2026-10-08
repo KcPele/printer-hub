@@ -5,6 +5,8 @@ import 'package:api_client/api_client.dart';
 import 'package:api_client/testing.dart';
 import 'package:auth_repository/auth_repository.dart';
 import 'package:dio/dio.dart';
+import 'package:documents_repository/documents_repository.dart';
+import 'package:documents_repository/testing.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:local_store/local_store.dart';
@@ -65,6 +67,11 @@ class TestBackend {
     );
     jobs = JobsRepository(client: client, store: store);
     presets = PresetsRepository(client: client);
+    documentsKept = DocumentsRepository(
+      client: client,
+      transfer: storage,
+      directory: scans,
+    );
     documents = PrintDocuments(picker: picker, renderer: renderer);
     finders = PrinterFinders(
       network: nearby,
@@ -92,6 +99,14 @@ class TestBackend {
   late final PrintersRepository printers;
   late final JobsRepository jobs;
   late final PresetsRepository presets;
+
+  /// The documents the workspace keeps, and the storage their files are in.
+  late final DocumentsRepository documentsKept;
+  final FakeFileTransfer storage = FakeFileTransfer();
+  List<Map<String, Object?>> documentList = [];
+
+  /// How many documents the list gives at a time.
+  int documentPageSize = 20;
 
   /// The phone's file browser and its PDF and image code.
   final FakeDocumentPicker picker = FakeDocumentPicker();
@@ -580,6 +595,10 @@ class TestBackend {
           ? FakeResponse.problem(404, 'connection.not_found')
           : FakeResponse(200, {...secrets, 'extra': <String, String>{}});
     }
+    final documentRoute = _documentRoute.firstMatch(key);
+    if (documentRoute != null) {
+      return _answerDocuments(documentRoute, body, request.uri.queryParameters);
+    }
     final presetRoute = _presetRoute.firstMatch(key);
     if (presetRoute != null) return _answerPresets(presetRoute, body);
     final jobRoute = _jobRoute.firstMatch(key);
@@ -608,6 +627,94 @@ class TestBackend {
     '^(GET|POST|PUT|PATCH|DELETE) /organizations/([^/]+)/printers'
     r'(?:/([^/]+))?(/status|/pairing-tokens|/capabilities)?$',
   );
+
+  static final RegExp _documentRoute = RegExp(
+    '^(GET|POST|PATCH|DELETE) /organizations/[^/]+/documents'
+    r'(?:/([^/]+))?(/complete-upload|/upload-url|/download-url)?$',
+  );
+
+  /// The workspace's documents: making a record, sending its file to the
+  /// storage, and listing, renaming, fetching, and deleting what is kept.
+  FakeResponse _answerDocuments(
+    RegExpMatch route,
+    Map<String, dynamic> body,
+    Map<String, String> query,
+  ) {
+    final method = route.group(1)!;
+    final documentId = route.group(2);
+    final action = route.group(3);
+    Map<String, Object?> link(String id) => {
+      'url': 'https://storage.example.com/$id?signature=abc',
+      'method': 'PUT',
+      'headers': <String, String>{},
+      'expires_at': '2026-10-07T10:15:00Z',
+    };
+
+    if (documentId == null) {
+      if (method == 'POST') {
+        final created = documentBody(
+          id: body['id'] as String,
+          name: body['file_name'] as String,
+          mimeType: body['mime_type'] as String,
+          sizeBytes: body['size_bytes'] as int,
+          pageCount: body['page_count'] as int?,
+          printerId: body['source_printer_id'] as String?,
+          uploadStatus: 'pending',
+        );
+        documentList = [created, ...documentList];
+        return FakeResponse(201, {
+          ...created,
+          'upload': link(body['id'] as String),
+        });
+      }
+      final wanted = (query['q'] ?? '').toLowerCase();
+      final matching = [
+        for (final document in documentList)
+          if ((document['file_name']! as String).toLowerCase().contains(wanted))
+            document,
+      ];
+      final from = int.parse(query['cursor'] ?? '0');
+      final to = from + documentPageSize;
+      return FakeResponse(200, {
+        'items': matching.skip(from).take(documentPageSize).toList(),
+        'next_cursor': to < matching.length ? '$to' : null,
+      });
+    }
+
+    final index = documentList.indexWhere((d) => d['id'] == documentId);
+    if (index < 0) return FakeResponse.problem(404, 'document.not_found');
+    final document = documentList[index];
+    switch (action) {
+      case '/upload-url':
+        return FakeResponse(200, link(documentId));
+      case '/download-url':
+        if (document['upload_status'] != 'uploaded') {
+          return FakeResponse.problem(409, 'document.upload_incomplete');
+        }
+        return FakeResponse(200, {
+          'url': 'https://storage.example.com/$documentId?signature=down',
+          'expires_at': '2026-10-07T10:15:00Z',
+        });
+      case '/complete-upload':
+        if (!storage.stored.containsKey('/$documentId')) {
+          return FakeResponse.problem(409, 'document.upload_missing');
+        }
+        final uploaded = {...document, 'upload_status': 'uploaded'};
+        documentList = [...documentList]..[index] = uploaded;
+        return FakeResponse(200, uploaded);
+    }
+    switch (method) {
+      case 'DELETE':
+        documentList = [...documentList]..removeAt(index);
+        return const FakeResponse(204);
+      case 'PATCH':
+        final renamed = {...document, 'file_name': body['file_name']};
+        documentList = [...documentList]..[index] = renamed;
+        return FakeResponse(200, renamed);
+      default:
+        return FakeResponse(200, document);
+    }
+  }
 
   static final RegExp _presetRoute = RegExp(
     r'^(GET|POST|PATCH|DELETE) /organizations/[^/]+/presets(?:/([^/]+))?$',

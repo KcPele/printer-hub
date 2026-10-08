@@ -11,6 +11,7 @@ Future<void> main() async {
       printersRepository: dependencies.printersRepository,
       jobsRepository: dependencies.jobsRepository,
       presetsRepository: dependencies.presetsRepository,
+      documentsRepository: dependencies.documentsRepository,
       finders: dependencies.finders,
       documents: dependencies.documents,
       scanSharer: dependencies.scanSharer,

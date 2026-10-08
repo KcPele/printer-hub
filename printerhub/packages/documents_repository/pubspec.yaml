@@ -1,0 +1,21 @@
+name: documents_repository
+description: Documents kept in a workspace, such as scans, and the files behind them.
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+  flutter: ^3.47.0
+
+dependencies:
+  api_client:
+    path: ../api_client
+  equatable: ^3.0.0
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  dio: ^5.11.1
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^11.0.0

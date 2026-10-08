@@ -8,6 +8,7 @@ import 'package:printerhub/account/account.dart';
 import 'package:printerhub/activity/activity.dart';
 import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/catalogue/catalogue.dart';
+import 'package:printerhub/documents/documents.dart';
 import 'package:printerhub/gallery/gallery.dart';
 import 'package:printerhub/home/home.dart';
 import 'package:printerhub/print/print.dart';
@@ -281,6 +282,18 @@ void main() {
 
         expect(find.byType(ScanPage), findsOneWidget);
         expect(find.text('How to scan it'), findsOneWidget);
+      });
+
+      testWidgets('opens the documents from Activity', (tester) async {
+        backend.documentList = [documentBody()];
+        await pump(tester);
+        await openArea(tester, 'Activity');
+
+        await tester.tap(find.byTooltip('Documents'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DocumentsPage), findsOneWidget);
+        expect(find.text('Receipts.pdf'), findsOneWidget);
       });
 
       testWidgets('opens a job from Activity, and prints it again', (

@@ -27,6 +27,7 @@ void main() {
     final cubit = ScanCubit(
       printersRepository: backend.printers,
       jobsRepository: backend.jobs,
+      documentsRepository: backend.documentsKept,
       sharer: backend.sharer,
       organizationId: _org,
       printer: on ?? printer,
@@ -455,6 +456,148 @@ void main() {
 
       expect(cubit.state.step, ScanStep.choosing);
       expect(file.existsSync(), isFalse);
+    });
+
+    group('in the workspace', () {
+      const documents = 'POST /organizations/$_org/documents';
+
+      Future<ScanCubit> saved({
+        int pages = 1,
+        ScanChoices choices = const ScanChoices(),
+      }) async {
+        backend.scanPages = [for (var i = 0; i < pages; i++) tinyJpeg];
+        final cubit = build()
+          ..change(choices)
+          ..rename('Receipts');
+        await cubit.scan();
+        await cubit.save();
+        return cubit;
+      }
+
+      test('keeps the scan, with what is known of it', () async {
+        final cubit = await saved(
+          pages: 2,
+          choices: const ScanChoices(source: 'adf'),
+        );
+
+        await cubit.keep();
+
+        expect(cubit.state.kept, ScanKept.yes);
+        expect(cubit.state.step, ScanStep.saved);
+        final document = backend.documentList.single;
+        expect(document['file_name'], 'Receipts.pdf');
+        expect(document['mime_type'], 'application/pdf');
+        expect(document['page_count'], 2);
+        expect(document['source_printer_id'], 'printer-1');
+        expect(document['upload_status'], 'uploaded');
+        expect(
+          backend.storage.stored['/${document['id']}'],
+          cubit.state.files.single.readAsBytesSync(),
+        );
+      });
+
+      test('keeps each picture as a document of one page', () async {
+        final cubit = await saved(
+          pages: 2,
+          choices: const ScanChoices(source: 'adf', format: 'image/jpeg'),
+        );
+
+        await cubit.keep();
+
+        expect(backend.documentList.map((d) => d['file_name']).toSet(), {
+          'Receipts 1.jpg',
+          'Receipts 2.jpg',
+        });
+        expect(backend.documentList.map((d) => d['mime_type']).toSet(), {
+          'image/jpeg',
+        });
+        expect(backend.documentList.map((d) => d['page_count']).toSet(), {1});
+      });
+
+      test('is asked for once', () async {
+        final cubit = await saved();
+
+        final first = cubit.keep();
+        await cubit.keep();
+        await first;
+        await cubit.keep();
+
+        expect(backend.sent(documents), hasLength(1));
+      });
+
+      test('says why the workspace will not have it', () async {
+        backend.fail(documents, 403, 'document.cloud_storage_disabled');
+        final cubit = await saved();
+
+        await cubit.keep();
+
+        expect(cubit.state.kept, ScanKept.no);
+        expect(cubit.state.error, isA<ApiProblem>());
+        expect(cubit.state.files, hasLength(1));
+      });
+
+      test('sends only what did not arrive when asked again', () async {
+        final cubit = await saved(
+          pages: 2,
+          choices: const ScanChoices(source: 'adf', format: 'image/jpeg'),
+        );
+        backend.storage.broken = true;
+
+        await cubit.keep();
+        expect(cubit.state.kept, ScanKept.no);
+        expect(cubit.state.failure, 'scan.keep_interrupted');
+        expect(backend.documentList, hasLength(1));
+
+        backend.storage.broken = false;
+        await cubit.keep();
+
+        expect(cubit.state.kept, ScanKept.yes);
+        expect(cubit.state.failure, isNull);
+        // The record made the first time was finished, not made again.
+        expect(backend.documentList, hasLength(2));
+        expect(backend.sent(documents), hasLength(2));
+        expect(backend.documentList.map((d) => d['upload_status']).toSet(), {
+          'uploaded',
+        });
+      });
+
+      test('cannot be asked for before the scan is saved', () async {
+        final cubit = build();
+        await cubit.scan();
+
+        await cubit.keep();
+
+        expect(backend.documentList, isEmpty);
+      });
+
+      test('nothing else changes while it is on its way', () async {
+        final cubit = await saved();
+
+        final keeping = cubit.keep();
+        cubit
+          ..edit()
+          ..startOver();
+        await keeping;
+
+        expect(cubit.state.step, ScanStep.saved);
+        expect(cubit.state.kept, ScanKept.yes);
+      });
+
+      test('says nothing once the screen has gone', () async {
+        for (final setUp in <void Function()>[
+          () {},
+          () => backend.storage.broken = true,
+          () => backend.fail(documents, 403, 'permission.denied'),
+        ]) {
+          backend.storage.broken = false;
+          backend.routes.clear();
+          final cubit = await saved();
+          setUp();
+          final keeping = cubit.keep();
+          await cubit.close();
+          await expectLater(keeping, completes);
+        }
+      });
     });
 
     test('nothing changes while the pages are being put together', () async {

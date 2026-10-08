@@ -5,6 +5,7 @@ import 'package:api_client/api_client.dart';
 import 'package:app_ui/app_ui.dart';
 import 'package:auth_repository/auth_repository.dart';
 import 'package:bloc/bloc.dart';
+import 'package:documents_repository/documents_repository.dart';
 import 'package:flutter/widgets.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:local_store/local_store.dart';
@@ -47,6 +48,7 @@ typedef AppDependencies = ({
   PrintersRepository printersRepository,
   JobsRepository jobsRepository,
   PresetsRepository presetsRepository,
+  DocumentsRepository documentsRepository,
   PrinterFinders finders,
   PrintDocuments documents,
   ScanSharer scanSharer,
@@ -109,6 +111,10 @@ Future<void> bootstrap(
       printersRepository: printersRepository,
       jobsRepository: JobsRepository(client: client, store: secureStore),
       presetsRepository: PresetsRepository(client: client),
+      documentsRepository: DocumentsRepository(
+        client: client,
+        transfer: IoFileTransfer(),
+      ),
       scanSharer: const SharePlusScanSharer(),
       documents: const PrintDocuments(
         picker: FilePickerDocumentPicker(),

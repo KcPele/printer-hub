@@ -359,6 +359,68 @@ void main() {
       verify(router.pop).called(1);
     });
 
+    testWidgets('keeps a saved scan in the workspace', (tester) async {
+      await pump(tester);
+      await scan(tester);
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+
+      await tester.tap(find.text('Keep in your workspace'));
+      await tester.pump();
+      // On its way: nothing else can be done to the scan.
+      expect(
+        tester
+            .widget<OutlinedButton>(
+              find.widgetWithText(OutlinedButton, 'Back to the pages'),
+            )
+            .onPressed,
+        isNull,
+      );
+      await settle(tester);
+
+      expect(find.text('Kept in your workspace'), findsOneWidget);
+      expect(find.text('Keep in your workspace'), findsNothing);
+      expect(backend.documentList.single['upload_status'], 'uploaded');
+    });
+
+    testWidgets('says when a scan did not reach the workspace', (tester) async {
+      backend.storage.broken = true;
+      await pump(tester);
+      await scan(tester);
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+
+      await tester.tap(find.text('Keep in your workspace'));
+      await settle(tester);
+
+      expect(
+        find.textContaining('did not reach your workspace'),
+        findsOneWidget,
+      );
+      expect(find.text('Keep in your workspace'), findsOneWidget);
+    });
+
+    testWidgets('says why the workspace will not keep a scan', (tester) async {
+      backend.fail(
+        'POST /organizations/$_org/documents',
+        403,
+        'document.cloud_storage_disabled',
+        detail: 'This organization keeps documents on devices only.',
+      );
+      await pump(tester);
+      await scan(tester);
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+
+      await tester.tap(find.text('Keep in your workspace'));
+      await settle(tester);
+
+      expect(
+        find.text('This organization keeps documents on devices only.'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('goes back from a saved scan to its pages', (tester) async {
       await pump(tester);
       await scan(tester);

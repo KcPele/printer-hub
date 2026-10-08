@@ -32,6 +32,7 @@ jobs:
           - app_ui
           - auth_repository
           - jobs_repository
+          - documents_repository
           - local_store
           - organizations_repository
           - preferences_repository

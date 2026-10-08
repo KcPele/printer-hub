@@ -1,5 +1,6 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:auth_repository/auth_repository.dart';
+import 'package:documents_repository/documents_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -109,6 +110,9 @@ extension PumpApp on WidgetTester {
           RepositoryProvider<PrintersRepository>.value(value: api.printers),
           RepositoryProvider<JobsRepository>.value(value: api.jobs),
           RepositoryProvider<PresetsRepository>.value(value: api.presets),
+          RepositoryProvider<DocumentsRepository>.value(
+            value: api.documentsKept,
+          ),
           RepositoryProvider<PrinterFinders>.value(value: api.finders),
           RepositoryProvider<PrintDocuments>.value(value: api.documents),
           RepositoryProvider<ScanSharer>.value(value: api.sharer),
@@ -147,6 +151,7 @@ extension PumpApp on WidgetTester {
         printersRepository: backend.printers,
         jobsRepository: backend.jobs,
         presetsRepository: backend.presets,
+        documentsRepository: backend.documentsKept,
         finders: backend.finders,
         documents: backend.documents,
         scanSharer: backend.sharer,

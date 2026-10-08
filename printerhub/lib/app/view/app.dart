@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:app_ui/app_ui.dart';
 import 'package:auth_repository/auth_repository.dart';
+import 'package:documents_repository/documents_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:jobs_repository/jobs_repository.dart';
@@ -25,6 +26,7 @@ class App extends StatelessWidget {
     required this.printersRepository,
     required this.jobsRepository,
     required this.presetsRepository,
+    required this.documentsRepository,
     required this.finders,
     required this.documents,
     required this.scanSharer,
@@ -38,6 +40,7 @@ class App extends StatelessWidget {
   final PrintersRepository printersRepository;
   final JobsRepository jobsRepository;
   final PresetsRepository presetsRepository;
+  final DocumentsRepository documentsRepository;
 
   /// The ways this phone can find a printer.
   final PrinterFinders finders;
@@ -61,6 +64,7 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: printersRepository),
         RepositoryProvider.value(value: jobsRepository),
         RepositoryProvider.value(value: presetsRepository),
+        RepositoryProvider.value(value: documentsRepository),
         RepositoryProvider.value(value: finders),
         RepositoryProvider.value(value: documents),
         RepositoryProvider.value(value: scanSharer),

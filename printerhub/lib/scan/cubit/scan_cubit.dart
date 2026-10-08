@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:api_client/api_client.dart';
 import 'package:bloc/bloc.dart';
+import 'package:documents_repository/documents_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:printerhub/scan/scan_output.dart';
@@ -24,6 +25,18 @@ enum ScanStep {
   saved,
 }
 
+/// Whether a finished scan has been put in the workspace.
+enum ScanKept {
+  /// It is on this phone only.
+  no,
+
+  /// It is on its way.
+  keeping,
+
+  /// The workspace has it.
+  yes,
+}
+
 class ScanState extends Equatable {
   const new({
     this.step = ScanStep.choosing,
@@ -34,6 +47,7 @@ class ScanState extends Equatable {
     this.failure,
     this.error,
     this.files = const [],
+    this.kept = ScanKept.no,
   });
 
   final ScanStep step;
@@ -58,6 +72,9 @@ class ScanState extends Equatable {
   /// The finished scan, once [ScanStep.saved].
   final List<File> files;
 
+  /// Whether the finished scan is in the workspace too.
+  final ScanKept kept;
+
   ScanState _with({
     ScanStep? step,
     ScanChoices? choices,
@@ -67,6 +84,7 @@ class ScanState extends Equatable {
     String? failure,
     ApiException? error,
     List<File> files = const [],
+    ScanKept kept = ScanKept.no,
   }) {
     return ScanState(
       step: step ?? this.step,
@@ -77,6 +95,7 @@ class ScanState extends Equatable {
       failure: failure,
       error: error,
       files: files,
+      kept: kept,
     );
   }
 
@@ -90,6 +109,7 @@ class ScanState extends Equatable {
     failure,
     error,
     [for (final file in files) file.path],
+    kept,
   ];
 }
 
@@ -100,6 +120,7 @@ class ScanCubit extends Cubit<ScanState> {
   new({
     required this._printersRepository,
     required this._jobsRepository,
+    required this._documentsRepository,
     required this._sharer,
     required this._organizationId,
     required this._printer,
@@ -112,12 +133,18 @@ class ScanCubit extends Cubit<ScanState> {
 
   final PrintersRepository _printersRepository;
   final JobsRepository _jobsRepository;
+  final DocumentsRepository _documentsRepository;
   final ScanSharer _sharer;
   final String _organizationId;
   final PrinterRead _printer;
   final Directory _directory;
 
   PrinterScan? _scan;
+
+  /// The files of this scan the workspace has, and the records of those
+  /// whose file did not arrive, by the file's path.
+  final Map<String, StoredDocument> _kept = {};
+  final Map<String, StoredDocument> _waiting = {};
 
   /// [choices] with anything [printer] does not offer changed to something
   /// it does.
@@ -295,16 +322,65 @@ class ScanCubit extends Cubit<ScanState> {
     await _sharer.share(state.files, name: state.name);
   }
 
+  /// Puts the finished scan in the workspace, for the other members and
+  /// the person's other devices. Asked again after a failure, it sends
+  /// only what did not arrive.
+  Future<void> keep() async {
+    if (state.step != ScanStep.saved || state.kept != ScanKept.no) return;
+    final files = state.files;
+    emit(state._with(files: files, kept: ScanKept.keeping));
+    try {
+      for (final file in files) {
+        if (_kept.containsKey(file.path)) continue;
+        final waiting = _waiting[file.path];
+        final name = file.uri.pathSegments.last;
+        final pdf = name.endsWith('.pdf');
+        try {
+          _kept[file.path] = waiting != null
+              ? await _documentsRepository.finish(
+                  organizationId: _organizationId,
+                  document: waiting,
+                  file: file,
+                )
+              : await _documentsRepository.keep(
+                  organizationId: _organizationId,
+                  file: file,
+                  name: Uri.decodeComponent(name),
+                  mimeType: pdf ? 'application/pdf' : 'image/jpeg',
+                  // One PDF holds every page; otherwise a file is a page.
+                  pageCount: files.length == 1 ? state.pages.length : 1,
+                  printerId: _printer.id,
+                );
+          _waiting.remove(file.path);
+        } on UploadInterrupted catch (interrupted) {
+          _waiting[file.path] = interrupted.document;
+          rethrow;
+        }
+      }
+      if (!isClosed) emit(state._with(files: files, kept: ScanKept.yes));
+    } on UploadInterrupted {
+      if (!isClosed) {
+        emit(state._with(files: files, failure: 'scan.keep_interrupted'));
+      }
+    } on ApiException catch (error) {
+      if (!isClosed) emit(state._with(files: files, error: error));
+    }
+  }
+
   /// Goes back to the pages, to add to them or change their order.
   void edit() {
-    if (state.step != ScanStep.saved) return;
+    if (state.step != ScanStep.saved || state.kept == ScanKept.keeping) {
+      return;
+    }
     _delete(state.files);
     emit(state._with(step: ScanStep.review));
   }
 
   /// Throws the pages away and begins again.
   void startOver() {
-    if (state.step == ScanStep.scanning || state.step == ScanStep.saving) {
+    if (state.step == ScanStep.scanning ||
+        state.step == ScanStep.saving ||
+        state.kept == ScanKept.keeping) {
       return;
     }
     _delete([for (final page in state.pages) page.file, ...state.files]);

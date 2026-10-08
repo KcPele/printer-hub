@@ -18,6 +18,8 @@ dependencies:
   connection_engine:
     path: packages/connection_engine
   device_info_plus: ^13.3.0
+  documents_repository:
+    path: packages/documents_repository
   equatable: ^3.0.0
   file_picker: ^13.1.0
   flutter:

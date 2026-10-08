@@ -142,6 +142,14 @@ void main() {
       expect(job, isA<Job>().having((j) => j.id, 'id', 'job-3'));
     });
 
+    testWidgets('opens the documents the workspace keeps', (tester) async {
+      await pump(tester);
+
+      await tester.tap(find.byTooltip('Documents'));
+
+      verify(() => router.push<Object?>(AppRoutes.documents)).called(1);
+    });
+
     testWidgets('reads again when pulled down', (tester) async {
       await pump(tester);
       backend.jobList = [

@@ -291,6 +291,38 @@ Map<String, Object?> profileBody({
   'updated_at': '2026-10-07T10:00:00Z',
 };
 
+/// A `DocumentRead` body: a scan kept in the workspace's storage.
+Map<String, Object?> documentBody({
+  String id = 'document-1',
+  String name = 'Receipts.pdf',
+  String mimeType = 'application/pdf',
+  int sizeBytes = 2048,
+  int? pageCount = 3,
+  String source = 'printer_scan',
+  String storageMode = 'cloud',
+  String uploadStatus = 'uploaded',
+  String? printerId = 'printer-1',
+  String createdAt = '2026-10-07T10:00:00Z',
+}) => {
+  'id': id,
+  'organization_id': 'org-1',
+  'owner_id': 'user-1',
+  'file_name': name,
+  'mime_type': mimeType,
+  'size_bytes': sizeBytes,
+  'page_count': pageCount,
+  'source': source,
+  'storage_mode': storageMode,
+  'upload_status': uploadStatus,
+  'checksum_sha256': null,
+  'tags': <String>[],
+  'has_ocr_text': false,
+  'source_printer_id': printerId,
+  'retention_expires_at': null,
+  'created_at': createdAt,
+  'updated_at': createdAt,
+};
+
 /// A `PresetRead` body: a print preset of the signed-in user's own.
 Map<String, Object?> presetBody({
   String id = 'preset-1',

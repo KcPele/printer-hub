@@ -2095,5 +2095,112 @@
                 "type": "int"
             }
         }
+    },
+    "scanKeep": "Keep in your workspace",
+    "@scanKeep": {
+        "description": "Button that uploads a finished scan to the workspace"
+    },
+    "scanKeptInWorkspace": "Kept in your workspace",
+    "@scanKeptInWorkspace": {
+        "description": "Shown once a scan has been uploaded"
+    },
+    "scanKeepInterrupted": "The scan did not reach your workspace. Check your connection and try again.",
+    "@scanKeepInterrupted": {
+        "description": "Shown when uploading a scan failed part way"
+    },
+    "documentsTitle": "Documents",
+    "@documentsTitle": {
+        "description": "Title of the list of documents the workspace keeps"
+    },
+    "documentsSearch": "Search documents",
+    "@documentsSearch": {
+        "description": "Label of the documents search field"
+    },
+    "documentsEmptyTitle": "No documents yet",
+    "@documentsEmptyTitle": {
+        "description": "Heading when the workspace keeps no documents"
+    },
+    "documentsEmptyBody": "A scan you keep in your workspace is listed here.",
+    "@documentsEmptyBody": {
+        "description": "Under the no-documents heading"
+    },
+    "documentsNoMatch": "Nothing by that name.",
+    "@documentsNoMatch": {
+        "description": "Shown when the search matches no document"
+    },
+    "documentsFailedTitle": "Your documents could not be read",
+    "@documentsFailedTitle": {
+        "description": "Heading when the documents failed to load"
+    },
+    "documentsMore": "Show earlier",
+    "@documentsMore": {
+        "description": "Button that loads older documents"
+    },
+    "documentOpen": "Open or share",
+    "@documentOpen": {
+        "description": "Menu entry that fetches a document and opens the share sheet"
+    },
+    "documentRename": "Rename",
+    "@documentRename": {
+        "description": "Menu entry and dialog title for renaming a document"
+    },
+    "documentDelete": "Delete",
+    "@documentDelete": {
+        "description": "Menu entry that deletes a document"
+    },
+    "documentNameLabel": "Name",
+    "@documentNameLabel": {
+        "description": "Label of the field that renames a document"
+    },
+    "documentRenameConfirm": "Save",
+    "@documentRenameConfirm": {
+        "description": "Button that confirms a new name"
+    },
+    "documentCancel": "Cancel",
+    "@documentCancel": {
+        "description": "Button that closes a document dialog without doing anything"
+    },
+    "documentDeleteBody": "It is removed from your workspace for everyone. A copy on a phone stays where it is.",
+    "@documentDeleteBody": {
+        "description": "Body of the delete-document confirmation"
+    },
+    "documentOnPhoneOnly": "On the phone that made it",
+    "@documentOnPhoneOnly": {
+        "description": "Tag on a document whose file is not in the workspace"
+    },
+    "documentAwaitsFile": "Did not finish uploading",
+    "@documentAwaitsFile": {
+        "description": "Tag on a document whose upload never completed"
+    },
+    "documentFetchFailed": "The file could not be fetched. Check your connection and try again.",
+    "@documentFetchFailed": {
+        "description": "Shown when downloading a document failed"
+    },
+    "documentDeleteTitle": "Delete {name}?",
+    "@documentDeleteTitle": {
+        "description": "Title of the delete-document confirmation",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "documentSizeKb": "{size} KB",
+    "@documentSizeKb": {
+        "description": "A file size in kilobytes",
+        "placeholders": {
+            "size": {
+                "type": "String"
+            }
+        }
+    },
+    "documentSizeMb": "{size} MB",
+    "@documentSizeMb": {
+        "description": "A file size in megabytes",
+        "placeholders": {
+            "size": {
+                "type": "String"
+            }
+        }
     }
 }

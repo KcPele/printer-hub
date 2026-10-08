@@ -6,6 +6,7 @@ import 'package:printerhub/account/account.dart';
 import 'package:printerhub/activity/activity.dart';
 import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/catalogue/catalogue.dart';
+import 'package:printerhub/documents/documents.dart';
 import 'package:printerhub/gallery/gallery.dart';
 import 'package:printerhub/home/home.dart';
 import 'package:printerhub/print/print.dart';
@@ -44,6 +45,9 @@ abstract final class AppRoutes {
   /// The ways one printer is reached.
   static String printerConnections(String id) => '/printers/$id/connections';
   static const String activity = '/activity';
+
+  /// The documents the workspace keeps.
+  static const String documents = '/activity/documents';
 
   /// One job from the history.
   static String job(String id) => '/activity/$id';
@@ -208,6 +212,10 @@ GoRouter createAppRouter({
                 path: AppRoutes.activity,
                 builder: (context, state) => const ActivityPage(),
                 routes: [
+                  GoRoute(
+                    path: 'documents',
+                    builder: (context, state) => const DocumentsPage(),
+                  ),
                   GoRoute(
                     path: ':jobId',
                     builder: (context, state) => JobPage(

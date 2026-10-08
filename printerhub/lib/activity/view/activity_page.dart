@@ -57,7 +57,16 @@ class ActivityView extends StatelessWidget {
         state.error == null;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.navActivity)),
+      appBar: AppBar(
+        title: Text(l10n.navActivity),
+        actions: [
+          IconButton(
+            tooltip: l10n.documentsTitle,
+            onPressed: () => context.push(AppRoutes.documents),
+            icon: const Icon(Icons.folder_outlined),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: switch (state.status) {
           ActivityStatus.failed => EmptyState(
