@@ -58,6 +58,7 @@ printerhub/                        # the Flutter app
 │   ├── local_store/               # secrets in the platform keystore; the job queue later
 │   ├── auth_repository/           # sign-in, the session, the signed-in user
 │   ├── organizations_repository/  # workspaces
+│   ├── jobs_repository/           # jobs recorded with the backend, and an outbox for offline
 │   ├── preferences_repository/    # device preferences: the chosen theme
 │   └── *_repository/              # auth, printers, jobs, documents, notifications
 └── test/
