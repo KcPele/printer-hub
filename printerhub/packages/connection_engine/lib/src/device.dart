@@ -20,6 +20,43 @@ class DeviceConnection extends Equatable {
   List<Object> get props => [type, uri];
 }
 
+/// How a saved connection did when it was last tried.
+class ConnectionCheck extends Equatable {
+  const new({
+    required this.connection,
+    required this.health,
+    this.latencyMs,
+    this.error,
+  });
+
+  /// The connection answered as it should, after [elapsed].
+  new connected(this.connection, Duration elapsed)
+    : health = 'connected',
+      latencyMs = elapsed.inMilliseconds,
+      error = null;
+
+  final DeviceConnection connection;
+
+  /// `connected`; `degraded` when it answered that it cannot serve now;
+  /// `auth_required` when it wants a password; `config_required` when the
+  /// protocol is not at this address, or is switched off; `unavailable`
+  /// when nothing answered.
+  final String health;
+
+  /// How long the answer took, when there was one.
+  final int? latencyMs;
+
+  /// What went wrong, in the protocol's own words. For the record, not for
+  /// showing to people.
+  final String? error;
+
+  /// True when something at the address answered, even to refuse.
+  bool get answered => health != 'unavailable';
+
+  @override
+  List<Object?> get props => [connection, health, latencyMs, error];
+}
+
 /// What a device can print.
 class PrintFeatures extends Equatable {
   const new({

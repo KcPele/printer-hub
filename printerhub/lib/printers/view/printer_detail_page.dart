@@ -4,11 +4,13 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/printers/cubit/printer_family_cubit.dart';
 import 'package:printerhub/printers/cubit/printers_cubit.dart';
+import 'package:printerhub/printers/cubit/recheck_printer_cubit.dart';
 import 'package:printerhub/printers/cubit/remove_printer_cubit.dart';
 import 'package:printerhub/printers/printer_words.dart';
 import 'package:printerhub/printers/widgets/pairing_code_sheet.dart';
@@ -33,6 +35,9 @@ class PrinterDetailPage extends StatelessWidget {
       providers: [
         BlocProvider(
           create: (_) => RemovePrinterCubit(printersCubit: printers),
+        ),
+        BlocProvider(
+          create: (_) => RecheckPrinterCubit(printersCubit: printers),
         ),
         BlocProvider(
           // What is known about the printer's family, for the tips.
@@ -133,20 +138,43 @@ class PrinterDetailView extends StatelessWidget {
       (cubit) => cubit.state?.setupTips ?? const [],
     );
 
-    return BlocListener<RemovePrinterCubit, SubmitState>(
-      listenWhen: (previous, current) => current.succeeded || current.failed,
-      listener: (context, removal) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              removal.succeeded
-                  ? l10n.printerRemoved(printer.friendlyName)
-                  : errorMessage(l10n, removal.error),
-            ),
-          ),
-        );
-        if (removal.succeeded) context.pop();
-      },
+    final rechecking = context.select<RecheckPrinterCubit, bool>(
+      (cubit) => cubit.state.asking,
+    );
+
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<RemovePrinterCubit, SubmitState>(
+          listenWhen: (previous, current) =>
+              current.succeeded || current.failed,
+          listener: (context, removal) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  removal.succeeded
+                      ? l10n.printerRemoved(printer.friendlyName)
+                      : errorMessage(l10n, removal.error),
+                ),
+              ),
+            );
+            if (removal.succeeded) context.pop();
+          },
+        ),
+        BlocListener<RecheckPrinterCubit, RecheckState>(
+          listenWhen: (previous, current) => !current.asking,
+          listener: (context, recheck) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(switch (recheck.status) {
+                  RecheckStatus.noAnswer => l10n.printerRecheckNoAnswer,
+                  RecheckStatus.refused => errorMessage(l10n, recheck.error),
+                  _ => l10n.printerRecheckDone,
+                }),
+              ),
+            );
+          },
+        ),
+      ],
       child: Scaffold(
         appBar: AppBar(title: Text(printer.friendlyName)),
         body: RefreshIndicator(
@@ -231,14 +259,26 @@ class PrinterDetailView extends StatelessWidget {
                 _Section(
                   title: l10n.printerConnections,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (final connection in printer.connections)
                         _Line(
-                          icon: Icons.lan_outlined,
+                          icon: connection.type == ConnectionType.escl
+                              ? Icons.document_scanner_outlined
+                              : Icons.print_outlined,
                           text:
-                              '${(connection.type.json ?? '').toUpperCase()}  '
-                              '${connection.configuration.host ?? ''}',
+                              '${PrinterWords.connection(l10n, connection)}\n'
+                              '${PrinterWords.health(l10n, connection).label}',
                         ),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: TextButton(
+                          onPressed: () => context.push(
+                            AppRoutes.printerConnections(printer.id),
+                          ),
+                          child: Text(l10n.connectionsManage),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -258,6 +298,15 @@ class PrinterDetailView extends StatelessWidget {
                 loading: checking,
                 onPressed: () =>
                     context.read<PrintersCubit>().checkStatus(printer),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              OutlinedButton.icon(
+                onPressed: rechecking
+                    ? null
+                    : () =>
+                          context.read<RecheckPrinterCubit>().recheck(printer),
+                icon: const Icon(Icons.manage_search),
+                label: Text(l10n.printerRecheck),
               ),
               const SizedBox(height: AppSpacing.sm),
               OutlinedButton.icon(

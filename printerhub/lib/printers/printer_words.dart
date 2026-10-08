@@ -44,6 +44,36 @@ abstract final class PrinterWords {
     };
   }
 
+  /// How a saved connection did when it was last tried: a colour and a
+  /// few words.
+  static PrinterStanding health(
+    AppLocalizations l10n,
+    ConnectionRead connection,
+  ) {
+    return switch (connection.health.json) {
+      'connected' => (status: AppStatus.success, label: l10n.healthConnected),
+      'degraded' => (status: AppStatus.warning, label: l10n.healthDegraded),
+      'unavailable' => (status: AppStatus.error, label: l10n.healthUnavailable),
+      'auth_required' => (
+        status: AppStatus.warning,
+        label: l10n.healthAuthRequired,
+      ),
+      'config_required' => (
+        status: AppStatus.warning,
+        label: l10n.healthConfigRequired,
+      ),
+      _ => (status: AppStatus.neutral, label: l10n.healthUnknown),
+    };
+  }
+
+  /// What a connection is for and where it goes: "Printing · 192.168.1.40".
+  static String connection(AppLocalizations l10n, ConnectionRead connection) {
+    final purpose = connection.type == ConnectionType.escl
+        ? l10n.connectionScanning
+        : l10n.connectionPrinting;
+    return '$purpose · ${connection.configuration.host ?? ''}';
+  }
+
   /// A sentence for an alert the device raised, by its code.
   static String alert(AppLocalizations l10n, String code) {
     return switch (code) {

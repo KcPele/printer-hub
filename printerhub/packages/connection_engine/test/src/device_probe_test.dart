@@ -559,9 +559,9 @@ void main() {
 
       expect(status.state, 'online');
       expect(status.scannerState, 'idle');
-      final asked = decodeIpp(http.requests.first.body).message
-          .group(IppGroupTag.operation)!['requested-attributes']!
-          .strings;
+      final asked = decodeIpp(
+        http.requests.firstWhere((request) => request.method == 'POST').body,
+      ).message.group(IppGroupTag.operation)!['requested-attributes']!.strings;
       expect(asked, contains('marker-levels'));
       expect(asked, isNot(contains('media-supported')));
     });
@@ -596,15 +596,113 @@ void main() {
       expect(scannerOnly.scannerState, 'idle');
     });
 
-    test('asks each kind of connection once', () async {
+    test(
+      'tries every connection, and lets the first of a kind speak',
+      () async {
+        final spare = DeviceConnection(
+          type: 'ipps',
+          uri: Uri.parse('ipps://192.168.1.40:443/ipp/print'),
+        );
+        network({
+          'http://192.168.1.40:631/ipp/print': (_) =>
+              FakeAnswer.ipp(_printerAnswer()),
+          'https://192.168.1.40/ipp/print': (_) => FakeAnswer.ipp(
+            ippResponse(status: IppStatus.serverErrorServiceUnavailable),
+          ),
+        });
+
+        final status = await probe.status([connections.first, spare]);
+
+        expect(status.state, 'online');
+        expect(http.requests, hasLength(2));
+      },
+    );
+  });
+
+  group('check', () {
+    final ipp = DeviceConnection(
+      type: 'ipp',
+      uri: Uri.parse('ipp://192.168.1.40:631/ipp/print'),
+    );
+    final scan = DeviceConnection(
+      type: 'escl',
+      uri: Uri.parse('http://192.168.1.40:80/eSCL'),
+    );
+
+    Future<String> healthOf(
+      DeviceConnection connection,
+      FakeAnswer Function(SentRequest)? device,
+    ) async {
+      network({'http': ?device});
+      final result = await probe.check([connection]);
+      return result.checks.single.health;
+    }
+
+    test('says how each connection did, in the order given', () async {
       network({
         'http://192.168.1.40:631/ipp/print': (_) =>
             FakeAnswer.ipp(_printerAnswer()),
       });
 
-      await probe.status([connections.first, connections.first]);
+      final result = await probe.check([ipp, scan]);
 
-      expect(http.requests, hasLength(1));
+      expect(result.status.state, 'online');
+      expect(result.checks.map((check) => check.connection), [ipp, scan]);
+      final printing = result.checks.first;
+      expect(printing.health, 'connected');
+      expect(printing.latencyMs, isNonNegative);
+      expect(printing.error, isNull);
+      expect(printing.answered, isTrue);
+      final scanning = result.checks.last;
+      expect(scanning.health, 'unavailable');
+      expect(scanning.latencyMs, isNull);
+      expect(scanning.error, 'nothing there');
+      expect(scanning.answered, isFalse);
+      expect(printing, isNot(scanning));
+    });
+
+    test('tells apart the ways a printing connection can fail', () async {
+      expect(await healthOf(ipp, null), 'unavailable');
+      expect(
+        await healthOf(
+          ipp,
+          (_) => FakeAnswer.ipp(
+            ippResponse(status: IppStatus.serverErrorServiceUnavailable),
+          ),
+        ),
+        'degraded',
+      );
+      expect(
+        await healthOf(
+          ipp,
+          (_) => const FakeAnswer(
+            401,
+            headers: {'www-authenticate': 'Digest realm="x", nonce="n"'},
+          ),
+        ),
+        'auth_required',
+      );
+      expect(
+        await healthOf(ipp, (_) => const FakeAnswer(404)),
+        'config_required',
+      );
+    });
+
+    test('tells apart the ways a scanning connection can fail', () async {
+      expect(await healthOf(scan, escl), 'connected');
+      expect(
+        await healthOf(scan, (_) => const FakeAnswer(404)),
+        'config_required',
+      );
+      expect(await healthOf(scan, (_) => const FakeAnswer(503)), 'degraded');
+      expect(await healthOf(scan, (_) => const FakeAnswer(500)), 'unavailable');
+    });
+
+    test('a device with nothing to try is unreachable', () async {
+      final result = await probe.check(const []);
+
+      expect(result.status, DeviceStatus.unreachable);
+      expect(result.checks, isEmpty);
     });
   });
 }

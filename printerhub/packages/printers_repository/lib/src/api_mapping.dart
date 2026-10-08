@@ -22,7 +22,7 @@ List<E> _known<E extends Enum>(
 /// They go with the connections that print; a scanner is not asked.
 ConnectionCreate connectionToApi(
   DeviceConnection connection,
-  int priority, {
+  int? priority, {
   PrinterCredentials? credentials,
 }) {
   return ConnectionCreate(

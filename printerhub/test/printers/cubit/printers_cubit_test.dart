@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:api_client/api_client.dart';
 import 'package:api_client/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:printer_protocols/testing.dart';
 import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printers_repository/printers_repository.dart';
@@ -233,6 +234,102 @@ void main() {
         backend.device.requests.where((r) => r.uri.path.contains('ipp')),
         hasLength(1),
       );
+    });
+  });
+
+  group('one printer', () {
+    test('refresh reads it again from the backend', () async {
+      final cubit = build();
+      await cubit.load();
+      backend.printerList = [
+        printerBody(name: 'Renamed elsewhere'),
+        backend.printerList.last,
+      ];
+
+      await cubit.refresh('printer-1');
+
+      expect(cubit.state.printers.map((p) => p.friendlyName), [
+        'Renamed elsewhere',
+        'Lobby',
+      ]);
+    });
+
+    test('refresh leaves the list alone when it cannot be read', () async {
+      final cubit = build();
+      await cubit.load();
+      backend.offline = true;
+
+      await cubit.refresh('printer-1');
+
+      expect(first(cubit).friendlyName, 'Front desk');
+    });
+
+    test('refresh does nothing without a workspace', () async {
+      final cubit = build(organizationId: null);
+
+      await cubit.refresh('printer-1');
+
+      expect(backend.network.requests, isEmpty);
+    });
+
+    test('refresh drops an answer for the old workspace', () async {
+      final cubit = build();
+      await cubit.load();
+      backend.printerList = [printerBody(name: 'Renamed elsewhere')];
+
+      final refreshing = cubit.refresh('printer-1');
+      organizations.add('another');
+      await refreshing;
+      await pumpEventQueue();
+
+      expect(
+        cubit.state.printers.map((p) => p.friendlyName),
+        isNot(contains('Renamed elsewhere')),
+      );
+    });
+
+    test('recheck records what the printer can do now', () async {
+      backend.plugInPrinter();
+      final cubit = build();
+      await cubit.load();
+      backend.device.device = (request) => request.uri.path.contains('eSCL')
+          ? const FakeAnswer(404)
+          : FakeAnswer.ipp(ippResponse());
+
+      await cubit.recheck(first(cubit));
+
+      expect(first(cubit).capabilities!.scan.supported, isFalse);
+      expect(cubit.state.printers.last.capabilities!.scan.supported, isTrue);
+    });
+
+    test('recheck passes on why it could not', () async {
+      final cubit = build();
+      await cubit.load();
+
+      await expectLater(
+        cubit.recheck(first(cubit)),
+        throwsA(isA<ProbeFailure>()),
+      );
+    });
+
+    test('RecheckPrinterCubit reports each outcome', () async {
+      final cubit = build();
+      await cubit.load();
+      final recheck = RecheckPrinterCubit(printersCubit: cubit);
+      addTearDown(recheck.close);
+      expect(recheck.state, const RecheckState());
+
+      await recheck.recheck(first(cubit));
+      expect(recheck.state.status, RecheckStatus.noAnswer);
+
+      backend.plugInPrinter();
+      await recheck.recheck(first(cubit));
+      expect(recheck.state.status, RecheckStatus.done);
+
+      backend.offline = true;
+      await recheck.recheck(first(cubit));
+      expect(recheck.state.status, RecheckStatus.refused);
+      expect(recheck.state.error, isA<ApiUnreachable>());
     });
   });
 

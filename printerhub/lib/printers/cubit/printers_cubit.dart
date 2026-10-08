@@ -64,6 +64,47 @@ class PrintersCubit extends Cubit<PrintersState> {
     );
   }
 
+  /// Puts a newer record of a printer in the list.
+  void updated(PrinterRead printer) {
+    emit(
+      state.copyWith(
+        printers: [
+          for (final existing in state.printers)
+            if (existing.id == printer.id) printer else existing,
+        ],
+      ),
+    );
+  }
+
+  /// Reads one printer again from the backend, after something about it
+  /// was changed there. A failure leaves the list as it is.
+  Future<void> refresh(String printerId) async {
+    final organizationId = _organizationId;
+    if (organizationId == null) return;
+    try {
+      final printer = await _printersRepository.get(
+        organizationId: organizationId,
+        printerId: printerId,
+      );
+      if (organizationId == _organizationId) updated(printer);
+    } on ApiException {
+      // The next load brings it up to date.
+    }
+  }
+
+  /// Asks [printer] again what it can do, and records the answer.
+  ///
+  /// Throws a [ProbeFailure] when it does not answer and an [ApiException]
+  /// when the backend refuses.
+  Future<void> recheck(PrinterRead printer) async {
+    updated(
+      await _printersRepository.recheck(
+        organizationId: _organizationId!,
+        printer: printer,
+      ),
+    );
+  }
+
   /// Puts a printer that was just added in the list, without a reload.
   void added(PrinterRead printer, DeviceStatus status) {
     emit(

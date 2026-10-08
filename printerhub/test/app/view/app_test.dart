@@ -198,6 +198,34 @@ void main() {
         await tester.pumpAndSettle();
       }
 
+      testWidgets('opens the ways a printer is reached from its page', (
+        tester,
+      ) async {
+        backend.printerList = [printerBody()];
+        await pump(tester);
+        await openArea(tester, 'Printers');
+        await tester.tap(find.text('Front desk'));
+        await tester.pumpAndSettle();
+
+        await tester.scrollUntilVisible(
+          find.text('Manage'),
+          200,
+          scrollable: find
+              .descendant(
+                of: find.byType(PrinterDetailPage),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.ensureVisible(find.text('Manage'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Manage'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(PrinterConnectionsPage), findsOneWidget);
+        expect(find.text('Printing · 192.168.1.40'), findsOneWidget);
+      });
+
       testWidgets('opens the catalogue from Add a printer', (tester) async {
         await pump(tester);
         await openArea(tester, 'Printers');

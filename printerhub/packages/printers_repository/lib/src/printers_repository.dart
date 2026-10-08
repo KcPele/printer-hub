@@ -271,25 +271,208 @@ class PrintersRepository {
 
   /// Asks the printer itself what it is doing, and tells the backend.
   ///
-  /// Never throws for a device that does not answer: that is a status too.
-  /// The returned printer is the backend's when it could be told, and the
-  /// given one otherwise.
+  /// Every saved connection is tried, and the backend is told of any whose
+  /// health has changed, so the rest of the workspace knows which way in
+  /// works. Never throws for a device that does not answer: that is a
+  /// status too. The returned printer is the backend's when it could be
+  /// told, and the given one otherwise.
   Future<({PrinterRead printer, DeviceStatus status})> refreshStatus({
     required String organizationId,
     required PrinterRead printer,
   }) async {
-    final status = await _probe.status(
-      [
-        for (final connection in printer.connections)
-          ?connectionFromApi(connection),
-      ],
+    final saved = [
+      for (final connection in printer.connections)
+        if (connectionFromApi(connection) case final reachable?)
+          (record: connection, reachable: reachable),
+    ];
+    final result = await _probe.check(
+      [for (final connection in saved) connection.reachable],
       credentials: await credentialsFor(
         organizationId: organizationId,
         printer: printer,
       ),
     );
-    final reported = await _report(organizationId, printer, status);
-    return (printer: reported ?? printer, status: status);
+
+    await Future.wait([
+      for (final (index, check) in result.checks.indexed)
+        if (saved[index].record.health.json != check.health)
+          _reportHealth(organizationId, saved[index].record, check),
+    ]);
+    final reported = await _report(organizationId, printer, result.status);
+    return (printer: reported ?? printer, status: result.status);
+  }
+
+  Future<void> _reportHealth(
+    String organizationId,
+    ConnectionRead connection,
+    ConnectionCheck check,
+  ) async {
+    try {
+      await apiCall(
+        () => _client.api.connections.reportConnectionHealth(
+          orgId: organizationId,
+          printerId: connection.printerId,
+          connectionId: connection.id,
+          body: ConnectionHealthReport(
+            health: ConnectionHealth.fromJson(check.health),
+            latencyMs: check.latencyMs,
+            error: check.error == null || check.error!.length <= 500
+                ? check.error
+                : check.error!.substring(0, 500),
+          ),
+        ),
+      );
+    } on ApiException {
+      // It is reported again the next time the printer is checked.
+    }
+  }
+
+  /// One printer, as the backend has it now.
+  Future<PrinterRead> get({
+    required String organizationId,
+    required String printerId,
+  }) {
+    return apiCall(
+      () => _client.api.printers.getPrinter(
+        orgId: organizationId,
+        printerId: printerId,
+      ),
+    );
+  }
+
+  /// Asks the printer again what it can do, and records the answer.
+  ///
+  /// For when something about the printer has changed: a finisher fitted,
+  /// scanning switched on. Throws [ProbeFailure] when the printer does not
+  /// answer, and leaves the record as it was.
+  Future<PrinterRead> recheck({
+    required String organizationId,
+    required PrinterRead printer,
+  }) async {
+    final saved = [
+      for (final connection in printer.connections)
+        ?connectionFromApi(connection),
+    ];
+    final host = saved.firstOrNull?.uri.host ?? '';
+    final device = await _probe.probeAnnounced(
+      host: host,
+      ipp: saved.where((c) => c.type != 'escl').firstOrNull?.uri,
+      escl: saved.where((c) => c.type == 'escl').firstOrNull?.uri,
+      credentials: await credentialsFor(
+        organizationId: organizationId,
+        printer: printer,
+      ),
+    );
+    return await apiCall(
+      () => _client.api.printers.reportCapabilities(
+        orgId: organizationId,
+        printerId: printer.id,
+        body: capabilitiesToApi(device),
+      ),
+    );
+  }
+
+  /// A printer's connections, the one tried first at the top.
+  Future<List<ConnectionRead>> connections({
+    required String organizationId,
+    required String printerId,
+  }) {
+    return apiCall(
+      () => _client.api.connections.listConnections(
+        orgId: organizationId,
+        printerId: printerId,
+      ),
+    );
+  }
+
+  /// Sets the order connections are tried in. [connectionIds] names every
+  /// connection of the printer once, the preferred one first.
+  Future<List<ConnectionRead>> setConnectionOrder({
+    required String organizationId,
+    required String printerId,
+    required List<String> connectionIds,
+  }) {
+    return apiCall(
+      () => _client.api.connections.setConnectionPriority(
+        orgId: organizationId,
+        printerId: printerId,
+        body: ConnectionPriorityUpdate(connectionIds: connectionIds),
+      ),
+    );
+  }
+
+  Future<void> removeConnection({
+    required String organizationId,
+    required String printerId,
+    required String connectionId,
+  }) {
+    return apiCall(
+      () => _client.api.connections.removeConnection(
+        orgId: organizationId,
+        printerId: printerId,
+        connectionId: connectionId,
+      ),
+    );
+  }
+
+  /// Saves the ways [device] answered that [printer] does not have yet,
+  /// after the ones it has. Returns how many were added.
+  ///
+  /// For a printer that has moved to another address, or gained one.
+  Future<int> addConnections({
+    required String organizationId,
+    required PrinterRead printer,
+    required DeviceDescription device,
+    PrinterCredentials? credentials,
+  }) async {
+    final known = {
+      for (final connection in printer.connections)
+        ?connectionFromApi(connection),
+    };
+    var added = 0;
+    for (final connection in device.connections) {
+      if (known.contains(connection)) continue;
+      await apiCall(
+        () => _client.api.connections.addConnection(
+          orgId: organizationId,
+          printerId: printer.id,
+          // Without a priority it goes last: what works now stays first.
+          body: connectionToApi(connection, null, credentials: credentials),
+        ),
+      );
+      added++;
+    }
+    return added;
+  }
+
+  /// Replaces the user name and password kept with a connection, for a
+  /// printer whose password has been changed.
+  Future<ConnectionRead> setCredentials({
+    required String organizationId,
+    required ConnectionRead connection,
+    required PrinterCredentials credentials,
+  }) async {
+    final updated = await apiCall(
+      () => _client.api.connections.updateConnection(
+        orgId: organizationId,
+        printerId: connection.printerId,
+        connectionId: connection.id,
+        body: ConnectionUpdate(
+          credentials: ConnectionCredentialsInput(
+            username: credentials.userName,
+            password: credentials.password,
+          ),
+        ),
+      ),
+    );
+    // What this phone kept is out of date now.
+    final kept = await _keptCredentials(organizationId);
+    kept[connection.id] = {
+      'u': credentials.userName,
+      'p': credentials.password,
+    };
+    await _store.write(_credentialsKey(organizationId), jsonEncode(kept));
+    return updated;
   }
 
   Future<PrinterRead> rename({

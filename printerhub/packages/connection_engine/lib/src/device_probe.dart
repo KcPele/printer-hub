@@ -146,43 +146,93 @@ class DeviceProbe {
     List<DeviceConnection> connections, {
     PrinterCredentials? credentials,
   }) async {
-    IppPrinterAttributes? printer;
-    EsclStatus? scanner;
-    var reached = false;
+    return (await check(connections, credentials: credentials)).status;
+  }
 
-    for (final connection in connections) {
-      try {
-        if (connection.type == 'escl') {
-          scanner ??= await EsclClient(
-            baseUri: connection.uri,
-            http: _http,
-          ).status();
-        } else {
-          printer ??= await IppClient(
-            printerUri: connection.uri,
-            http: _http,
-            credentials: credentials,
-          ).getPrinterAttributes(requested: _statusAttributes);
-        }
-        reached = true;
-      } on PrinterUnreachable {
-        continue;
-      } on IppException {
-        // It answered, to say it cannot serve right now.
-        reached = true;
-      } on IppNotAvailable {
-        continue;
-      } on EsclException {
-        continue;
+  /// Tries every one of a known device's [connections] and says how each
+  /// did, along with what the device is doing.
+  ///
+  /// They are tried at the same time, so one that has gone quiet does not
+  /// hold up the others. Never throws.
+  Future<({DeviceStatus status, List<ConnectionCheck> checks})> check(
+    List<DeviceConnection> connections, {
+    PrinterCredentials? credentials,
+  }) async {
+    final results = await Future.wait([
+      for (final connection in connections) _try(connection, credentials),
+    ]);
+    final checks = [for (final result in results) result.check];
+    // The first connection of each kind that answered speaks for the device.
+    final printer = results.map((r) => r.printer).nonNulls.firstOrNull;
+    final scanner = results.map((r) => r.scanner).nonNulls.firstOrNull;
+
+    final DeviceStatus status;
+    if (printer != null || scanner != null) {
+      status = deviceStatusFrom(printer, scanner: scanner);
+    } else if (checks.any((check) => check.health == 'degraded')) {
+      // It spoke the protocol, to say it cannot serve right now.
+      status = const DeviceStatus(state: 'offline', acceptingJobs: false);
+    } else {
+      status = DeviceStatus.unreachable;
+    }
+    return (status: status, checks: checks);
+  }
+
+  Future<_Tried> _try(
+    DeviceConnection connection,
+    PrinterCredentials? credentials,
+  ) async {
+    final clock = Stopwatch()..start();
+    ConnectionCheck failed(String health, Object error) => ConnectionCheck(
+      connection: connection,
+      health: health,
+      error: '$error',
+    );
+
+    try {
+      if (connection.type == 'escl') {
+        final scanner = await EsclClient(
+          baseUri: connection.uri,
+          http: _http,
+        ).status();
+        return _Tried(
+          ConnectionCheck.connected(connection, clock.elapsed),
+          scanner: scanner,
+        );
       }
+      final printer = await IppClient(
+        printerUri: connection.uri,
+        http: _http,
+        credentials: credentials,
+      ).getPrinterAttributes(requested: _statusAttributes);
+      return _Tried(
+        ConnectionCheck.connected(connection, clock.elapsed),
+        printer: printer,
+      );
+    } on PrinterUnreachable catch (error) {
+      return _Tried(failed('unavailable', error.cause));
+    } on IppException catch (error) {
+      // It answered, to say it cannot serve right now.
+      return _Tried(failed('degraded', error));
+    } on IppNotAvailable catch (error) {
+      return _Tried(
+        failed(
+          error.needsAuthentication ? 'auth_required' : 'config_required',
+          error,
+        ),
+      );
+    } on EsclException catch (error) {
+      return _Tried(
+        failed(
+          error.notSupported
+              ? 'config_required'
+              : error.busy
+              ? 'degraded'
+              : 'unavailable',
+          error,
+        ),
+      );
     }
-
-    if (printer == null && scanner == null) {
-      return reached
-          ? const DeviceStatus(state: 'offline', acceptingJobs: false)
-          : DeviceStatus.unreachable;
-    }
-    return deviceStatusFrom(printer, scanner: scanner);
   }
 
   Future<(DeviceConnection, IppPrinterAttributes)?> _findIpp(
@@ -267,6 +317,15 @@ class DeviceProbe {
     if (uri.host.isEmpty) return null;
     return _Target(uri);
   }
+}
+
+/// What one connection gave when it was tried.
+class _Tried {
+  const new(this.check, {this.printer, this.scanner});
+
+  final ConnectionCheck check;
+  final IppPrinterAttributes? printer;
+  final EsclStatus? scanner;
 }
 
 class _Attempt {

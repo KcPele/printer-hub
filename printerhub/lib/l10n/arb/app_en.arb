@@ -793,6 +793,126 @@
     "@printerTips": {
         "description": "Heading over the family tips on a printer's page"
     },
+    "healthConnected": "Working",
+    "@healthConnected": {
+        "description": "A connection that answered when last tried"
+    },
+    "healthDegraded": "Busy or stopped",
+    "@healthDegraded": {
+        "description": "A connection that answered but could not serve"
+    },
+    "healthUnavailable": "Not answering",
+    "@healthUnavailable": {
+        "description": "A connection nothing answered on"
+    },
+    "healthAuthRequired": "Wants a password",
+    "@healthAuthRequired": {
+        "description": "A connection that asked for credentials"
+    },
+    "healthConfigRequired": "Not set up at this address",
+    "@healthConfigRequired": {
+        "description": "A connection whose protocol is off or elsewhere"
+    },
+    "healthUnknown": "Not tried yet",
+    "@healthUnknown": {
+        "description": "A connection that has not been tried"
+    },
+    "connectionPrinting": "Printing",
+    "@connectionPrinting": {
+        "description": "What an IPP connection is for"
+    },
+    "connectionScanning": "Scanning",
+    "@connectionScanning": {
+        "description": "What an eSCL connection is for"
+    },
+    "connectionsManage": "Manage",
+    "@connectionsManage": {
+        "description": "Button that opens a printer's connections"
+    },
+    "connectionsTitle": "How it connects",
+    "@connectionsTitle": {
+        "description": "Title of the connections screen"
+    },
+    "connectionsBody": "PrinterHub tries these in order, and moves to the next when one does not answer.",
+    "@connectionsBody": {
+        "description": "Explains the order of connections"
+    },
+    "connectionsFirst": "Tried first",
+    "@connectionsFirst": {
+        "description": "Marks the connection tried first"
+    },
+    "connectionsSecure": "Secure",
+    "@connectionsSecure": {
+        "description": "Marks a connection that uses TLS"
+    },
+    "connectionsPreferFirst": "Try this first",
+    "@connectionsPreferFirst": {
+        "description": "Menu item that moves a connection to the top"
+    },
+    "connectionsChangePassword": "Change password",
+    "@connectionsChangePassword": {
+        "description": "Menu item that replaces a connection's credentials"
+    },
+    "connectionsRemove": "Remove",
+    "@connectionsRemove": {
+        "description": "Menu item that removes a connection"
+    },
+    "connectionsAddTitle": "Add another address",
+    "@connectionsAddTitle": {
+        "description": "Heading over the field that adds a connection"
+    },
+    "connectionsAddBody": "If the printer has moved, or answers at a second address, enter it here.",
+    "@connectionsAddBody": {
+        "description": "Explains adding an address"
+    },
+    "connectionsAddAction": "Find at this address",
+    "@connectionsAddAction": {
+        "description": "Button that probes the typed address"
+    },
+    "connectionsAdded": "The new address was added.",
+    "@connectionsAdded": {
+        "description": "Shown after connections were added"
+    },
+    "connectionsNothingNew": "The printer is already saved at that address.",
+    "@connectionsNothingNew": {
+        "description": "Shown when the address brought nothing new"
+    },
+    "connectionsPasswordChanged": "The password was changed.",
+    "@connectionsPasswordChanged": {
+        "description": "Shown after credentials were replaced"
+    },
+    "connectionsNeedsPassword": "The printer asks for a user name and password at that address. Set them with Change password, then try again.",
+    "@connectionsNeedsPassword": {
+        "description": "Shown when the typed address wants credentials"
+    },
+    "connectionsFailedTitle": "Couldn't load the connections",
+    "@connectionsFailedTitle": {
+        "description": "Heading when connections cannot be read"
+    },
+    "connectionsPasswordTitle": "The printer's user name and password",
+    "@connectionsPasswordTitle": {
+        "description": "Title of the dialog that replaces credentials"
+    },
+    "connectionsPasswordSave": "Save",
+    "@connectionsPasswordSave": {
+        "description": "Button that saves new credentials"
+    },
+    "connectionsCancel": "Cancel",
+    "@connectionsCancel": {
+        "description": "Button that closes a dialog without saving"
+    },
+    "printerRecheck": "Ask what it can do again",
+    "@printerRecheck": {
+        "description": "Button that probes capabilities again"
+    },
+    "printerRecheckDone": "What the printer can do is up to date.",
+    "@printerRecheckDone": {
+        "description": "Shown after capabilities were refreshed"
+    },
+    "printerRecheckNoAnswer": "The printer did not answer. Check that it is on and on your network.",
+    "@printerRecheckNoAnswer": {
+        "description": "Shown when the printer could not be probed again"
+    },
     "printerPasswordTitle": "This printer asks who is printing",
     "@printerPasswordTitle": {
         "description": "Heading of the step that asks for a printer's user name and password"

@@ -31,6 +31,9 @@ abstract final class AppRoutes {
 
   /// The page of one printer.
   static String printer(String id) => '/printers/$id';
+
+  /// The ways one printer is reached.
+  static String printerConnections(String id) => '/printers/$id/connections';
   static const String activity = '/activity';
   static const String settings = '/settings';
   static const String profile = '/settings/profile';
@@ -161,6 +164,14 @@ GoRouter createAppRouter({
                     builder: (context, state) => PrinterDetailPage(
                       printerId: state.pathParameters['printerId']!,
                     ),
+                    routes: [
+                      GoRoute(
+                        path: 'connections',
+                        builder: (context, state) => PrinterConnectionsPage(
+                          printerId: state.pathParameters['printerId']!,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

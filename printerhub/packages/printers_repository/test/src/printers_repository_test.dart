@@ -756,11 +756,71 @@ void main() {
       expect(result.status.state, 'online');
       expect(result.status.scannerState, 'idle');
       expect(result.printer.friendlyName, 'From API');
-      expect(device.requests.map((r) => r.uri.toString()), [
-        'http://192.168.1.40:631/ipp/print',
-        'http://192.168.1.40/eSCL/ScannerStatus',
-      ]);
-      expect(bodyOf(api.requests.single)['status'], 'online');
+      expect(
+        device.requests.map((r) => r.uri.toString()),
+        unorderedEquals([
+          'http://192.168.1.40:631/ipp/print',
+          'http://192.168.1.40/eSCL/ScannerStatus',
+        ]),
+      );
+      expect(bodyOf(api.requests.last)['status'], 'online');
+    });
+
+    test(
+      'tells the backend how each connection did, when that changed',
+      () async {
+        device.device = (request) => request.uri.path.contains('eSCL')
+            ? const FakeAnswer(404)
+            : FakeAnswer.ipp(ippResponse());
+        api.handler = (_) async => FakeResponse(200, printerBody());
+
+        await repository.refreshStatus(organizationId: _org, printer: printer);
+
+        final health = {
+          for (final request in api.requests)
+            if (request.path.endsWith('/health'))
+              request.path.split('/').reversed.elementAt(1): bodyOf(request),
+        };
+        expect(health.keys, {'connection-ipp-1', 'connection-escl-2'});
+        expect(health['connection-ipp-1']!['health'], 'connected');
+        expect(health['connection-ipp-1']!['latency_ms'], isNonNegative);
+        expect(health['connection-ipp-1']!.containsKey('error'), isFalse);
+        expect(health['connection-escl-2']!['health'], 'config_required');
+        expect(health['connection-escl-2']!['error'], contains('HTTP 404'));
+        // Health first, so the printer that comes back carries it.
+        expect(api.requests.last.path, endsWith('/status'));
+      },
+    );
+
+    test('says nothing of a connection that is as it was', () async {
+      final steady = PrinterRead.fromJson(
+        printerBody(
+          connections: [
+            {...connectionBody(), 'health': 'unavailable'},
+          ],
+        ).cast(),
+      );
+
+      await repository.refreshStatus(organizationId: _org, printer: steady);
+
+      expect(api.requests.single.path, endsWith('/status'));
+    });
+
+    test('keeps a long error short, and survives a refused report', () async {
+      device.device = (request) =>
+          throw PrinterUnreachable(request.uri, 'x' * 900);
+      api.handler = (request) async => request.path.endsWith('/health')
+          ? throw const FormatException('offline')
+          : FakeResponse(200, printerBody());
+
+      final result = await repository.refreshStatus(
+        organizationId: _org,
+        printer: printer,
+      );
+
+      expect(result.status, DeviceStatus.unreachable);
+      final sent = api.requests.firstWhere((r) => r.path.endsWith('/health'));
+      expect((bodyOf(sent)['error'] as String).length, 500);
     });
 
     test('reports a device that does not answer as unreachable', () async {
@@ -770,7 +830,7 @@ void main() {
       );
 
       expect(result.status, DeviceStatus.unreachable);
-      expect(bodyOf(api.requests.single)['status'], 'unreachable');
+      expect(bodyOf(api.requests.last)['status'], 'unreachable');
     });
 
     test('keeps the status when the backend cannot be told', () async {
@@ -783,6 +843,173 @@ void main() {
 
       expect(result.status, DeviceStatus.unreachable);
       expect(result.printer, same(printer));
+    });
+  });
+
+  group('connections', () {
+    final printer = PrinterRead.fromJson(printerBody().cast());
+    const base = '$_printers/printer-1';
+
+    test('get reads one printer', () async {
+      api.handler = (_) async => FakeResponse(200, printerBody(name: 'Fresh'));
+
+      final read = await repository.get(
+        organizationId: _org,
+        printerId: 'printer-1',
+      );
+
+      expect(read.friendlyName, 'Fresh');
+      expect(api.requests.single.method, 'GET');
+      expect(api.requests.single.path, base);
+    });
+
+    test('recheck asks the printer again and records what it can do', () async {
+      device.device = (request) => request.uri.path.contains('eSCL')
+          ? const FakeAnswer(404)
+          : FakeAnswer.ipp(
+              ippResponse(
+                groups: [
+                  IppGroup(IppGroupTag.printer, [
+                    IppAttribute.single(
+                      'color-supported',
+                      IppValueTag.boolean,
+                      false,
+                    ),
+                  ]),
+                ],
+              ),
+            );
+      api.handler = (_) async => FakeResponse(200, printerBody(scans: false));
+
+      final updated = await repository.recheck(
+        organizationId: _org,
+        printer: printer,
+      );
+
+      expect(updated.capabilities!.scan.supported, isFalse);
+      final sent = api.requests.single;
+      expect(sent.method, 'PUT');
+      expect(sent.path, '$base/capabilities');
+      expect((bodyOf(sent)['print'] as Map)['color'], isFalse);
+      expect(bodyOf(sent).containsKey('scan'), isFalse);
+      // It was asked where it is known to be, not searched for.
+      expect(device.requests.map((r) => r.uri.toString()).toSet(), {
+        'http://192.168.1.40:631/ipp/print',
+        'http://192.168.1.40/eSCL/ScannerCapabilities',
+      });
+    });
+
+    test('recheck leaves the record alone when the printer is away', () async {
+      await expectLater(
+        repository.recheck(organizationId: _org, printer: printer),
+        throwsA(isA<ProbeFailure>()),
+      );
+      expect(api.requests, isEmpty);
+    });
+
+    test('lists a printer’s connections', () async {
+      api.handler = (_) async => FakeResponse(200, [connectionBody()]);
+
+      final listed = await repository.connections(
+        organizationId: _org,
+        printerId: 'printer-1',
+      );
+
+      expect(listed.single.id, 'connection-ipp-1');
+      expect(api.requests.single.path, '$base/connections');
+    });
+
+    test('sets the order connections are tried in', () async {
+      api.handler = (_) async => FakeResponse(200, [
+        connectionBody(type: 'escl', port: 80, path: '/eSCL'),
+        connectionBody(priority: 2),
+      ]);
+
+      final ordered = await repository.setConnectionOrder(
+        organizationId: _org,
+        printerId: 'printer-1',
+        connectionIds: ['connection-escl-2', 'connection-ipp-1'],
+      );
+
+      expect(ordered.first.type, ConnectionType.escl);
+      expect(api.requests.single.method, 'PUT');
+      expect(api.requests.single.path, '$base/connections/priority');
+      expect(bodyOf(api.requests.single), {
+        'connection_ids': ['connection-escl-2', 'connection-ipp-1'],
+      });
+    });
+
+    test('removes a connection', () async {
+      api.handler = (_) async => const FakeResponse(204);
+
+      await repository.removeConnection(
+        organizationId: _org,
+        printerId: 'printer-1',
+        connectionId: 'connection-escl-2',
+      );
+
+      expect(api.requests.single.method, 'DELETE');
+      expect(api.requests.single.path, '$base/connections/connection-escl-2');
+    });
+
+    test('adds only the ways in that the printer does not have', () async {
+      api.handler = (_) async => FakeResponse(201, connectionBody());
+      final moved = DeviceDescription(
+        host: '192.168.1.77',
+        connections: [
+          // Already saved.
+          _device.connections.first,
+          DeviceConnection(
+            type: 'ipps',
+            uri: Uri.parse('ipps://192.168.1.77:631/ipp/print'),
+          ),
+        ],
+      );
+
+      final added = await repository.addConnections(
+        organizationId: _org,
+        printer: printer,
+        device: moved,
+        credentials: const PrinterCredentials(userName: 'ada', password: 'pw'),
+      );
+
+      expect(added, 1);
+      final sent = bodyOf(api.requests.single);
+      expect(api.requests.single.path, '$base/connections');
+      expect(sent['type'], 'ipps');
+      expect((sent['configuration'] as Map)['host'], '192.168.1.77');
+      // Last in line: what works now stays first.
+      expect(sent.containsKey('priority'), isFalse);
+      expect((sent['credentials'] as Map)['username'], 'ada');
+    });
+
+    test('replaces a connection’s password, here and on the backend', () async {
+      api.handler = (_) async =>
+          FakeResponse(200, connectionBody(hasCredentials: true));
+      final connection = ConnectionRead.fromJson(connectionBody().cast());
+
+      final updated = await repository.setCredentials(
+        organizationId: _org,
+        connection: connection,
+        credentials: const PrinterCredentials(userName: 'ada', password: 'new'),
+      );
+
+      expect(updated.hasCredentials, isTrue);
+      expect(api.requests.single.method, 'PATCH');
+      expect(bodyOf(api.requests.single), {
+        'credentials': {'username': 'ada', 'password': 'new'},
+      });
+      // The phone uses the new one at once, without asking the backend.
+      api.requests.clear();
+      final kept = await repository.credentialsFor(
+        organizationId: _org,
+        printer: PrinterRead.fromJson(
+          printerBody(connections: [connectionBody(hasCredentials: true)])
+              .cast(),
+        ),
+      );
+      expect(kept!.password, 'new');
+      expect(api.requests, isEmpty);
     });
   });
 

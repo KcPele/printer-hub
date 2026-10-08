@@ -5,6 +5,9 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:printer_protocols/printer_protocols.dart';
+import 'package:printer_protocols/testing.dart';
+import 'package:printerhub/app/app.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/printers/widgets/pairing_code_sheet.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -75,8 +78,95 @@ void main() {
       expect(find.text('Prints in colour'), findsOneWidget);
 
       await scrollTo(tester, find.text('How it connects'));
-      await scrollTo(tester, find.textContaining('ESCL'));
-      expect(find.textContaining('IPP  192.168.1.40'), findsOneWidget);
+      await scrollTo(tester, find.textContaining('Scanning · 192.168.1.40'));
+      expect(find.textContaining('Printing · 192.168.1.40'), findsOneWidget);
+      // The check as the page opened found both ways in working.
+      expect(find.textContaining('Working'), findsNWidgets(2));
+    });
+
+    testWidgets('opens the ways the printer is reached', (tester) async {
+      await pump(tester);
+
+      await scrollTo(tester, find.text('Manage'));
+      await tester.tap(find.text('Manage'));
+
+      verify(
+        () => router.push<Object?>(AppRoutes.printerConnections('printer-1')),
+      ).called(1);
+    });
+
+    group('asking again what it can do', () {
+      Future<void> ask(WidgetTester tester) async {
+        await scrollTo(tester, find.text('Ask what it can do again'));
+        await tester.tap(find.text('Ask what it can do again'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('records what the printer says now', (tester) async {
+        backend.plugInPrinter();
+        await pump(tester);
+        // Scanning has been switched off on the printer since it was added.
+        backend.device.device = (request) => request.uri.path.contains('eSCL')
+            ? const FakeAnswer(404)
+            : FakeAnswer.ipp(ippResponse());
+
+        await ask(tester);
+
+        expect(
+          find.text('What the printer can do is up to date.'),
+          findsOneWidget,
+        );
+        expect(
+          printers.state.printers.single.capabilities!.scan.supported,
+          isFalse,
+        );
+      });
+
+      testWidgets('says when the printer does not answer', (tester) async {
+        await pump(tester);
+
+        await ask(tester);
+
+        expect(find.textContaining('did not answer'), findsOneWidget);
+      });
+
+      testWidgets('says why the answer could not be recorded', (tester) async {
+        backend.plugInPrinter();
+        await pump(tester);
+        backend.fail(
+          'PUT /organizations/$_org/printers/printer-1/capabilities',
+          403,
+          'permission.denied',
+          detail: 'You cannot change this printer.',
+        );
+
+        await ask(tester);
+
+        expect(find.text('You cannot change this printer.'), findsOneWidget);
+      });
+
+      testWidgets('cannot be asked twice at once', (tester) async {
+        final answer = Completer<void>();
+        await pump(tester);
+        backend.device.device = (request) async {
+          await answer.future;
+          throw PrinterUnreachable(request.uri, 'gone');
+        };
+        await scrollTo(tester, find.text('Ask what it can do again'));
+
+        await tester.tap(find.text('Ask what it can do again'));
+        await tester.pump();
+
+        final button = tester.widget<OutlinedButton>(
+          find.ancestor(
+            of: find.text('Ask what it can do again'),
+            matching: find.byWidgetPredicate((w) => w is OutlinedButton),
+          ),
+        );
+        expect(button.onPressed, isNull);
+        answer.complete();
+        await tester.pumpAndSettle();
+      });
     });
 
     testWidgets('passes on what is good to know about its family', (

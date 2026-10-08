@@ -412,6 +412,10 @@ class TestBackend {
           ? FakeResponse.problem(404, 'connection.not_found')
           : FakeResponse(200, {...secrets, 'extra': <String, String>{}});
     }
+    final connectionRoute = _connectionRoute.firstMatch(key);
+    if (connectionRoute != null) {
+      return _answerConnections(connectionRoute, body);
+    }
     final printerRoute = _printerRoute.firstMatch(key);
     if (printerRoute != null) return _answerPrinters(printerRoute, body);
 
@@ -427,9 +431,82 @@ class TestBackend {
   );
 
   static final RegExp _printerRoute = RegExp(
-    '^(GET|POST|PATCH|DELETE) /organizations/([^/]+)/printers'
-    r'(?:/([^/]+))?(/status|/pairing-tokens)?$',
+    '^(GET|POST|PUT|PATCH|DELETE) /organizations/([^/]+)/printers'
+    r'(?:/([^/]+))?(/status|/pairing-tokens|/capabilities)?$',
   );
+
+  static final RegExp _connectionRoute = RegExp(
+    '^(GET|POST|PUT|PATCH|DELETE) /organizations/[^/]+/printers/([^/]+)'
+    r'/connections(?:/([^/]+))?(/health)?$',
+  );
+
+  /// A printer's connections: listing, adding, ordering, changing, and
+  /// removing them, and recording how each did.
+  FakeResponse _answerConnections(
+    RegExpMatch route,
+    Map<String, dynamic> body,
+  ) {
+    final method = route.group(1)!;
+    final printerId = route.group(2)!;
+    final connectionId = route.group(3);
+    final index = printerList.indexWhere((p) => p['id'] == printerId);
+    if (index < 0) return FakeResponse.problem(404, 'printer.not_found');
+    var connections = (printerList[index]['connections']! as List<dynamic>)
+        .cast<Map<String, Object?>>();
+
+    void save(List<Map<String, Object?>> changed) {
+      connections = changed;
+      printerList = [...printerList]
+        ..[index] = {...printerList[index], 'connections': changed};
+    }
+
+    if (connectionId == null) {
+      if (method == 'GET') return FakeResponse(200, connections);
+      final configuration = body['configuration'] as Map<String, dynamic>;
+      final created = connectionBody(
+        type: body['type'] as String,
+        host: configuration['host'] as String,
+        port: configuration['port'] as int,
+        path: configuration['path'] as String,
+        priority: connections.length + 1,
+        printerId: printerId,
+        hasCredentials: body['credentials'] != null,
+      );
+      save([...connections, created]);
+      return FakeResponse(201, created);
+    }
+    if (connectionId == 'priority') {
+      final order = (body['connection_ids'] as List<dynamic>).cast<String>();
+      if (order.toSet().length != connections.length ||
+          !connections.every((c) => order.contains(c['id']))) {
+        return FakeResponse.problem(422, 'connection.priority_mismatch');
+      }
+      save([
+        for (final (position, id) in order.indexed)
+          {
+            ...connections.firstWhere((c) => c['id'] == id),
+            'priority': position + 1,
+          },
+      ]);
+      return FakeResponse(200, connections);
+    }
+
+    final at = connections.indexWhere((c) => c['id'] == connectionId);
+    if (at < 0) return FakeResponse.problem(404, 'connection.not_found');
+    if (method == 'DELETE') {
+      save([...connections]..removeAt(at));
+      return const FakeResponse(204);
+    }
+    final secrets = body['credentials'] as Map<String, dynamic>?;
+    if (secrets != null) printerPasswords[printerId] = secrets;
+    final changed = {
+      ...connections[at],
+      if (route.group(4) != null) 'health': body['health'],
+      if (secrets != null) 'has_credentials': true,
+    };
+    save([...connections]..[at] = changed);
+    return FakeResponse(200, changed);
+  }
 
   FakeResponse _answerPrinters(RegExpMatch route, Map<String, dynamic> body) {
     final method = route.group(1)!;
@@ -490,6 +567,25 @@ class TestBackend {
     if (method == 'DELETE') {
       printerList = [...printerList]..removeAt(index);
       return const FakeResponse(204);
+    }
+
+    if (route.group(4) == '/capabilities') {
+      // What the phone found when it asked the printer again.
+      final probed = printerBody(scans: body['scan'] != null);
+      final recorded = {
+        ...printerList[index],
+        'capabilities': {
+          ...probed['capabilities']! as Map<String, Object?>,
+          'print': {
+            ...(probed['capabilities']! as Map<String, Object?>)['print']!
+                as Map<String, Object?>,
+            'color':
+                (body['print'] as Map<String, dynamic>?)?['color'] ?? false,
+          },
+        },
+      };
+      printerList = [...printerList]..[index] = recorded;
+      return FakeResponse(200, recorded);
     }
 
     final detail = body['detail'] as Map<String, dynamic>?;
