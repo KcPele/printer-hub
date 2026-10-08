@@ -14,6 +14,7 @@ import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/scan/scan_words.dart';
 import 'package:printerhub/scan/widgets/scan_options.dart';
 import 'package:printerhub/session/session.dart';
+import 'package:printerhub/workspace/cubit/features_cubit.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 /// Scans on one printer: say how, scan, look the pages over, and keep the
@@ -45,6 +46,7 @@ class ScanPage extends StatelessWidget {
         jobsRepository: context.read<JobsRepository>(),
         documentsRepository: context.read<DocumentsRepository>(),
         sharer: context.read<ScanSharer>(),
+        textReader: context.read<ScanTextReader>(),
         organizationId: context.read<SessionCubit>().state.organization!.id,
         printer: printer,
         name: name,
@@ -391,17 +393,33 @@ class _Saved extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
-          if (state.kept == ScanKept.yes)
+          if (state.kept == ScanKept.yes) ...[
             Center(
               child: StatusPill(
                 status: AppStatus.success,
                 label: l10n.scanKeptInWorkspace,
                 icon: Icons.cloud_done_outlined,
               ),
-            )
-          else
+            ),
+            if (state.textRead != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                state.textRead! ? l10n.scanTextKept : l10n.scanTextNotRead,
+                style: textTheme.bodySmall?.copyWith(
+                  color: context.colors.textMuted,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ] else
             OutlinedButton.icon(
-              onPressed: keeping ? null : cubit.keep,
+              onPressed: keeping
+                  ? null
+                  : () => cubit.keep(
+                      readText: context.read<FeaturesCubit>().enabled(
+                        'local_ocr',
+                      ),
+                    ),
               icon: keeping
                   ? const SizedBox.square(
                       dimension: 18,

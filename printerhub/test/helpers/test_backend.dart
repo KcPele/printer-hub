@@ -186,6 +186,9 @@ class TestBackend {
   /// The phone's share sheet.
   final FakeScanSharer sharer = FakeScanSharer();
 
+  /// The phone's text recognition.
+  final FakeScanTextReader textReader = FakeScanTextReader();
+
   /// The other apps on the phone, which can hand a file to this one.
   final FakeIncomingDocuments otherApps = FakeIncomingDocuments();
 

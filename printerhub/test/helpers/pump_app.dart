@@ -141,6 +141,7 @@ extension PumpApp on WidgetTester {
           RepositoryProvider<PrinterFinders>.value(value: api.finders),
           RepositoryProvider<PrintDocuments>.value(value: api.documents),
           RepositoryProvider<ScanSharer>.value(value: api.sharer),
+          RepositoryProvider<ScanTextReader>.value(value: api.textReader),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -183,6 +184,7 @@ extension PumpApp on WidgetTester {
         finders: backend.finders,
         documents: backend.documents,
         scanSharer: backend.sharer,
+        scanTextReader: backend.textReader,
         incoming: backend.otherApps,
         keptOrganizations: await backend.organizations.kept(),
       ),

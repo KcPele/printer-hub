@@ -102,6 +102,24 @@ class FakeIncomingDocuments implements IncomingDocuments {
   void open(PickedDocument document) => _documents.add(document);
 }
 
+/// Stands in for the phone's text recognition: every page says [text].
+class FakeScanTextReader implements ScanTextReader {
+  String text = 'Invoice 42';
+
+  /// True makes the phone unable to read anything.
+  bool fails = false;
+
+  /// The pictures of each reading asked for.
+  final List<List<String>> asked = [];
+
+  @override
+  Future<String> read(List<File> pictures) async {
+    asked.add([for (final picture in pictures) picture.path]);
+    if (fails) throw const FormatException('unreadable');
+    return [for (final _ in pictures) text].join('\n');
+  }
+}
+
 /// Stands in for the phone's share sheet, and keeps what it was handed.
 class FakeScanSharer implements ScanSharer {
   final List<({List<File> files, String name})> shared = [];

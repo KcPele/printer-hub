@@ -7,7 +7,7 @@ import 'package:organizations_repository/organizations_repository.dart';
 /// What is switched on for the workspace in use, by name. It follows the
 /// workspace: another workspace has its own.
 ///
-/// A screen asks `context.read<FeaturesCubit>().enabled('scan.ocr')`.
+/// A screen asks `context.read<FeaturesCubit>().enabled('local_ocr')`.
 /// Something that is not named, or not yet known, is off.
 class FeaturesCubit extends Cubit<Map<String, bool>> {
   new({

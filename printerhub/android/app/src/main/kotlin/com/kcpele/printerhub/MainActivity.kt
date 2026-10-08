@@ -4,6 +4,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.OpenableColumns
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -16,6 +19,8 @@ import kotlin.concurrent.thread
  *
  * A file can arrive before Flutter is listening, when it is what started the
  * app. Those wait here until Flutter asks with `listen`.
+ *
+ * It also reads the words in scanned pages, over `printerhub/scan_text`.
  */
 class MainActivity : FlutterActivity() {
     private var channel: MethodChannel? = null
@@ -40,6 +45,51 @@ class MainActivity : FlutterActivity() {
         }
         clearOldCopies()
         take(intent)
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "printerhub/scan_text",
+        ).setMethodCallHandler { call, result ->
+            val paths = call.arguments as? List<*>
+            if (call.method == "read" && paths != null) {
+                readText(paths.filterIsInstance<String>(), result)
+            } else {
+                result.notImplemented()
+            }
+        }
+    }
+
+    /**
+     * Reads the words in scanned pages with ML Kit's bundled model, a page
+     * after another. The pages never leave the phone.
+     */
+    private fun readText(paths: List<String>, result: MethodChannel.Result) {
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        val pages = mutableListOf<String>()
+
+        fun next(index: Int) {
+            if (index == paths.size) {
+                recognizer.close()
+                result.success(pages.filter { it.isNotEmpty() }.joinToString("\n\n"))
+                return
+            }
+            try {
+                val image = InputImage.fromFilePath(this, Uri.fromFile(File(paths[index])))
+                recognizer.process(image)
+                    .addOnSuccessListener { read ->
+                        pages.add(read.text)
+                        next(index + 1)
+                    }
+                    .addOnFailureListener { error ->
+                        recognizer.close()
+                        result.error("scan_text.unreadable", error.message, null)
+                    }
+            } catch (error: Exception) {
+                recognizer.close()
+                result.error("scan_text.unreadable", error.message, null)
+            }
+        }
+        next(0)
     }
 
     /**

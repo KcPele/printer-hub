@@ -29,6 +29,7 @@ void main() {
       jobsRepository: backend.jobs,
       documentsRepository: backend.documentsKept,
       sharer: backend.sharer,
+      textReader: backend.textReader,
       organizationId: _org,
       printer: on ?? printer,
       name: 'Scan today',
@@ -602,6 +603,98 @@ void main() {
           backend.storage.stored['/${document['id']}'],
           cubit.state.files.single.readAsBytesSync(),
         );
+      });
+
+      group('with the words of a scan read', () {
+        Future<ScanCubit> savedReading({
+          int pages = 2,
+          String format = 'application/pdf',
+        }) async {
+          backend.scanPages = [for (var i = 0; i < pages; i++) tinyJpeg];
+          final cubit = build()
+            ..change(ScanChoices(source: 'adf', format: format))
+            ..rename('Receipts');
+          await cubit.scan();
+          await cubit.save();
+          return cubit;
+        }
+
+        test('reads every page of a PDF, and keeps the words with '
+            'it', () async {
+          final cubit = await savedReading();
+
+          await cubit.keep(readText: true);
+
+          expect(cubit.state.kept, ScanKept.yes);
+          expect(cubit.state.textRead, isTrue);
+          expect(backend.textReader.asked.single, [
+            for (final page in cubit.state.pages) page.file.path,
+          ]);
+          expect(
+            backend.lastBody(documents)['ocr_text'],
+            'Invoice 42\nInvoice 42',
+          );
+        });
+
+        test('reads each picture for its own document', () async {
+          final cubit = await savedReading(format: 'image/jpeg');
+
+          await cubit.keep(readText: true);
+
+          expect(backend.textReader.asked, [
+            [cubit.state.pages.first.file.path],
+            [cubit.state.pages.last.file.path],
+          ]);
+          expect(backend.documentList, hasLength(2));
+          expect(backend.lastBody(documents)['ocr_text'], 'Invoice 42');
+        });
+
+        test('keeps a scan with no words in it without any', () async {
+          backend.textReader.text = '  ';
+          final cubit = await savedReading(pages: 1);
+
+          await cubit.keep(readText: true);
+
+          expect(cubit.state.textRead, isTrue);
+          expect(backend.lastBody(documents)['ocr_text'], isNull);
+        });
+
+        test('keeps the scan all the same when the phone cannot read '
+            'it, and says so', () async {
+          backend.textReader.fails = true;
+          final cubit = await savedReading();
+
+          await cubit.keep(readText: true);
+
+          expect(cubit.state.kept, ScanKept.yes);
+          expect(cubit.state.textRead, isFalse);
+          expect(backend.documentList.single['file_name'], 'Receipts.pdf');
+          expect(backend.lastBody(documents)['ocr_text'], isNull);
+        });
+
+        test('does not read again a scan whose record is already '
+            'made', () async {
+          final cubit = await savedReading();
+          backend.storage.broken = true;
+          await cubit.keep(readText: true);
+          expect(cubit.state.failure, 'scan.keep_interrupted');
+
+          backend.storage.broken = false;
+          await cubit.keep(readText: true);
+
+          expect(cubit.state.kept, ScanKept.yes);
+          expect(backend.textReader.asked, hasLength(1));
+        });
+      });
+
+      test('reads nothing when the workspace has not switched it on', () async {
+        final cubit = await saved();
+
+        await cubit.keep();
+
+        expect(cubit.state.textRead, isNull);
+        expect(backend.textReader.asked, isEmpty);
+        expect(backend.lastBody(documents)['ocr_text'], isNull);
       });
 
       test('keeps each picture as a document of one page', () async {

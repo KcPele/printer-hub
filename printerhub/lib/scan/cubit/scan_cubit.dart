@@ -49,6 +49,7 @@ class ScanState extends Equatable {
     this.error,
     this.files = const [],
     this.kept = ScanKept.no,
+    this.textRead,
   });
 
   final ScanStep step;
@@ -83,6 +84,11 @@ class ScanState extends Equatable {
   /// Whether the finished scan is in the workspace too.
   final ScanKept kept;
 
+  /// Whether the words of a kept scan were read and kept with it. Null
+  /// when they were not asked for, false when the phone could not read
+  /// them.
+  final bool? textRead;
+
   ScanState _with({
     ScanStep? step,
     ScanChoices? choices,
@@ -94,6 +100,7 @@ class ScanState extends Equatable {
     ApiException? error,
     List<File> files = const [],
     ScanKept kept = ScanKept.no,
+    bool? textRead,
   }) {
     return ScanState(
       step: step ?? this.step,
@@ -106,6 +113,7 @@ class ScanState extends Equatable {
       error: error,
       files: files,
       kept: kept,
+      textRead: textRead,
     );
   }
 
@@ -121,6 +129,7 @@ class ScanState extends Equatable {
     error,
     [for (final file in files) file.path],
     kept,
+    textRead,
   ];
 }
 
@@ -133,6 +142,7 @@ class ScanCubit extends Cubit<ScanState> {
     required this._jobsRepository,
     required this._documentsRepository,
     required this._sharer,
+    required this._textReader,
     required this._organizationId,
     required this._printer,
     required String name,
@@ -146,6 +156,7 @@ class ScanCubit extends Cubit<ScanState> {
   final JobsRepository _jobsRepository;
   final DocumentsRepository _documentsRepository;
   final ScanSharer _sharer;
+  final ScanTextReader _textReader;
   final String _organizationId;
   final PrinterRead _printer;
   final Directory _directory;
@@ -370,16 +381,36 @@ class ScanCubit extends Cubit<ScanState> {
   /// Puts the finished scan in the workspace, for the other members and
   /// the person's other devices. Asked again after a failure, it sends
   /// only what did not arrive.
-  Future<void> keep() async {
+  ///
+  /// With [readText], the words in the pages are read on the phone first
+  /// and kept with the scan, so the workspace can find it by what it says.
+  /// That is for a workspace with `local_ocr` switched on.
+  Future<void> keep({bool readText = false}) async {
     if (state.step != ScanStep.saved || state.kept != ScanKept.no) return;
     final files = state.files;
     emit(state._with(files: files, kept: ScanKept.keeping));
+    bool? textRead;
     try {
-      for (final file in files) {
+      for (final (index, file) in files.indexed) {
         if (_kept.containsKey(file.path)) continue;
         final waiting = _waiting[file.path];
         final name = file.uri.pathSegments.last;
         final pdf = name.endsWith('.pdf');
+        String? text;
+        if (readText && waiting == null) {
+          // One file holds every page; otherwise a file is its page.
+          final pages = files.length == 1 ? state.pages : [state.pages[index]];
+          try {
+            text = await _textReader.read([
+              for (final page in pages)
+                if (page.mimeType != 'application/pdf') page.file,
+            ]);
+            textRead ??= true;
+          } on Object {
+            // The scan is kept all the same, and found by its name.
+            textRead = false;
+          }
+        }
         try {
           _kept[file.path] = waiting != null
               ? await _documentsRepository.finish(
@@ -400,6 +431,7 @@ class ScanCubit extends Cubit<ScanState> {
                       ? (state.pages.length + 1) ~/ 2
                       : state.pages.length,
                   printerId: _printer.id,
+                  text: text,
                 );
           _waiting.remove(file.path);
         } on UploadInterrupted catch (interrupted) {
@@ -407,7 +439,9 @@ class ScanCubit extends Cubit<ScanState> {
           rethrow;
         }
       }
-      if (!isClosed) emit(state._with(files: files, kept: ScanKept.yes));
+      if (!isClosed) {
+        emit(state._with(files: files, kept: ScanKept.yes, textRead: textRead));
+      }
     } on UploadInterrupted {
       if (!isClosed) {
         emit(state._with(files: files, failure: 'scan.keep_interrupted'));

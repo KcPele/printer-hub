@@ -2719,6 +2719,14 @@
     "@scanCardBack": {
         "description": "Label of the scanned back of an ID card"
     },
+    "scanTextKept": "Its words were read on this phone and kept with it, so it can be found by what it says.",
+    "@scanTextKept": {
+        "description": "Shown under a scan kept in the workspace when its text was recognised on the device"
+    },
+    "scanTextNotRead": "Its words could not be read on this phone. It can be found by its name.",
+    "@scanTextNotRead": {
+        "description": "Shown under a scan kept in the workspace when text recognition failed"
+    },
     "scanPrint": "Print it",
     "@scanPrint": {
         "description": "Button that prints a finished scan"

@@ -95,4 +95,7 @@ flutter {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:2.2.10")
+    // Reads the words in a scan on the phone. The model for Latin script
+    // comes with the app, so nothing is downloaded or sent to be read.
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 }

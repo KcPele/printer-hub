@@ -8,6 +8,7 @@ import 'package:printerhub/app/app.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/scan/scan.dart';
+import 'package:printerhub/workspace/workspace.dart';
 
 import '../../helpers/helpers.dart';
 
@@ -505,6 +506,51 @@ void main() {
       expect(find.text('Kept in your workspace'), findsOneWidget);
       expect(find.text('Keep in your workspace'), findsNothing);
       expect(backend.documentList.single['upload_status'], 'uploaded');
+    });
+
+    testWidgets('reads the words of a kept scan in a workspace that has it '
+        'switched on, and says so', (tester) async {
+      backend.features = {'local_ocr': true};
+      await pump(tester);
+      await tester.runAsync(
+        BlocProvider.of<FeaturesCubit>(tester.element(find.byType(ScanView)))
+            .load,
+      );
+      await scan(tester);
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+
+      await tester.tap(find.text('Keep in your workspace'));
+      await settle(tester);
+
+      expect(find.text('Kept in your workspace'), findsOneWidget);
+      expect(find.textContaining('Its words were read'), findsOneWidget);
+      expect(
+        backend.lastBody('POST /organizations/$_org/documents')['ocr_text'],
+        'Invoice 42',
+      );
+    });
+
+    testWidgets('says when the words of a kept scan could not be read', (
+      tester,
+    ) async {
+      backend
+        ..features = {'local_ocr': true}
+        ..textReader.fails = true;
+      await pump(tester);
+      await tester.runAsync(
+        BlocProvider.of<FeaturesCubit>(tester.element(find.byType(ScanView)))
+            .load,
+      );
+      await scan(tester);
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+
+      await tester.tap(find.text('Keep in your workspace'));
+      await settle(tester);
+
+      expect(find.text('Kept in your workspace'), findsOneWidget);
+      expect(find.textContaining('could not be read'), findsOneWidget);
     });
 
     testWidgets('says when a scan did not reach the workspace', (tester) async {

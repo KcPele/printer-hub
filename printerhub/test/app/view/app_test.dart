@@ -562,14 +562,14 @@ void main() {
 
       testWidgets('opens the workspace screens from Settings', (tester) async {
         backend
-          ..features = {'scan.ocr': true}
+          ..features = {'local_ocr': true}
           ..auditList = [auditBody()];
         await pump(tester);
         // What is switched on for the workspace was read as the app began.
         final features = BlocProvider.of<FeaturesCubit>(
           tester.element(find.byType(HomePage)),
         );
-        expect(features.enabled('scan.ocr'), isTrue);
+        expect(features.enabled('local_ocr'), isTrue);
         await openArea(tester, 'Settings');
 
         await openEntry(tester, 'Name and rules');

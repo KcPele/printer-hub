@@ -10,6 +10,15 @@ abstract interface class ScanSharer {
   Future<void> share(List<File> files, {required String name});
 }
 
+/// Reads the words in scanned pages. It works on the phone: no page
+/// leaves it to be read.
+// One member, but a class so the app can be given a stand-in for it.
+abstract interface class ScanTextReader {
+  /// The words in [pictures], one page after another. Empty when there
+  /// are none. Throws when this phone cannot read them.
+  Future<String> read(List<File> pictures);
+}
+
 /// A paper size a scan can be made at.
 class ScanPaper {
   const new(this.name, this.widthMm, this.heightMm);

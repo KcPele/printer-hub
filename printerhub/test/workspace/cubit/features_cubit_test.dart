@@ -12,7 +12,7 @@ void main() {
   late StreamController<String?> workspaces;
 
   setUp(() async {
-    backend = TestBackend()..features = {'scan.ocr': true, 'print.pin': false};
+    backend = TestBackend()..features = {'local_ocr': true, 'print.pin': false};
     workspaces = StreamController<String?>.broadcast();
     await backend.signedInBefore();
   });
@@ -35,7 +35,7 @@ void main() {
     final cubit = build();
 
     expect(cubit.state, isEmpty);
-    expect(cubit.enabled('scan.ocr'), isFalse);
+    expect(cubit.enabled('local_ocr'), isFalse);
   });
 
   test('reads what is switched on for the workspace', () async {
@@ -43,7 +43,7 @@ void main() {
 
     await cubit.load();
 
-    expect(cubit.enabled('scan.ocr'), isTrue);
+    expect(cubit.enabled('local_ocr'), isTrue);
     expect(cubit.enabled('print.pin'), isFalse);
     expect(cubit.enabled('never.heard.of'), isFalse);
   });
@@ -62,7 +62,7 @@ void main() {
 
     workspaces.add(_org);
     await pumpEventQueue();
-    expect(cubit.enabled('scan.ocr'), isTrue);
+    expect(cubit.enabled('local_ocr'), isTrue);
 
     workspaces.add(null);
     await pumpEventQueue();

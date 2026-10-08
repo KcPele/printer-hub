@@ -36,6 +36,7 @@ class App extends StatelessWidget {
     required this.finders,
     required this.documents,
     required this.scanSharer,
+    required this.scanTextReader,
     required this.incoming,
     this.keptOrganizations,
     super.key,
@@ -58,6 +59,9 @@ class App extends StatelessWidget {
 
   /// The way this phone hands a finished scan on.
   final ScanSharer scanSharer;
+
+  /// The way this phone reads the words in a scan.
+  final ScanTextReader scanTextReader;
 
   /// The files other apps hand to this one to print.
   final IncomingDocuments incoming;
@@ -86,6 +90,7 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: finders),
         RepositoryProvider.value(value: documents),
         RepositoryProvider.value(value: scanSharer),
+        RepositoryProvider.value(value: scanTextReader),
       ],
       child: MultiBlocProvider(
         providers: [

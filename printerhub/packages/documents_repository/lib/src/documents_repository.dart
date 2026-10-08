@@ -30,6 +30,8 @@ class DocumentsRepository {
 
   /// Puts [file] in the workspace, and returns its record.
   ///
+  /// [text] is what the document says, read on the phone.
+  ///
   /// Throws an [ApiException] when the record cannot be made, which is
   /// also how a workspace that keeps documents on devices only says so,
   /// and [UploadInterrupted] when it was made but the file did not arrive.
@@ -41,6 +43,7 @@ class DocumentsRepository {
     int? pageCount,
     String source = 'printer_scan',
     String? printerId,
+    String? text,
   }) async {
     final size = await file.length();
     final created = await apiCall(
@@ -57,6 +60,9 @@ class DocumentsRepository {
           source: DocumentSource.fromJson(source),
           storageMode: StorageMode.cloud,
           sourcePrinterId: printerId,
+          // The words in it, when the phone has read them: the workspace
+          // can then find the document by what it says.
+          ocrText: text == null || text.trim().isEmpty ? null : text,
         ),
       ),
     );

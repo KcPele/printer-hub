@@ -102,7 +102,7 @@ void main() {
     );
   });
 
-  Future<StoredDocument> keep() {
+  Future<StoredDocument> keep({String? text}) {
     return repository.keep(
       organizationId: _org,
       file: scan,
@@ -110,10 +110,23 @@ void main() {
       mimeType: 'application/pdf',
       pageCount: 3,
       printerId: 'printer-1',
+      text: text,
     );
   }
 
   group('keep', () {
+    test('sends the words read on the phone with the record', () async {
+      await keep(text: 'Invoice 42');
+
+      expect(bodyOf(api.requests.first)['ocr_text'], 'Invoice 42');
+    });
+
+    test('sends no words when there are none to speak of', () async {
+      await keep(text: ' \n');
+
+      expect(bodyOf(api.requests.first)['ocr_text'], isNull);
+    });
+
     test('makes the record, sends the file, and says it arrived', () async {
       final kept = await keep();
 
