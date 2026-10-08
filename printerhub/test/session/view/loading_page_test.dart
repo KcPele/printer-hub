@@ -1,4 +1,5 @@
 import 'package:api_client/testing.dart';
+import 'package:app_ui/app_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/session/session.dart';
@@ -43,6 +44,7 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.text('Getting things ready'), findsOneWidget);
+      expect(find.byType(AppLogo), findsOneWidget);
     });
 
     testWidgets('says why loading failed and tries again', (tester) async {

@@ -99,6 +99,11 @@ app-smoke: ## Run the Dart API client against a local backend (needs `make dev`)
 app-live-test: ## Add the simulated printer through a real local backend (needs `make dev` and `make simulator`)
 	cd printerhub/packages/printers_repository && flutter test --tags live
 
+.PHONY: app-brand
+app-brand: ## Regenerate the app icon and launch image from the mark in printerhub/tool/brand/generate.py
+	cd printerhub && python3 tool/brand/generate.py
+	cd printerhub/packages/app_ui && flutter test tool/render_brand_test.dart
+
 .PHONY: app-goldens
 app-goldens: ## Regenerate the golden images after an intended visual change
 	cd printerhub/packages/app_ui && flutter test --update-goldens --tags golden

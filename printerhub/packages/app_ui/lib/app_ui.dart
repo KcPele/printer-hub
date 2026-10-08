@@ -14,6 +14,7 @@ export 'src/theme/app_theme_id.dart';
 export 'src/theme/app_theme_tokens.dart';
 export 'src/theme/app_typography.dart';
 export 'src/widgets/app_card.dart';
+export 'src/widgets/app_logo.dart';
 export 'src/widgets/app_notice.dart';
 export 'src/widgets/app_page_indicator.dart';
 export 'src/widgets/app_submit_button.dart';

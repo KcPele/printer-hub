@@ -21,6 +21,7 @@ dev_dependencies:
 
 flutter:
   assets:
+    - assets/brand/
     - assets/illustrations/
     # Licensed font files, when present. See the README in that folder.
     - assets/fonts/lufga/

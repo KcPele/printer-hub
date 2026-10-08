@@ -41,6 +41,10 @@ class LoadingPage extends StatelessWidget {
                 : Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // The same mark as the launch screen before it, so
+                      // the start of the app does not jump.
+                      AppLogo(semanticLabel: l10n.appName),
+                      const SizedBox(height: AppSpacing.xxl),
                       const CircularProgressIndicator(),
                       const SizedBox(height: AppSpacing.xl),
                       Text(

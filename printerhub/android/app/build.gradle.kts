@@ -60,17 +60,17 @@ android {
         create("production") {
             dimension = "default"
             applicationIdSuffix = ""
-            manifestPlaceholders["appName"] = "Printerhub"
+            manifestPlaceholders["appName"] = "PrinterHub"
         }
         create("staging") {
             dimension = "default"
             applicationIdSuffix = ".stg"
-            manifestPlaceholders["appName"] = "[STG] Printerhub"
+            manifestPlaceholders["appName"] = "[STG] PrinterHub"
         }
         create("development") {
             dimension = "default"
             applicationIdSuffix = ".dev"
-            manifestPlaceholders["appName"] = "[DEV] Printerhub"
+            manifestPlaceholders["appName"] = "[DEV] PrinterHub"
         }
     }
 
