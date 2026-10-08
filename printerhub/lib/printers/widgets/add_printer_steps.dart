@@ -1,7 +1,9 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printer_discovery/printer_discovery.dart';
+import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/auth/widgets/password_field.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
@@ -511,6 +513,12 @@ class WaysStep extends StatelessWidget {
                 onTap: state.bluetoothAvailable
                     ? () => cubit.choose(AddPrinterStep.bluetooth)
                     : null,
+              ),
+              _Way(
+                icon: Icons.menu_book_outlined,
+                title: l10n.waysCatalogue,
+                body: l10n.waysCatalogueBody,
+                onTap: () => context.push(AppRoutes.catalogue),
               ),
             ],
           ),

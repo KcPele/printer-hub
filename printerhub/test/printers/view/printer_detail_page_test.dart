@@ -42,7 +42,10 @@ void main() {
         printersCubit: printers,
         router: router,
       );
-      await tester.pump();
+      // Long enough for the page to learn which family the printer is in.
+      for (var i = 0; i < 3; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
     }
 
     Future<void> scrollTo(WidgetTester tester, Finder finder) async {
@@ -74,6 +77,29 @@ void main() {
       await scrollTo(tester, find.text('How it connects'));
       await scrollTo(tester, find.textContaining('ESCL'));
       expect(find.textContaining('IPP  192.168.1.40'), findsOneWidget);
+    });
+
+    testWidgets('passes on what is good to know about its family', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      await scrollTo(tester, find.text('Good to know'));
+      await scrollTo(tester, find.textContaining('Switch on Mopria scanning'));
+      expect(
+        find.text('Connect the printer to the office network.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('has no tips for a printer the catalogue does not know', (
+      tester,
+    ) async {
+      backend.families = [];
+      await pump(tester);
+
+      await scrollTo(tester, find.text('How it connects'));
+      expect(find.text('Good to know'), findsNothing);
     });
 
     testWidgets('shows what the printer wants attention for', (tester) async {

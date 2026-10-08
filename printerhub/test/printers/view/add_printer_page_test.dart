@@ -63,6 +63,8 @@ void main() {
 
     Future<void> open(WidgetTester tester, String way) async {
       await tester.ensureVisible(find.text(way));
+      // A frame, so the list has moved before the tap is aimed.
+      await tester.pump();
       await tester.tap(find.text(way));
       await settle(tester);
     }
@@ -91,6 +93,16 @@ void main() {
         ]) {
           expect(find.text(way), findsOneWidget);
         }
+      });
+
+      testWidgets('include the catalogue, for getting a model ready', (
+        tester,
+      ) async {
+        await pump(tester);
+
+        await open(tester, 'Browse the catalogue');
+
+        verify(() => router.push<Object?>(AppRoutes.catalogue)).called(1);
       });
 
       testWidgets('say when the phone cannot use one', (tester) async {

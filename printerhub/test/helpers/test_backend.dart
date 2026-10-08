@@ -86,6 +86,31 @@ class TestBackend {
   /// The printers the API knows, in every workspace.
   List<Map<String, Object?>> printerList = [];
 
+  /// The catalogue of printer families.
+  List<Map<String, Object?>> families = [
+    profileBody(),
+    profileBody(
+      id: 'profile-2',
+      manufacturer: 'HP',
+      name: 'DeskJet, ENVY, and Smart Tank',
+      category: 'home_multifunction',
+      summary: 'Wi-Fi inkjets for the home that print, copy, and scan.',
+      popularity: 95,
+      setupTips: const ['Wake the printer before you look for it.'],
+    ),
+    profileBody(
+      id: 'profile-3',
+      manufacturer: 'Brother',
+      name: 'HL-L lasers',
+      category: 'office_printer',
+      summary: 'Compact laser printers for the desk.',
+      popularity: 80,
+      setupTips: const [],
+      color: false,
+      scans: false,
+    ),
+  ];
+
   /// Where the account is signed in. The first is this phone.
   List<Map<String, Object?>> sessionList = [
     _sessionBody('session-1', current: true, deviceId: 'device-1'),
@@ -327,6 +352,17 @@ class TestBackend {
         return printer == null
             ? FakeResponse.problem(422, 'pairing.token_invalid')
             : FakeResponse(200, {'printer': printer});
+      case 'GET /capability-profiles':
+        return FakeResponse(200, families);
+      case 'GET /capability-profiles/match':
+        final maker = '${request.queryParameters['manufacturer']}'
+            .toLowerCase();
+        final family = families
+            .where((item) => '${item['manufacturer']}'.toLowerCase() == maker)
+            .firstOrNull;
+        return family == null
+            ? FakeResponse.problem(404, 'capability_profile.no_match')
+            : FakeResponse(200, family);
       case 'GET /auth/sessions':
         return FakeResponse(200, sessionList);
       case 'GET /devices':

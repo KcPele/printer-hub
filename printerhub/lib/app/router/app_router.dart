@@ -4,6 +4,7 @@ import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printerhub/account/account.dart';
 import 'package:printerhub/activity/activity.dart';
 import 'package:printerhub/auth/auth.dart';
+import 'package:printerhub/catalogue/catalogue.dart';
 import 'package:printerhub/gallery/gallery.dart';
 import 'package:printerhub/home/home.dart';
 import 'package:printerhub/printers/printers.dart';
@@ -26,6 +27,7 @@ abstract final class AppRoutes {
   static const String home = '/home';
   static const String printers = '/printers';
   static const String addPrinter = '/printers/add';
+  static const String catalogue = '/printers/catalogue';
 
   /// The page of one printer.
   static String printer(String id) => '/printers/$id';
@@ -149,6 +151,10 @@ GoRouter createAppRouter({
                   GoRoute(
                     path: 'add',
                     builder: (context, state) => const AddPrinterPage(),
+                  ),
+                  GoRoute(
+                    path: 'catalogue',
+                    builder: (context, state) => const CataloguePage(),
                   ),
                   GoRoute(
                     path: ':printerId',

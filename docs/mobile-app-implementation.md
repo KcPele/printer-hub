@@ -1,7 +1,7 @@
 # PrinterHub Mobile — Implementation Document
 
 **Date:** 2026-10-07
-**Status:** Milestone A0 is in progress. Done: the three themes, theme switching that survives a restart, the shared widgets, the gallery, and the themed illustration pipeline. The generated Dart API client, with session renewal and typed errors, is in `packages/api_client`. The welcome screens, the four-area shell, and Settings with the theme picker are built. A1 is built: register, sign in, password reset, email verification, workspaces, and sign-out, checked end to end against a local backend. A1 is complete: the phone registers itself with the account each time a session starts, and Settings has the profile, change password, devices and sessions, and delete account screens. A2 is partly built: adding a printer by address, the printer list, and printer detail with live status and supplies, checked on the iOS simulator against the printer simulator. Also built, ahead of A6: the ways to connect. Adding a printer opens on the printers found on the Wi-Fi network, then offers an address, a QR code, an NFC tap, Wi-Fi Direct, and Bluetooth, and a printer can be shared with a pairing code. Discovery was checked on the iOS simulator; NFC, Bluetooth, and the camera need a real phone. The protocol code was then hardened against what real printers do (`docs/printer-compatibility.md`): print formats other than PDF, printers that want a password, IPP 1.1, and scanner retries and quirks. A printer that asks for a user name and password can be added, and its password is saved with it. Left in A2: the catalogue. Section 14 records the owner's decisions and the questions still open.
+**Status:** Milestone A0 is in progress. Done: the three themes, theme switching that survives a restart, the shared widgets, the gallery, and the themed illustration pipeline. The generated Dart API client, with session renewal and typed errors, is in `packages/api_client`. The welcome screens, the four-area shell, and Settings with the theme picker are built. A1 is built: register, sign in, password reset, email verification, workspaces, and sign-out, checked end to end against a local backend. A1 is complete: the phone registers itself with the account each time a session starts, and Settings has the profile, change password, devices and sessions, and delete account screens. A2 is partly built: adding a printer by address, the printer list, and printer detail with live status and supplies, checked on the iOS simulator against the printer simulator. Also built, ahead of A6: the ways to connect. Adding a printer opens on the printers found on the Wi-Fi network, then offers an address, a QR code, an NFC tap, Wi-Fi Direct, and Bluetooth, and a printer can be shared with a pairing code. Discovery was checked on the iOS simulator; NFC, Bluetooth, and the camera need a real phone. The protocol code was then hardened against what real printers do (`docs/printer-compatibility.md`): print formats other than PDF, printers that want a password, IPP 1.1, and scanner retries and quirks. A printer that asks for a user name and password can be added, and its password is saved with it. The catalogue is built: 27 printer families from the backend, searchable, each with what its models usually do and what to do on the printer first, and a printer's own page passes on its family's tips. Section 14 records the owner's decisions and the questions still open.
 **Requirements:** `PrinterHub_FRD_v2.0_Mobile_First.md` §7 (FR-MOB), §8 (FR-CON), §55.2 (mobile MVP), §60 (acceptance on the Xerox VersaLink C7130)
 **Design references:** `design/`, on the owner's machine only. The folder is ignored by git.
 
@@ -315,13 +315,13 @@ Each milestone ends with something a person can use and a test suite that passes
 
 ## 12. Backend work this needs
 
-The backend is complete for the MVP as specified. The app adds four small requirements. The first and the last are done.
+The backend is complete for the MVP as specified. The app adds four small requirements. All four are done.
 
 | Change | Why |
 |---|---|
 | Add `app_theme` (`volt`, `indigo`, `mint`) to user preferences | The theme choice follows the user to a new device. Today the field only covers light and dark |
-| Add catalogue fields to capability profiles: category, image, popularity, setup tips | The catalogue needs more than capabilities to be worth browsing |
-| Seed profiles for popular printer families | The catalogue holds one family today |
+| Add catalogue fields to capability profiles: category, summary, popularity, setup tips | The catalogue needs more than capabilities to be worth browsing. Done; the app draws its own pictures, so there is no image field |
+| Seed profiles for popular printer families | Done: 27 families |
 | Generate the Dart client in `make openapi`, and check it in CI | Same guarantee the TypeScript client has |
 
 ## 13. Testing

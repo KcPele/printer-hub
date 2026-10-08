@@ -6,6 +6,7 @@ import 'package:local_store/local_store.dart';
 import 'package:printer_protocols/printer_protocols.dart'
     show PrinterCredentials;
 import 'package:printers_repository/src/api_mapping.dart';
+import 'package:printers_repository/src/printer_family.dart';
 
 /// The printers of a workspace.
 ///
@@ -22,6 +23,9 @@ class PrintersRepository {
   final SecureStore _store;
 
   static String _cacheKey(String organizationId) => 'printers.$organizationId';
+
+  /// The catalogue is the same for everyone, so it is kept once.
+  static const String _catalogueKey = 'catalogue';
 
   /// Where the passwords of a workspace's printers are kept on this phone,
   /// so a printer can still be used when the API cannot be reached.
@@ -55,6 +59,73 @@ class PrintersRepository {
       final kept = await _kept(organizationId);
       if (kept == null) rethrow;
       return kept;
+    }
+  }
+
+  /// The catalogue of printer families, the ones most people have first.
+  ///
+  /// Answers from the last time it was read when the API cannot be
+  /// reached. Throws an [ApiException] when there is nothing kept.
+  Future<List<PrinterFamily>> families() async {
+    try {
+      final profiles = await apiCall(
+        () => _client.api.capabilities.listProfiles(),
+      );
+      await _store.write(
+        _catalogueKey,
+        jsonEncode([for (final profile in profiles) profile.toJson()]),
+      );
+      return profiles.map(PrinterFamily.fromApi).toList();
+    } on ApiUnreachable {
+      final kept = await _keptFamilies();
+      if (kept == null) rethrow;
+      return kept;
+    }
+  }
+
+  /// The family a printer belongs to, from the names it gives itself. Null
+  /// when the catalogue has no such family, or cannot be asked.
+  Future<PrinterFamily?> familyOf({
+    required String? manufacturer,
+    required String? model,
+  }) async {
+    if (manufacturer == null || model == null) return null;
+    try {
+      final profile = await apiCall(
+        () => _client.api.capabilities.matchProfile(
+          manufacturer: _makers[manufacturer.toLowerCase()] ?? manufacturer,
+          model: model,
+        ),
+      );
+      return PrinterFamily.fromApi(profile);
+    } on ApiException {
+      return null;
+    }
+  }
+
+  /// Names a maker goes by other than the one the catalogue uses.
+  static const Map<String, String> _makers = {
+    'hewlett-packard': 'HP',
+    'hewlett packard': 'HP',
+    'fuji xerox': 'Xerox',
+    'fujifilm business innovation': 'Xerox',
+    'seiko epson': 'Epson',
+    'kyocera document solutions': 'Kyocera',
+  };
+
+  Future<List<PrinterFamily>?> _keptFamilies() async {
+    final json = await _store.read(_catalogueKey);
+    if (json == null) return null;
+    try {
+      return [
+        for (final item in jsonDecode(json) as List<dynamic>)
+          PrinterFamily.fromApi(
+            CapabilityProfileRead.fromJson(item as Map<String, dynamic>),
+          ),
+      ];
+    } on Object {
+      // Written by an older version of the app.
+      return null;
     }
   }
 

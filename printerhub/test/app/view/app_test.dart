@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:printerhub/account/account.dart';
 import 'package:printerhub/activity/activity.dart';
 import 'package:printerhub/auth/auth.dart';
+import 'package:printerhub/catalogue/catalogue.dart';
 import 'package:printerhub/gallery/gallery.dart';
 import 'package:printerhub/home/home.dart';
 import 'package:printerhub/printers/printers.dart';
@@ -196,6 +197,35 @@ void main() {
         await tester.tap(find.text(title));
         await tester.pumpAndSettle();
       }
+
+      testWidgets('opens the catalogue from Add a printer', (tester) async {
+        await pump(tester);
+        await openArea(tester, 'Printers');
+        await tester.tap(find.text('Add a printer'));
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        await tester.scrollUntilVisible(
+          find.text('Browse the catalogue'),
+          200,
+          scrollable: find
+              .descendant(
+                of: find.byType(AddPrinterPage),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.ensureVisible(find.text('Browse the catalogue'));
+        await tester.pump();
+        await tester.tap(find.text('Browse the catalogue'));
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+
+        expect(find.byType(CataloguePage), findsOneWidget);
+        expect(find.text('Xerox VersaLink C7100 Series'), findsOneWidget);
+      });
 
       testWidgets('opens each account screen from Settings', (tester) async {
         await pump(tester);

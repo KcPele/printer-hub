@@ -184,6 +184,130 @@ void main() {
     expect(device.requests.map((request) => request.uri.port), contains(631));
   });
 
+  group('the catalogue', () {
+    void serve(List<Map<String, Object?>> profiles) {
+      api.handler = (_) async => FakeResponse(200, profiles);
+    }
+
+    test('lists the families, as the API orders them', () async {
+      serve([
+        profileBody(),
+        profileBody(
+          id: 'profile-2',
+          manufacturer: 'Epson',
+          name: 'EcoTank',
+          category: 'home_multifunction',
+          summary: null,
+          color: false,
+          scans: false,
+        ),
+      ]);
+
+      final families = await repository.families();
+
+      expect(families.map((family) => family.title), [
+        'Xerox VersaLink C7100 Series',
+        'Epson EcoTank',
+      ]);
+      final xerox = families.first;
+      expect(xerox.category, 'office_multifunction');
+      expect(xerox.isHome, isFalse);
+      expect(xerox.summary, startsWith('A3 colour'));
+      expect(xerox.setupTips, hasLength(2));
+      expect([
+        xerox.color,
+        xerox.duplex,
+        xerox.scans,
+        xerox.feeder,
+      ], everyElement(isTrue));
+      final epson = families.last;
+      expect(epson.isHome, isTrue);
+      expect([epson.color, epson.scans, epson.feeder], everyElement(isFalse));
+      expect(api.requests.single.path, '/api/v1/capability-profiles');
+    });
+
+    test('answers from the last read when offline', () async {
+      serve([profileBody()]);
+      await repository.families();
+      api.handler = (_) async => throw const FormatException('offline');
+
+      expect((await repository.families()).single.name, contains('C7100'));
+    });
+
+    test('fails offline when nothing was kept, or it cannot be read', () async {
+      api.handler = (_) async => throw const FormatException('offline');
+      await expectLater(repository.families(), throwsA(isA<ApiUnreachable>()));
+
+      store.values['catalogue'] = 'not json';
+      await expectLater(repository.families(), throwsA(isA<ApiUnreachable>()));
+    });
+
+    test('a family is found by its name, its maker, or what it is for', () {
+      final family = PrinterFamily.fromApi(
+        CapabilityProfileRead.fromJson(profileBody().cast()),
+      );
+
+      expect(family.matches(''), isTrue);
+      expect(family.matches('xerox'), isTrue);
+      expect(family.matches('versalink XEROX'), isTrue);
+      expect(family.matches('busy office'), isTrue);
+      expect(family.matches('epson'), isFalse);
+      expect(
+        family,
+        PrinterFamily.fromApi(
+          CapabilityProfileRead.fromJson(profileBody().cast()),
+        ),
+      );
+    });
+
+    test('finds the family a printer belongs to', () async {
+      api.handler = (_) async => FakeResponse(200, profileBody());
+
+      final family = await repository.familyOf(
+        manufacturer: 'Xerox',
+        model: 'VersaLink C7130',
+      );
+
+      expect(family!.name, 'VersaLink C7100 Series');
+      expect(api.requests.single.path, '/api/v1/capability-profiles/match');
+      expect(api.requests.single.queryParameters, {
+        'manufacturer': 'Xerox',
+        'model': 'VersaLink C7130',
+      });
+    });
+
+    test('asks under the name the catalogue knows a maker by', () async {
+      api.handler = (_) async => FakeResponse(200, profileBody());
+
+      await repository.familyOf(
+        manufacturer: 'Hewlett-Packard',
+        model: 'LaserJet Pro M404dn',
+      );
+
+      expect(api.requests.single.queryParameters['manufacturer'], 'HP');
+    });
+
+    test('has no family for a printer the catalogue does not know', () async {
+      api.handler = (_) async => const FakeResponse(404, {
+        'type': 'about:blank',
+        'title': 'Not Found',
+        'status': 404,
+        'code': 'capability_profile.no_match',
+        'detail': 'No capability profile matches this printer.',
+      });
+
+      expect(
+        await repository.familyOf(manufacturer: 'Acme', model: 'Inkwell'),
+        isNull,
+      );
+      // Nothing to ask about a printer that does not say what it is.
+      api.requests.clear();
+      expect(await repository.familyOf(manufacturer: null, model: 'x'), isNull);
+      expect(await repository.familyOf(manufacturer: 'x', model: null), isNull);
+      expect(api.requests, isEmpty);
+    });
+  });
+
   group('a printer that asks who is printing', () {
     const credentials = PrinterCredentials(userName: 'ada', password: 'pw');
     const path =

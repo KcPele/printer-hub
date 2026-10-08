@@ -253,3 +253,40 @@ Map<String, Object?> printerBody({
   'created_at': '2026-10-07T10:00:00Z',
   'updated_at': '2026-10-07T10:00:00Z',
 };
+
+/// A `CapabilityProfileRead` body: a family of printers in the catalogue.
+Map<String, Object?> profileBody({
+  String id = 'profile-1',
+  String manufacturer = 'Xerox',
+  String name = 'VersaLink C7100 Series',
+  String category = 'office_multifunction',
+  String? summary = 'A3 colour multifunction for a busy office.',
+  int popularity = 100,
+  List<String> setupTips = const [
+    'Connect the printer to the office network.',
+    'Switch on Mopria scanning in the printer’s web page.',
+  ],
+  bool color = true,
+  bool scans = true,
+}) => {
+  'id': id,
+  'manufacturer': manufacturer,
+  'display_name': name,
+  'category': category,
+  'summary': summary,
+  'popularity': popularity,
+  'model_patterns': ['*'],
+  'optional_features': <String>[],
+  'notes': <String>[],
+  'setup_tips': setupTips,
+  'version': 1,
+  'capabilities': {
+    ...printerBody(scans: scans)['capabilities']! as Map<String, Object?>,
+    'print': {
+      ...(printerBody()['capabilities']! as Map<String, Object?>)['print']!
+          as Map<String, Object?>,
+      'color': color,
+    },
+  },
+  'updated_at': '2026-10-07T10:00:00Z',
+};

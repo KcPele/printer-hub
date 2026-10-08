@@ -13,4 +13,5 @@ export 'package:printer_protocols/printer_protocols.dart'
     show PrinterCredentials;
 
 export 'src/api_mapping.dart';
+export 'src/printer_family.dart';
 export 'src/printers_repository.dart';

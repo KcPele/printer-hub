@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/printers/cubit/printer_family_cubit.dart';
 import 'package:printerhub/printers/cubit/printers_cubit.dart';
 import 'package:printerhub/printers/cubit/remove_printer_cubit.dart';
 import 'package:printerhub/printers/printer_words.dart';
@@ -21,9 +24,33 @@ class PrinterDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) =>
-          RemovePrinterCubit(printersCubit: context.read<PrintersCubit>()),
+    final printers = context.read<PrintersCubit>();
+    final printer = printers.state.printers
+        .where((printer) => printer.id == printerId)
+        .firstOrNull;
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => RemovePrinterCubit(printersCubit: printers),
+        ),
+        BlocProvider(
+          // What is known about the printer's family, for the tips.
+          lazy: false,
+          create: (context) {
+            final cubit = PrinterFamilyCubit(
+              printersRepository: context.read<PrintersRepository>(),
+            );
+            unawaited(
+              cubit.load(
+                manufacturer: printer?.manufacturer,
+                model: printer?.model,
+              ),
+            );
+            return cubit;
+          },
+        ),
+      ],
       child: PrinterDetailView(printerId: printerId),
     );
   }
@@ -102,6 +129,9 @@ class PrinterDetailView extends StatelessWidget {
               (supply.name, supply.color, supply.levelPercent),
           ];
     final abilities = PrinterWords.abilities(l10n, printer);
+    final tips = context.select<PrinterFamilyCubit, List<String>>(
+      (cubit) => cubit.state?.setupTips ?? const [],
+    );
 
     return BlocListener<RemovePrinterCubit, SubmitState>(
       listenWhen: (previous, current) => current.succeeded || current.failed,
@@ -209,6 +239,16 @@ class PrinterDetailView extends StatelessWidget {
                               '${(connection.type.json ?? '').toUpperCase()}  '
                               '${connection.configuration.host ?? ''}',
                         ),
+                    ],
+                  ),
+                ),
+              if (tips.isNotEmpty)
+                _Section(
+                  title: l10n.printerTips,
+                  child: Column(
+                    children: [
+                      for (final tip in tips)
+                        _Line(icon: Icons.lightbulb_outline, text: tip),
                     ],
                   ),
                 ),

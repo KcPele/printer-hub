@@ -12,6 +12,7 @@ dependencies:
     path: ../api_client
   connection_engine:
     path: ../connection_engine
+  equatable: ^3.0.0
   flutter:
     sdk: flutter
   local_store:

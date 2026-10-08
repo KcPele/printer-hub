@@ -733,6 +733,66 @@
     "@devicesFailedTitle": {
         "description": "Heading when the devices list cannot be read"
     },
+    "waysCatalogue": "Browse the catalogue",
+    "@waysCatalogue": {
+        "description": "Entry that opens the printer catalogue from Add a printer"
+    },
+    "waysCatalogueBody": "See how to get your model ready",
+    "@waysCatalogueBody": {
+        "description": "Under the catalogue entry"
+    },
+    "catalogueTitle": "Printer catalogue",
+    "@catalogueTitle": {
+        "description": "Title of the catalogue screen"
+    },
+    "catalogueSearch": "Search by maker or model",
+    "@catalogueSearch": {
+        "description": "Label of the catalogue search field"
+    },
+    "catalogueAll": "All",
+    "@catalogueAll": {
+        "description": "Filter chip: every family"
+    },
+    "catalogueHome": "Home",
+    "@catalogueHome": {
+        "description": "Filter chip: printers for the home"
+    },
+    "catalogueOffice": "Office",
+    "@catalogueOffice": {
+        "description": "Filter chip: printers for the office"
+    },
+    "catalogueNoMatch": "Nothing in the catalogue matches. You can still add your printer: PrinterHub asks it what it can do.",
+    "@catalogueNoMatch": {
+        "description": "Shown when the search finds no family"
+    },
+    "catalogueAddAnyway": "Add a printer",
+    "@catalogueAddAnyway": {
+        "description": "Button under the no-match message"
+    },
+    "catalogueFailedTitle": "Couldn't load the catalogue",
+    "@catalogueFailedTitle": {
+        "description": "Heading when the catalogue cannot be read"
+    },
+    "catalogueUsually": "What these printers usually do",
+    "@catalogueUsually": {
+        "description": "Heading over a family's usual features"
+    },
+    "catalogueUsuallyNote": "Models differ. PrinterHub asks your printer what it can do when you add it.",
+    "@catalogueUsuallyNote": {
+        "description": "Note under a family's usual features"
+    },
+    "catalogueBefore": "Before you add it",
+    "@catalogueBefore": {
+        "description": "Heading over a family's setup tips"
+    },
+    "catalogueAdd": "Add this printer",
+    "@catalogueAdd": {
+        "description": "Button that starts adding a printer from a family"
+    },
+    "printerTips": "Good to know",
+    "@printerTips": {
+        "description": "Heading over the family tips on a printer's page"
+    },
     "printerPasswordTitle": "This printer asks who is printing",
     "@printerPasswordTitle": {
         "description": "Heading of the step that asks for a printer's user name and password"

@@ -1,5 +1,6 @@
 export 'cubit/add_printer_cubit.dart';
 export 'cubit/nearby_cubits.dart';
+export 'cubit/printer_family_cubit.dart';
 export 'cubit/printers_cubit.dart';
 export 'cubit/remove_printer_cubit.dart';
 export 'finders.dart';

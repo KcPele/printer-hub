@@ -91,6 +91,18 @@ abstract final class PrinterWords {
     );
   }
 
+  /// What the printers of a family usually do, in plain sentences.
+  static List<String> family(AppLocalizations l10n, PrinterFamily family) {
+    return _features(
+      l10n,
+      prints: true,
+      color: family.color,
+      duplex: family.duplex,
+      glass: family.scans,
+      feeder: family.feeder,
+    );
+  }
+
   static List<String> _features(
     AppLocalizations l10n, {
     required bool prints,
