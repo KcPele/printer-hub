@@ -793,5 +793,227 @@
     "homeSeeAll": "See all",
     "@homeSeeAll": {
         "description": "Link from Home to the printers list"
+    },
+    "waysNearby": "Nearby printers",
+    "@waysNearby": {
+        "description": "Heading above printers found on the network"
+    },
+    "waysLooking": "Looking on your Wi-Fi…",
+    "@waysLooking": {
+        "description": "Shown while no printer has been found yet"
+    },
+    "waysNearbyHint": "Printers on the same Wi-Fi as your phone appear here.",
+    "@waysNearbyHint": {
+        "description": "Explains the nearby list"
+    },
+    "waysPrints": "Prints",
+    "@waysPrints": {
+        "description": "A nearby device prints"
+    },
+    "waysScans": "Scans",
+    "@waysScans": {
+        "description": "A nearby device scans"
+    },
+    "waysOther": "Other ways to connect",
+    "@waysOther": {
+        "description": "Heading above the other connection methods"
+    },
+    "waysAddress": "Enter an address",
+    "@waysAddress": {
+        "description": "Connection method"
+    },
+    "waysAddressBody": "Type the printer's IP address or name",
+    "@waysAddressBody": {
+        "description": "Explains the address method"
+    },
+    "waysQr": "Scan a code",
+    "@waysQr": {
+        "description": "Connection method"
+    },
+    "waysQrBody": "A code on the printer, or one a colleague shares",
+    "@waysQrBody": {
+        "description": "Explains the QR method"
+    },
+    "waysNfc": "Tap the printer",
+    "@waysNfc": {
+        "description": "Connection method"
+    },
+    "waysNfcBody": "Hold your phone against the NFC mark on the printer",
+    "@waysNfcBody": {
+        "description": "Explains the NFC method"
+    },
+    "waysNfcUnavailable": "NFC is off or not on this phone",
+    "@waysNfcUnavailable": {
+        "description": "Shown when NFC cannot be used"
+    },
+    "waysWifiDirect": "Wi-Fi Direct",
+    "@waysWifiDirect": {
+        "description": "Connection method"
+    },
+    "waysWifiDirectBody": "Join the printer's own Wi-Fi when there is no network",
+    "@waysWifiDirectBody": {
+        "description": "Explains the Wi-Fi Direct method"
+    },
+    "waysBluetooth": "Find by Bluetooth",
+    "@waysBluetooth": {
+        "description": "Connection method"
+    },
+    "waysBluetoothBody": "See which printer you are standing next to",
+    "@waysBluetoothBody": {
+        "description": "Explains the Bluetooth method"
+    },
+    "waysBluetoothUnavailable": "Bluetooth is off or not on this phone",
+    "@waysBluetoothUnavailable": {
+        "description": "Shown when Bluetooth cannot be used"
+    },
+    "nfcWaiting": "Hold your phone against the printer…",
+    "@nfcWaiting": {
+        "description": "Shown while waiting for an NFC tag"
+    },
+    "nfcCancel": "Cancel",
+    "@nfcCancel": {
+        "description": "Stops waiting for an NFC tag"
+    },
+    "nfcNothing": "That tag has nothing PrinterHub can read.",
+    "@nfcNothing": {
+        "description": "Shown for an NFC tag with no readable record"
+    },
+    "nfcFailed": "The tag could not be read. Hold the phone still against it and try again.",
+    "@nfcFailed": {
+        "description": "Shown when NFC reading fails"
+    },
+    "qrTitle": "Scan a code",
+    "@qrTitle": {
+        "description": "Title of the QR scanning step"
+    },
+    "qrBody": "Point the camera at the code on the printer, or at a code shared from another phone.",
+    "@qrBody": {
+        "description": "Explains the QR scanner"
+    },
+    "qrUnrecognised": "That code is not a printer or a PrinterHub pairing code.",
+    "@qrUnrecognised": {
+        "description": "Shown for a QR code the app cannot use"
+    },
+    "wifiDirectTitle": "Connect with Wi-Fi Direct",
+    "@wifiDirectTitle": {
+        "description": "Title of the Wi-Fi Direct step"
+    },
+    "wifiDirectStep1": "On the printer, turn on Wi-Fi Direct. It is in the network settings on the printer's panel.",
+    "@wifiDirectStep1": {
+        "description": "Wi-Fi Direct instruction"
+    },
+    "wifiDirectStep2": "On your phone, open Wi-Fi settings and join the printer's network. Its name usually starts with DIRECT.",
+    "@wifiDirectStep2": {
+        "description": "Wi-Fi Direct instruction"
+    },
+    "wifiDirectStep2Named": "On your phone, open Wi-Fi settings and join {network}.",
+    "@wifiDirectStep2Named": {
+        "description": "Wi-Fi Direct instruction when the network name is known",
+        "placeholders": {
+            "network": {
+                "type": "String"
+            }
+        }
+    },
+    "wifiDirectPassword": "Password: {password}",
+    "@wifiDirectPassword": {
+        "description": "The password of the printer's Wi-Fi network",
+        "placeholders": {
+            "password": {
+                "type": "String"
+            }
+        }
+    },
+    "wifiDirectStep3": "Come back here and find the printer.",
+    "@wifiDirectStep3": {
+        "description": "Wi-Fi Direct instruction"
+    },
+    "wifiDirectFind": "Find the printer",
+    "@wifiDirectFind": {
+        "description": "Button that looks for the printer on the joined network"
+    },
+    "wifiDirectNoNetwork": "Your phone does not seem to be on the printer's Wi-Fi yet. Join it in Wi-Fi settings, then try again.",
+    "@wifiDirectNoNetwork": {
+        "description": "Shown when the phone has no Wi-Fi gateway"
+    },
+    "wifiDirectNote": "While your phone is on the printer's Wi-Fi it may have no internet. Printing and scanning still work, and history syncs later.",
+    "@wifiDirectNote": {
+        "description": "Explains the side effect of Wi-Fi Direct"
+    },
+    "bluetoothTitle": "Printers near you",
+    "@bluetoothTitle": {
+        "description": "Title of the Bluetooth step"
+    },
+    "bluetoothBody": "Bluetooth shows which printer you are next to. Your documents still travel over Wi-Fi.",
+    "@bluetoothBody": {
+        "description": "Explains what Bluetooth is used for"
+    },
+    "bluetoothLooking": "Looking for printers near you…",
+    "@bluetoothLooking": {
+        "description": "Shown while no Bluetooth device has been seen"
+    },
+    "bluetoothBeside": "Right beside you",
+    "@bluetoothBeside": {
+        "description": "Bluetooth nearness"
+    },
+    "bluetoothRoom": "In the room",
+    "@bluetoothRoom": {
+        "description": "Bluetooth nearness"
+    },
+    "bluetoothFar": "Further away",
+    "@bluetoothFar": {
+        "description": "Bluetooth nearness"
+    },
+    "bluetoothNotOnNetwork": "{name} is nearby, but it is not on your Wi-Fi. Connect it to the same network as your phone, or use Wi-Fi Direct.",
+    "@bluetoothNotOnNetwork": {
+        "description": "Shown when a Bluetooth device has no network match",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "pairingOpened": "Opened {name}.",
+    "@pairingOpened": {
+        "description": "Shown after a pairing code opened a printer",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "errorPairingInvalid": "That pairing code is not valid or has expired. Ask for a new one.",
+    "@errorPairingInvalid": {
+        "description": "Shown when a pairing code is rejected"
+    },
+    "errorPairingNotMember": "Join that printer's workspace before pairing with it.",
+    "@errorPairingNotMember": {
+        "description": "Shown when the user is not in the printer's workspace"
+    },
+    "printerShare": "Share with a code",
+    "@printerShare": {
+        "description": "Button that shows a pairing QR code for the printer"
+    },
+    "printerShareTitle": "Scan to open this printer",
+    "@printerShareTitle": {
+        "description": "Title of the pairing code sheet"
+    },
+    "printerShareBody": "Anyone in your workspace can scan this in PrinterHub to open {name}. It works for a few minutes.",
+    "@printerShareBody": {
+        "description": "Explains the pairing code",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "printerShareSemantics": "Pairing code for {name}",
+    "@printerShareSemantics": {
+        "description": "Screen reader label of the QR code",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
     }
 }

@@ -90,5 +90,11 @@
 		<string>_uscan._tcp</string>
 		<string>_uscans._tcp</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>PrinterHub uses the camera to scan the code on a printer, or a pairing code from another phone.</string>
+	<key>NFCReaderUsageDescription</key>
+	<string>PrinterHub reads the NFC mark on a printer to find and connect to it.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>PrinterHub uses Bluetooth to tell which printer you are standing next to.</string>
 </dict>
 </plist>

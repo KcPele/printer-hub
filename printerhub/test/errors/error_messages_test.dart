@@ -39,6 +39,8 @@ void main() {
         'account.password_incorrect': l10n.errorPasswordIncorrect,
         'account.sole_owner': l10n.errorSoleOwner,
         'rate_limited': l10n.errorRateLimited,
+        'pairing.token_invalid': l10n.errorPairingInvalid,
+        'pairing.not_a_member': l10n.errorPairingNotMember,
       };
 
       for (final MapEntry(key: code, value: message) in expected.entries) {

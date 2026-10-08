@@ -17,6 +17,8 @@ String errorMessage(AppLocalizations l10n, Object? error) {
     'account.password_incorrect' => l10n.errorPasswordIncorrect,
     'account.sole_owner' => l10n.errorSoleOwner,
     'rate_limited' => l10n.errorRateLimited,
+    'pairing.token_invalid' => l10n.errorPairingInvalid,
+    'pairing.not_a_member' => l10n.errorPairingNotMember,
     'request.validation_failed' =>
       error.fieldErrors.firstOrNull?.message ?? l10n.errorGeneric,
     _ => error.detail ?? l10n.errorGeneric,

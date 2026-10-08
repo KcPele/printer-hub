@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:api_client/testing.dart';
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printerhub/printers/printers.dart';
+import 'package:printerhub/printers/widgets/pairing_code_sheet.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../helpers/helpers.dart';
 
@@ -187,6 +191,57 @@ void main() {
         expect(find.textContaining("Can't reach PrinterHub"), findsOneWidget);
         expect(printers.state.printers, hasLength(1));
         verifyNever(router.pop);
+      });
+    });
+
+    group('sharing with a code', () {
+      testWidgets('shows a code another member can scan', (tester) async {
+        await pump(tester);
+
+        await scrollTo(tester, find.text('Share with a code'));
+        await tester.tap(find.text('Share with a code'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Scan to open this printer'), findsOneWidget);
+        expect(find.textContaining('to open Front desk'), findsOneWidget);
+        expect(
+          tester.widget<QrImageView>(find.byType(QrImageView)).semanticsLabel,
+          'Pairing code for Front desk',
+        );
+        expect(
+          backend.sent(
+            'POST /organizations/$_org/printers/printer-1/pairing-tokens',
+          ),
+          hasLength(1),
+        );
+      });
+
+      testWidgets('says why the code could not be made', (tester) async {
+        await pump(tester);
+        backend.offline = true;
+
+        await scrollTo(tester, find.text('Share with a code'));
+        await tester.tap(find.text('Share with a code'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(QrImageView), findsNothing);
+        expect(find.textContaining("Can't reach PrinterHub"), findsOneWidget);
+      });
+
+      testWidgets('shows progress while the code is being made', (
+        tester,
+      ) async {
+        await tester.pumpApp(
+          Scaffold(
+            body: PairingCodeSheet(
+              printerName: 'Front desk',
+              code: Completer<({String link, DateTime expiresAt})>().future,
+            ),
+          ),
+          backend: backend,
+        );
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
     });
 

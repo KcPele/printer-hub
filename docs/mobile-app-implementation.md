@@ -1,7 +1,7 @@
 # PrinterHub Mobile — Implementation Document
 
 **Date:** 2026-10-07
-**Status:** Milestone A0 is in progress. Done: the three themes, theme switching that survives a restart, the shared widgets, the gallery, and the themed illustration pipeline. The generated Dart API client, with session renewal and typed errors, is in `packages/api_client`. The welcome screens, the four-area shell, and Settings with the theme picker are built. A1 is built: register, sign in, password reset, email verification, workspaces, and sign-out, checked end to end against a local backend. Device registration, sessions, and account deletion screens remain in A1. A2 is partly built: adding a printer by address, the printer list, and printer detail with live status and supplies, checked on the iOS simulator against the printer simulator. Left in A2: automatic discovery, the catalogue, and the other ways to connect. Section 14 records the owner's decisions and the questions still open.
+**Status:** Milestone A0 is in progress. Done: the three themes, theme switching that survives a restart, the shared widgets, the gallery, and the themed illustration pipeline. The generated Dart API client, with session renewal and typed errors, is in `packages/api_client`. The welcome screens, the four-area shell, and Settings with the theme picker are built. A1 is built: register, sign in, password reset, email verification, workspaces, and sign-out, checked end to end against a local backend. Device registration, sessions, and account deletion screens remain in A1. A2 is partly built: adding a printer by address, the printer list, and printer detail with live status and supplies, checked on the iOS simulator against the printer simulator. Also built, ahead of A6: the ways to connect. Adding a printer opens on the printers found on the Wi-Fi network, then offers an address, a QR code, an NFC tap, Wi-Fi Direct, and Bluetooth, and a printer can be shared with a pairing code. Discovery was checked on the iOS simulator; NFC, Bluetooth, and the camera need a real phone. Left in A2: the catalogue. Section 14 records the owner's decisions and the questions still open.
 **Requirements:** `PrinterHub_FRD_v2.0_Mobile_First.md` §7 (FR-MOB), §8 (FR-CON), §55.2 (mobile MVP), §60 (acceptance on the Xerox VersaLink C7130)
 **Design references:** `design/`, on the owner's machine only. The folder is ignored by git.
 
@@ -52,7 +52,7 @@ printerhub/                        # the Flutter app
 │   ├── app_ui/                    # design tokens, the three themes, shared widgets
 │   ├── api_client/                # generated from backend/openapi.json
 │   ├── printer_protocols/         # IPP codec and client, eSCL client. Pure Dart
-│   ├── printer_discovery/         # mDNS / DNS-SD browsing
+│   ├── printer_discovery/         # Bonjour, QR and NFC payloads, Bluetooth proximity
 │   ├── connection_engine/         # probing a device, certificate trust; the job runner later
 │   ├── printers_repository/       # a workspace's printers, and what each device reports
 │   ├── local_store/               # secrets in the platform keystore; the job queue later

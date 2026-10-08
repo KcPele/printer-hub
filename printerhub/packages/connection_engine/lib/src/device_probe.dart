@@ -54,7 +54,21 @@ class DeviceProbe {
     if (target == null) {
       throw ProbeFailure(ProbeFailureKind.invalidAddress, address);
     }
+    return await _describe(target, address);
+  }
 
+  /// Describes a device that announced where it prints and scans, as one
+  /// found by network discovery does. An address it did not announce is
+  /// looked for in the usual places.
+  Future<DeviceDescription> probeAnnounced({
+    required String host,
+    Uri? ipp,
+    Uri? escl,
+  }) {
+    return _describe(_Target.announced(host, ipp: ipp, escl: escl), host);
+  }
+
+  Future<DeviceDescription> _describe(_Target target, String address) async {
     final attempt = _Attempt();
     // Printing and scanning are asked about at the same time: a device that
     // has one and not the other should not take twice as long.
@@ -211,9 +225,15 @@ class _Attempt {
 
 /// An address as typed, and the places worth trying for it.
 class _Target {
-  new(this._uri);
+  new(this._uri) : _ipp = null, _escl = null;
+
+  new announced(String host, {this._ipp, this._escl}) : _uri = Uri(host: host);
 
   final Uri _uri;
+
+  /// Where the device said it prints and scans, when it said.
+  final Uri? _ipp;
+  final Uri? _escl;
 
   String get host => _uri.host;
   bool get _hasPort => _uri.hasPort;
@@ -224,6 +244,7 @@ class _Target {
   }
 
   List<Uri> get ippCandidates {
+    if (_ipp != null) return [_ipp];
     final path = _uri.path.isEmpty || _uri.path == '/'
         ? '/ipp/print'
         : _uri.path;
@@ -239,6 +260,7 @@ class _Target {
   }
 
   List<Uri> get esclCandidates {
+    if (_escl != null) return [_escl];
     if (_hasPort) {
       return [_build(_secure ? 'https' : 'http', _uri.port, '/eSCL')];
     }

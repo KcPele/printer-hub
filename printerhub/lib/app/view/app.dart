@@ -20,6 +20,7 @@ class App extends StatelessWidget {
     required this.authRepository,
     required this.organizationsRepository,
     required this.printersRepository,
+    required this.finders,
     this.keptOrganizations,
     super.key,
   });
@@ -28,6 +29,9 @@ class App extends StatelessWidget {
   final AuthRepository authRepository;
   final OrganizationsRepository organizationsRepository;
   final PrintersRepository printersRepository;
+
+  /// The ways this phone can find a printer.
+  final PrinterFinders finders;
 
   /// The workspace list from the last launch, read before the first frame.
   final List<Organization>? keptOrganizations;
@@ -40,6 +44,7 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: authRepository),
         RepositoryProvider.value(value: organizationsRepository),
         RepositoryProvider.value(value: printersRepository),
+        RepositoryProvider.value(value: finders),
       ],
       child: MultiBlocProvider(
         providers: [

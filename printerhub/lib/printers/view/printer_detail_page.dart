@@ -8,6 +8,7 @@ import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/printers/cubit/printers_cubit.dart';
 import 'package:printerhub/printers/cubit/remove_printer_cubit.dart';
 import 'package:printerhub/printers/printer_words.dart';
+import 'package:printerhub/printers/widgets/pairing_code_sheet.dart';
 import 'package:printerhub/printers/widgets/printer_card.dart';
 import 'package:printers_repository/printers_repository.dart';
 
@@ -217,6 +218,12 @@ class PrinterDetailView extends StatelessWidget {
                 loading: checking,
                 onPressed: () =>
                     context.read<PrintersCubit>().checkStatus(printer),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              OutlinedButton.icon(
+                onPressed: () => showPairingCode(context, printer),
+                icon: const Icon(Icons.qr_code_2),
+                label: Text(l10n.printerShare),
               ),
               const SizedBox(height: AppSpacing.sm),
               TextButton(

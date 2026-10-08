@@ -29,14 +29,18 @@ dependencies:
     path: packages/local_store
   material_ui: ^1.1.1
   meta: ^1.19.0
+  mobile_scanner: ^7.4.2
   organizations_repository:
     path: packages/organizations_repository
   preferences_repository:
     path: packages/preferences_repository
+  printer_discovery:
+    path: packages/printer_discovery
   printer_protocols:
     path: packages/printer_protocols
   printers_repository:
     path: packages/printers_repository
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   bloc_lint: ^0.4.2

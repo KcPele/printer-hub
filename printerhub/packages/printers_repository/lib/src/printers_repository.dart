@@ -54,6 +54,43 @@ class PrintersRepository {
   /// Asks the device at [address] what it is. Throws [ProbeFailure].
   Future<DeviceDescription> probe(String address) => _probe.probe(address);
 
+  /// Asks a device that announced itself on the network what it is.
+  /// Throws [ProbeFailure].
+  Future<DeviceDescription> probeAnnounced({
+    required String host,
+    Uri? ipp,
+    Uri? escl,
+  }) {
+    return _probe.probeAnnounced(host: host, ipp: ipp, escl: escl);
+  }
+
+  /// Makes a short-lived code another member can scan to open [printerId]
+  /// on their phone. The answer is the link to put in a QR code, and when
+  /// it stops working.
+  Future<({String link, DateTime expiresAt})> createPairingCode({
+    required String organizationId,
+    required String printerId,
+  }) async {
+    final created = await apiCall(
+      () => _client.api.pairing.createPairingToken(
+        orgId: organizationId,
+        printerId: printerId,
+      ),
+    );
+    return (link: created.deepLink, expiresAt: created.expiresAt);
+  }
+
+  /// Exchanges a scanned pairing code for the printer it names. The user
+  /// must already belong to that printer's workspace.
+  Future<PrinterRead> redeemPairingCode(String token) async {
+    final result = await apiCall(
+      () => _client.api.pairing.redeemPairingToken(
+        body: PairingRedeem(token: token),
+      ),
+    );
+    return result.printer;
+  }
+
   /// Adds a device that was just probed to the workspace.
   Future<PrinterRead> add({
     required String organizationId,

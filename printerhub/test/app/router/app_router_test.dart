@@ -57,6 +57,7 @@ void main() {
             RepositoryProvider<PrintersRepository>.value(
               value: backend.printers,
             ),
+            RepositoryProvider<PrinterFinders>.value(value: backend.finders),
           ],
           child: MultiBlocProvider(
             providers: [

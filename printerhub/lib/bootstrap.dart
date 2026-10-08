@@ -9,8 +9,11 @@ import 'package:flutter/widgets.dart';
 import 'package:local_store/local_store.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
+import 'package:printer_discovery/printer_discovery.dart';
 import 'package:printer_protocols/printer_protocols.dart';
 import 'package:printerhub/app/config/app_config.dart';
+import 'package:printerhub/printers/finders.dart';
+import 'package:printerhub/printers/widgets/qr_camera.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 class AppBlocObserver extends BlocObserver {
@@ -35,6 +38,7 @@ typedef AppDependencies = ({
   AuthRepository authRepository,
   OrganizationsRepository organizationsRepository,
   PrintersRepository printersRepository,
+  PrinterFinders finders,
   List<Organization>? keptOrganizations,
 });
 
@@ -87,6 +91,13 @@ Future<void> bootstrap(
       authRepository: authRepository,
       organizationsRepository: organizationsRepository,
       printersRepository: printersRepository,
+      finders: PrinterFinders(
+        network: const BonsoirNetworkDiscovery(),
+        nfc: const PluginNfcReader(),
+        bluetooth: const PluginBluetoothScanner(),
+        wifi: const PluginWifiNetwork(),
+        qrScanner: (onCode) => QrCamera(onCode: onCode),
+      ),
       keptOrganizations: await organizationsRepository.kept(),
     )),
   );

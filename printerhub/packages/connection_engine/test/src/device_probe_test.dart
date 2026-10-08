@@ -285,6 +285,58 @@ void main() {
     });
   });
 
+  group('probeAnnounced', () {
+    test('goes straight to where the device said it is', () async {
+      network({
+        'http://192.168.1.40:8631/printers/main': (_) =>
+            FakeAnswer.ipp(_printerAnswer()),
+        'http://192.168.1.40:8080/eSCL': escl,
+      });
+
+      final device = await probe.probeAnnounced(
+        host: '192.168.1.40',
+        ipp: Uri.parse('ipp://192.168.1.40:8631/printers/main'),
+        escl: Uri.parse('http://192.168.1.40:8080/eSCL'),
+      );
+
+      expect(device.host, '192.168.1.40');
+      expect(device.connections.map((c) => c.uri.port), [8631, 8080]);
+      expect(http.requests.map((r) => r.uri.port).toSet(), {8631, 8080});
+    });
+
+    test('looks in the usual places for what was not announced', () async {
+      network({
+        'http://192.168.1.40:631/ipp/print': (_) =>
+            FakeAnswer.ipp(_printerAnswer()),
+        'http://192.168.1.40/eSCL': escl,
+      });
+
+      final device = await probe.probeAnnounced(
+        host: '192.168.1.40',
+        ipp: Uri.parse('ipp://192.168.1.40:631/ipp/print'),
+      );
+
+      expect(device.scan, isNotNull);
+    });
+
+    test('fails when the announced device no longer answers', () async {
+      await expectLater(
+        probe.probeAnnounced(
+          host: '192.168.1.40',
+          ipp: Uri.parse('ipp://192.168.1.40:631/ipp/print'),
+          escl: Uri.parse('http://192.168.1.40/eSCL'),
+        ),
+        throwsA(
+          isA<ProbeFailure>().having(
+            (f) => f.kind,
+            'kind',
+            ProbeFailureKind.unreachable,
+          ),
+        ),
+      );
+    });
+  });
+
   group('status', () {
     final connections = [
       DeviceConnection(

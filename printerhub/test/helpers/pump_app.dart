@@ -104,6 +104,7 @@ extension PumpApp on WidgetTester {
             value: api.organizations,
           ),
           RepositoryProvider<PrintersRepository>.value(value: api.printers),
+          RepositoryProvider<PrinterFinders>.value(value: api.finders),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -137,6 +138,7 @@ extension PumpApp on WidgetTester {
         authRepository: backend.auth,
         organizationsRepository: backend.organizations,
         printersRepository: backend.printers,
+        finders: backend.finders,
         keptOrganizations: await backend.organizations.kept(),
       ),
     );

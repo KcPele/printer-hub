@@ -173,6 +173,61 @@ void main() {
     );
   });
 
+  test('probeAnnounced asks the device where it said it is', () async {
+    await expectLater(
+      repository.probeAnnounced(
+        host: '192.168.1.40',
+        ipp: Uri.parse('ipp://192.168.1.40:631/ipp/print'),
+      ),
+      throwsA(isA<ProbeFailure>()),
+    );
+    expect(device.requests.map((request) => request.uri.port), contains(631));
+  });
+
+  group('pairing', () {
+    test('createPairingCode returns the link to show as a QR code', () async {
+      api.handler = (_) async => const FakeResponse(201, {
+        'payload': {
+          'v': 1,
+          'token': 'tok',
+          'printer_id': 'printer-1',
+          'organization_id': _org,
+        },
+        'deep_link': 'printerhub://pair?token=tok',
+        'expires_at': '2026-10-07T10:05:00Z',
+      });
+
+      final code = await repository.createPairingCode(
+        organizationId: _org,
+        printerId: 'printer-1',
+      );
+
+      expect(code.link, 'printerhub://pair?token=tok');
+      expect(code.expiresAt, DateTime.utc(2026, 10, 7, 10, 5));
+      expect(api.requests.single.path, '$_printers/printer-1/pairing-tokens');
+    });
+
+    test('redeemPairingCode returns the printer the code names', () async {
+      api.handler = (_) async => FakeResponse(200, {'printer': printerBody()});
+
+      final printer = await repository.redeemPairingCode('tok');
+
+      expect(printer.friendlyName, 'Front desk');
+      expect(api.requests.single.path, '/api/v1/pairing/redeem');
+      expect(bodyOf(api.requests.single), {'token': 'tok'});
+    });
+
+    test('redeemPairingCode reports a code that has expired', () async {
+      api.handler = (_) async =>
+          FakeResponse.problem(422, 'pairing.token_invalid');
+
+      await expectLater(
+        repository.redeemPairingCode('old'),
+        throwsA(isA<ApiProblem>()),
+      );
+    });
+  });
+
   group('add', () {
     test('sends what the device said about itself', () async {
       await repository.add(

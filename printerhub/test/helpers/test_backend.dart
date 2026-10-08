@@ -4,10 +4,13 @@ import 'package:api_client/api_client.dart';
 import 'package:api_client/testing.dart';
 import 'package:auth_repository/auth_repository.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:local_store/local_store.dart';
 import 'package:organizations_repository/organizations_repository.dart';
+import 'package:printer_discovery/testing.dart';
 import 'package:printer_protocols/printer_protocols.dart';
 import 'package:printer_protocols/testing.dart';
+import 'package:printerhub/printers/finders.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 /// A pretend PrinterHub API with the real client and repositories on top,
@@ -34,7 +37,20 @@ class TestBackend {
       probe: DeviceProbe(http: device),
       store: store,
     );
+    finders = PrinterFinders(
+      network: nearby,
+      nfc: nfc,
+      bluetooth: bluetooth,
+      wifi: wifi,
+      qrScanner: (onCode) {
+        _onCode = onCode;
+        return const SizedBox(key: qrCameraKey);
+      },
+    );
   }
+
+  /// Marks the stand-in for the camera, so a test can see it is shown.
+  static const Key qrCameraKey = Key('qr-camera');
 
   final InMemorySecureStore store = InMemorySecureStore();
   late final FakeApi network;
@@ -45,6 +61,18 @@ class TestBackend {
 
   /// The local network. Nothing answers on it until [plugInPrinter].
   late final FakePrinterHttp device;
+
+  /// What the phone's radios find. Nothing, until a test says otherwise.
+  final FakeNetworkDiscovery nearby = FakeNetworkDiscovery();
+  final FakeNfcReader nfc = FakeNfcReader();
+  final FakeBluetoothScanner bluetooth = FakeBluetoothScanner();
+  final FakeWifiNetwork wifi = FakeWifiNetwork();
+  late final PrinterFinders finders;
+  late ValueChanged<String> _onCode;
+
+  /// Shows [text] to the camera, as a QR code. The scanning step has to be
+  /// on screen.
+  void scanCode(String text) => _onCode(text);
 
   /// The printers the API knows, in every workspace.
   List<Map<String, Object?>> printerList = [];
@@ -210,6 +238,13 @@ class TestBackend {
         );
         workspaces = [...workspaces, created];
         return FakeResponse(201, created);
+      case 'POST /pairing/redeem':
+        final printer = printerList
+            .where((item) => 'token-${item['id']}' == body['token'])
+            .firstOrNull;
+        return printer == null
+            ? FakeResponse.problem(422, 'pairing.token_invalid')
+            : FakeResponse(200, {'printer': printer});
       case 'POST /auth/logout' ||
           'POST /auth/email/resend' ||
           'POST /auth/password/forgot' ||
@@ -226,14 +261,27 @@ class TestBackend {
 
   static final RegExp _printerRoute = RegExp(
     '^(GET|POST|PATCH|DELETE) /organizations/([^/]+)/printers'
-    r'(?:/([^/]+))?(/status)?$',
+    r'(?:/([^/]+))?(/status|/pairing-tokens)?$',
   );
 
   FakeResponse _answerPrinters(RegExpMatch route, Map<String, dynamic> body) {
     final method = route.group(1)!;
     final organizationId = route.group(2)!;
     final printerId = route.group(3);
-    final isStatus = route.group(4) != null;
+    final isStatus = route.group(4) == '/status';
+    if (route.group(4) == '/pairing-tokens') {
+      // The token is the printer's id with a prefix, so a test can read it.
+      return FakeResponse(201, {
+        'payload': {
+          'v': 1,
+          'token': 'token-$printerId',
+          'printer_id': printerId,
+          'organization_id': organizationId,
+        },
+        'deep_link': 'printerhub://pair?token=token-$printerId',
+        'expires_at': '2026-10-07T10:05:00Z',
+      });
+    }
     int indexOf(String id) => printerList.indexWhere((p) => p['id'] == id);
 
     if (printerId == null) {

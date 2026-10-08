@@ -256,6 +256,13 @@ void main() {
         expect(find.text('No printers yet'), findsOneWidget);
 
         await tester.tap(find.text('Add a printer'));
+        // The list of ways shows a spinner while it looks for printers, so
+        // it never settles: time is moved on by hand.
+        for (var i = 0; i < 8; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        await tester.ensureVisible(find.text('Enter an address'));
+        await tester.tap(find.text('Enter an address'));
         await tester.pumpAndSettle();
         await tester.enterText(find.byType(TextField).first, '192.168.1.40');
         await tester.tap(find.text('Find printer'));
