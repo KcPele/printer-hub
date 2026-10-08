@@ -29,6 +29,7 @@ Interactive docs: <http://localhost:8631/docs>.
 - **Print jobs take time.** A job is `pending`, then `processing`, then `completed` over `job_duration_seconds` (default 4). Poll Get-Job-Attributes to watch it.
 - **A feeder scan has several pages.** Call `NextDocument` until it returns `404`. A platen scan has one page.
 - **Scanned pages are generated.** PDF pages carry a line of text saying which page they are; JPEG pages are a 1×1 image.
+- **Raster print jobs are read.** A job sent as `image/pwg-raster` or `image/urf` is decoded the way a printer would. One that is cut short, or is the other format under the wrong name, is refused with `client-error-document-format-error`. The page count appears in `/sim/state` and as `job-impressions`.
 
 ## Injecting faults
 
@@ -44,8 +45,22 @@ curl -X PATCH localhost:8631/sim/state -H 'content-type: application/json' \
 | `door_open` | Print-Job is refused; `printer-is-accepting-jobs` is false. |
 | `adf_empty` | Feeder scans are refused with `409`; platen scans still work. |
 | `escl_disabled` | Every eSCL endpoint answers `404`, like firmware that does not expose eSCL. Use it to test the scan fallback order (FR-MOB-007). |
+| `ipp_1_1_only` | IPP 2.0 requests are refused with `server-error-version-not-supported`, like a printer from before 2010. |
 
 Other knobs in the same `PATCH`: `toner` (percent per colour; 10 or less reports low, 0 reports empty), `job_duration_seconds`, `adf_pages`.
+
+## Standing in for other printers
+
+A client that only meets a Xerox that reads PDF will fail on the printer at home. These knobs make the simulator behave like the others:
+
+| Knob | Effect |
+|---|---|
+| `document_formats` | What the printer accepts. `["image/pwg-raster", "image/urf", "image/jpeg"]` is a printer that does not read PDF; `["image/urf"]` is one with AirPrint alone. |
+| `auth` | `"basic"` or `"digest"`: IPP answers `401` until the request is signed in as `auth_user` / `auth_password`. |
+| `scan_busy_responses` | Each scanned page answers `503` that many times before it arrives, as a scanner does while its lamp moves. |
+| `scan_location` | How a new scan job is named in `Location`: `"absolute"`, `"path"`, or `"wrong_host"` (a name the client cannot look up). |
+
+`docs/printer-compatibility.md` says why each of these matters.
 
 ## Trying the fallback flow
 

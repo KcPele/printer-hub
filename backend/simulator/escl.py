@@ -129,6 +129,7 @@ def create_job(printer: PrinterState, settings_xml: str) -> ScanJob:
         source=source,
         document_format=document_format,
         pages_total=printer.adf_pages if source == "Feeder" else 1,
+        busy_left=printer.scan_busy_responses,
     )
     printer.scan_jobs[job.id] = job
     return job

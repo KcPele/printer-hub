@@ -1,17 +1,12 @@
 """IPP operations of the simulated printer."""
 
+from simulator import raster
 from simulator import state as s
 from simulator.ipp import Group, GroupTag, Message, Operation, Status
 from simulator.ipp import ValueTag as V
 from simulator.state import PrinterState, PrintJob
 
-DOCUMENT_FORMATS = (
-    "application/pdf",
-    "image/jpeg",
-    "image/urf",
-    "image/pwg-raster",
-    "application/octet-stream",
-)
+RASTER_FORMATS = ("image/pwg-raster", "image/urf")
 MEDIA = (
     "iso_a4_210x297mm",
     "iso_a3_297x420mm",
@@ -58,7 +53,7 @@ def _printer_attributes(printer: PrinterState, base_url: str) -> Group:
     g = Group(GroupTag.PRINTER)
     g.add("printer-uri-supported", V.URI, f"{ipp_url}/ipp/print")
     g.add("uri-security-supported", V.KEYWORD, "tls" if ipp_url.startswith("ipps") else "none")
-    g.add("uri-authentication-supported", V.KEYWORD, "none")
+    g.add("uri-authentication-supported", V.KEYWORD, printer.auth)
     g.add("printer-name", V.NAME, "Simulated C7130")
     g.add("printer-info", V.TEXT, "PrinterHub simulator")
     g.add("printer-make-and-model", V.TEXT, s.MODEL)
@@ -74,8 +69,19 @@ def _printer_attributes(printer: PrinterState, base_url: str) -> Group:
     g.add("charset-configured", V.CHARSET, "utf-8")
     g.add("charset-supported", V.CHARSET, "utf-8")
     g.add("natural-language-configured", V.NATURAL_LANGUAGE, "en")
-    g.add("document-format-supported", V.MIME_MEDIA_TYPE, *DOCUMENT_FORMATS)
-    g.add("document-format-default", V.MIME_MEDIA_TYPE, "application/pdf")
+    g.add("document-format-supported", V.MIME_MEDIA_TYPE, *printer.document_formats)
+    g.add("document-format-default", V.MIME_MEDIA_TYPE, printer.document_formats[0])
+    if "image/pwg-raster" in printer.document_formats:
+        g.add(
+            "pwg-raster-document-resolution-supported",
+            V.RESOLUTION,
+            (300, 300, _DOTS_PER_INCH),
+            (600, 600, _DOTS_PER_INCH),
+        )
+        g.add("pwg-raster-document-type-supported", V.KEYWORD, "sgray_8", "srgb_8")
+        g.add("pwg-raster-document-sheet-back", V.KEYWORD, "rotated")
+    if "image/urf" in printer.document_formats:
+        g.add("urf-supported", V.KEYWORD, "V1.4", "CP255", "W8", "SRGB24", "RS300-600", "DM3")
     g.add("color-supported", V.BOOLEAN, True)
     g.add("print-color-mode-supported", V.KEYWORD, "auto", "color", "monochrome")
     g.add("print-color-mode-default", V.KEYWORD, "auto")
@@ -117,6 +123,8 @@ def _job_attributes(printer: PrinterState, job: PrintJob, base_url: str) -> Grou
     g.add("job-originating-user-name", V.NAME, job.user)
     g.add("job-k-octets", V.INTEGER, max(1, job.size_bytes // 1024))
     g.add("copies", V.INTEGER, job.copies)
+    if job.pages is not None:
+        g.add("job-impressions", V.INTEGER, job.pages * job.copies)
     return g
 
 
@@ -125,11 +133,11 @@ def _text(group: Group | None, name: str) -> str | None:
     return value if isinstance(value, str) else None
 
 
-def _validate(request: Message) -> tuple[Status, str] | None:
+def _validate(request: Message, printer: PrinterState) -> tuple[Status, str] | None:
     operation = request.group(GroupTag.OPERATION)
     job = request.group(GroupTag.JOB)
     document_format = _text(operation, "document-format")
-    if document_format is not None and document_format not in DOCUMENT_FORMATS:
+    if document_format is not None and document_format not in printer.document_formats:
         return (
             Status.CLIENT_ERROR_DOCUMENT_FORMAT_NOT_SUPPORTED,
             f"Unsupported document format: {document_format}",
@@ -155,8 +163,24 @@ def _find_job(request: Message, printer: PrinterState) -> PrintJob | None:
     return printer.print_jobs.get(job_id) if isinstance(job_id, int) else None
 
 
+def _count_pages(document_format: str, data: bytes) -> int | None:
+    """Pages in a raster document. Raises `raster.RasterError` when it cannot be printed."""
+    if document_format not in RASTER_FORMATS:
+        return None
+    sync = raster.PWG_SYNC if document_format == "image/pwg-raster" else raster.URF_SYNC
+    if not data.startswith(sync):
+        raise raster.RasterError(f"the document is not {document_format}")
+    return len(raster.read(data, keep_pixels=False))
+
+
 def handle(request: Message, printer: PrinterState, base_url: str) -> Message:
     """Run one IPP operation against the simulated printer."""
+    if printer.faults.ipp_1_1_only and request.version > (1, 1):
+        response = _error(
+            request, Status.SERVER_ERROR_VERSION_NOT_SUPPORTED, "This printer speaks IPP 1.1"
+        )
+        response.version = (1, 1)
+        return response
     if printer.faults.offline:
         return _error(request, Status.SERVER_ERROR_SERVICE_UNAVAILABLE, "Printer is offline")
 
@@ -166,7 +190,7 @@ def handle(request: Message, printer: PrinterState, base_url: str) -> Message:
         return response
 
     if request.code in (Operation.VALIDATE_JOB, Operation.PRINT_JOB):
-        problem = _validate(request)
+        problem = _validate(request, printer)
         if problem is not None:
             return _error(request, *problem)
         if request.code == Operation.VALIDATE_JOB:
@@ -180,12 +204,18 @@ def handle(request: Message, printer: PrinterState, base_url: str) -> Message:
         operation = request.group(GroupTag.OPERATION)
         job_group = request.group(GroupTag.JOB)
         copies = job_group.first("copies") if job_group else None
+        document_format = _text(operation, "document-format") or "application/octet-stream"
+        try:
+            pages = _count_pages(document_format, request.data)
+        except raster.RasterError as error:
+            return _error(request, Status.CLIENT_ERROR_DOCUMENT_FORMAT_ERROR, str(error))
         job = printer.new_print_job(
             name=_text(operation, "job-name") or "Untitled",
             user=_text(operation, "requesting-user-name") or "anonymous",
-            document_format=_text(operation, "document-format") or "application/octet-stream",
+            document_format=document_format,
             copies=copies if isinstance(copies, int) else 1,
             size_bytes=len(request.data),
+            pages=pages,
         )
         response = _response(request, Status.OK)
         response.groups.append(_job_attributes(printer, job, base_url))

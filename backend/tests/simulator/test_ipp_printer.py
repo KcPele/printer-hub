@@ -1,6 +1,11 @@
-import httpx
+import base64
+import hashlib
+from pathlib import Path
 
-from simulator.ipp import Group, GroupTag, Message, Operation, Status, ValueTag
+import httpx
+import pytest
+
+from simulator.ipp import Group, GroupTag, Message, Operation, Status, ValueTag, decode
 from tests.simulator.conftest import ipp_request, send_ipp
 
 PDF = b"%PDF-1.7 pretend document"
@@ -83,7 +88,17 @@ async def test_print_job_runs_to_completion(sim: httpx.AsyncClient) -> None:
 
     assert await _job_state(sim, job_id) == (9, "job-completed-successfully")
     state = (await sim.get("/sim/state")).json()
-    assert state["print_jobs"] == [{"id": job_id, "name": "Invoice.pdf", "state": 9}]
+    assert state["print_jobs"] == [
+        {
+            "id": job_id,
+            "name": "Invoice.pdf",
+            "user": "anonymous",
+            "state": 9,
+            "document_format": "application/pdf",
+            "size_bytes": len(PDF),
+            "pages": None,
+        }
+    ]
 
 
 async def test_pending_job_can_be_cancelled_once(sim: httpx.AsyncClient) -> None:
@@ -219,3 +234,162 @@ async def test_offline_printer_answers_nothing_useful(sim: httpx.AsyncClient) ->
     assert ipp.code == Status.SERVER_ERROR_SERVICE_UNAVAILABLE
     assert ipp.group(GroupTag.PRINTER) is None
     assert scanner.status_code == 503
+
+
+# --- What a client must cope with on other printers ---------------------------
+
+FIXTURES = Path(__file__).parent / "fixtures"
+MIME = ValueTag.MIME_MEDIA_TYPE
+
+
+async def _printer_group(sim: httpx.AsyncClient) -> Group:
+    response = await send_ipp(sim, ipp_request(Operation.GET_PRINTER_ATTRIBUTES))
+    group = response.group(GroupTag.PRINTER)
+    assert group is not None
+    return group
+
+
+async def test_says_which_raster_it_takes(sim: httpx.AsyncClient) -> None:
+    printer = await _printer_group(sim)
+
+    assert printer.get("pwg-raster-document-type-supported") == ("sgray_8", "srgb_8")
+    assert printer.get("pwg-raster-document-resolution-supported") == ((300, 300, 3), (600, 600, 3))
+    assert printer.first("pwg-raster-document-sheet-back") == "rotated"
+    assert "RS300-600" in (printer.get("urf-supported") or ())
+
+
+async def test_can_stand_in_for_a_printer_without_pdf(sim: httpx.AsyncClient) -> None:
+    await sim.patch("/sim/state", json={"document_formats": ["image/urf", "image/jpeg"]})
+
+    printer = await _printer_group(sim)
+    assert printer.get("document-format-supported") == ("image/urf", "image/jpeg")
+    assert printer.first("document-format-default") == "image/urf"
+    assert printer.get("pwg-raster-document-type-supported") is None
+
+    refused = await send_ipp(
+        sim, ipp_request(Operation.VALIDATE_JOB, document_format=(MIME, "application/pdf"))
+    )
+    assert refused.code == Status.CLIENT_ERROR_DOCUMENT_FORMAT_NOT_SUPPORTED
+
+
+@pytest.mark.parametrize(
+    ("name", "document_format"),
+    [("rgb.pwg", "image/pwg-raster"), ("gray.urf", "image/urf")],
+)
+async def test_counts_the_pages_of_a_raster_document(
+    sim: httpx.AsyncClient, name: str, document_format: str
+) -> None:
+    job = Group(GroupTag.JOB).add("copies", INTEGER, 3)
+    response = await send_ipp(
+        sim,
+        ipp_request(
+            Operation.PRINT_JOB,
+            job=job,
+            data=(FIXTURES / name).read_bytes(),
+            document_format=(MIME, document_format),
+        ),
+    )
+
+    assert response.code == Status.OK
+    group = response.group(GroupTag.JOB)
+    assert group is not None
+    assert group.first("job-impressions") == 6
+    printed = (await sim.get("/sim/state")).json()["print_jobs"][0]
+    assert printed["pages"] == 2
+    assert printed["document_format"] == document_format
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        b"%PDF-1.7 not a raster",
+        # The other raster format under the wrong name.
+        (FIXTURES / "rgb.urf").read_bytes(),
+        # Cut off part way through.
+        (FIXTURES / "rgb.pwg").read_bytes()[:2000],
+    ],
+)
+async def test_refuses_a_raster_document_it_cannot_read(
+    sim: httpx.AsyncClient, data: bytes
+) -> None:
+    response = await send_ipp(
+        sim,
+        ipp_request(Operation.PRINT_JOB, data=data, document_format=(MIME, "image/pwg-raster")),
+    )
+
+    assert response.code == Status.CLIENT_ERROR_DOCUMENT_FORMAT_ERROR
+    assert (await sim.get("/sim/state")).json()["print_jobs"] == []
+
+
+async def test_can_stand_in_for_a_printer_that_only_speaks_ipp_1_1(
+    sim: httpx.AsyncClient,
+) -> None:
+    await sim.patch("/sim/state", json={"faults": {"ipp_1_1_only": True}})
+
+    refused = await send_ipp(sim, ipp_request(Operation.GET_PRINTER_ATTRIBUTES))
+    assert refused.code == Status.SERVER_ERROR_VERSION_NOT_SUPPORTED
+    assert refused.version == (1, 1)
+
+    old = ipp_request(Operation.GET_PRINTER_ATTRIBUTES)
+    accepted = await send_ipp(sim, bytes([1, 1]) + old[2:])
+    assert accepted.code == Status.OK
+
+
+async def _post_ipp(sim: httpx.AsyncClient, authorization: str | None = None) -> httpx.Response:
+    headers = {"Content-Type": "application/ipp"}
+    if authorization is not None:
+        headers["Authorization"] = authorization
+    return await sim.post(
+        "/ipp/print", content=ipp_request(Operation.GET_PRINTER_ATTRIBUTES), headers=headers
+    )
+
+
+async def test_asks_for_a_basic_password(sim: httpx.AsyncClient) -> None:
+    await sim.patch(
+        "/sim/state", json={"auth": "basic", "auth_user": "ada", "auth_password": "s3cret"}
+    )
+
+    asked = await _post_ipp(sim)
+    assert asked.status_code == 401
+    assert asked.headers["www-authenticate"] == 'Basic realm="PrinterHub simulator"'
+
+    signed = "Basic " + base64.b64encode(b"ada:s3cret").decode()
+    accepted = await _post_ipp(sim, signed)
+    assert accepted.status_code == 200
+    printer = decode(accepted.content).group(GroupTag.PRINTER)
+    assert printer is not None
+    assert printer.first("uri-authentication-supported") == "basic"
+
+    assert (
+        await _post_ipp(sim, "Basic " + base64.b64encode(b"ada:wrong").decode())
+    ).status_code == 401
+    assert (await _post_ipp(sim, "Digest username=ada")).status_code == 401
+
+
+async def test_asks_for_a_digest_signature(sim: httpx.AsyncClient) -> None:
+    await sim.patch(
+        "/sim/state", json={"auth": "digest", "auth_user": "ada", "auth_password": "s3cret"}
+    )
+
+    asked = await _post_ipp(sim)
+    assert asked.status_code == 401
+    challenge = asked.headers["www-authenticate"]
+    nonce = challenge.split('nonce="')[1].split('"')[0]
+    assert challenge.startswith('Digest realm="PrinterHub simulator"')
+
+    def md5(text: str) -> str:
+        return hashlib.md5(text.encode(), usedforsecurity=False).hexdigest()
+
+    def signed(password: str, *, uri: str = "/ipp/print", user: str = "ada") -> str:
+        ha1 = md5(f"{user}:PrinterHub simulator:{password}")
+        response = md5(f"{ha1}:{nonce}:00000001:abc:auth:{md5(f'POST:{uri}')}")
+        return (
+            f'Digest username="{user}", realm="PrinterHub simulator", nonce="{nonce}", '
+            f'uri="{uri}", qop=auth, nc=00000001, cnonce="abc", response="{response}"'
+        )
+
+    assert (await _post_ipp(sim, signed("s3cret"))).status_code == 200
+    assert (await _post_ipp(sim, signed("wrong"))).status_code == 401
+    assert (await _post_ipp(sim, signed("s3cret", uri="/other"))).status_code == 401
+    assert (await _post_ipp(sim, signed("s3cret", user="eve"))).status_code == 401
+    assert (await _post_ipp(sim, "Basic YWRhOnMzY3JldA==")).status_code == 401

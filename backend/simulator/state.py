@@ -33,6 +33,8 @@ class PrintJob:
     canceled: bool = False
     # Set when the job was submitted into a jam; it stays stopped.
     jammed: bool = False
+    # Counted from the document when it is a raster; unknown for a PDF or JPEG.
+    pages: int | None = None
 
 
 @dataclass(slots=True)
@@ -42,6 +44,8 @@ class ScanJob:
     document_format: str
     pages_total: int
     pages_served: int = 0
+    # How many more times the next page answers "busy" before it is handed over.
+    busy_left: int = 0
 
 
 @dataclass
@@ -54,6 +58,17 @@ class Faults:
     adf_empty: bool = False
     # Turns the eSCL endpoints off, as on firmware that does not expose them.
     escl_disabled: bool = False
+    # Answers IPP 2.0 requests with "version not supported", like a printer from before 2010.
+    ipp_1_1_only: bool = False
+
+
+DOCUMENT_FORMATS = (
+    "application/pdf",
+    "image/jpeg",
+    "image/urf",
+    "image/pwg-raster",
+    "application/octet-stream",
+)
 
 
 @dataclass
@@ -67,13 +82,33 @@ class PrinterState:
     job_duration_seconds: float = 4.0
     # Pages the document feeder holds for one scan.
     adf_pages: int = 3
+    # What the printer accepts. Remove application/pdf to stand in for a printer that only
+    # takes pictures of pages, as many home printers do.
+    document_formats: tuple[str, ...] = DOCUMENT_FORMATS
+    # How IPP asks who is printing: "none", "basic", or "digest".
+    auth: str = "none"
+    auth_user: str = "printer"
+    auth_password: str = "secret"  # noqa: S105 - a made-up password for a made-up printer
+    # Changes with every reset, as a real printer's does with every challenge.
+    auth_nonce: str = field(default_factory=lambda: uuid.uuid4().hex)
+    # Times each scanned page answers "busy" (503) before it arrives.
+    scan_busy_responses: int = 0
+    # How the scanner names a new job in Location: "absolute", "path", or "wrong_host".
+    scan_location: str = "absolute"
     uuid: str = field(default_factory=lambda: str(uuid.uuid4()))
     print_jobs: dict[int, PrintJob] = field(default_factory=dict)
     scan_jobs: dict[str, ScanJob] = field(default_factory=dict)
     _next_job_id: int = 1
 
     def new_print_job(
-        self, *, name: str, user: str, document_format: str, copies: int, size_bytes: int
+        self,
+        *,
+        name: str,
+        user: str,
+        document_format: str,
+        copies: int,
+        size_bytes: int,
+        pages: int | None = None,
     ) -> PrintJob:
         job = PrintJob(
             id=self._next_job_id,
@@ -85,6 +120,7 @@ class PrinterState:
             created_at=time.monotonic(),
             duration_seconds=self.job_duration_seconds,
             jammed=self.faults.paper_jam,
+            pages=pages,
         )
         self._next_job_id += 1
         self.print_jobs[job.id] = job

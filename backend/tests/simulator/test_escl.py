@@ -161,6 +161,7 @@ async def test_reset_restores_factory_state(sim: httpx.AsyncClient) -> None:
         "door_open": False,
         "adf_empty": False,
         "escl_disabled": False,
+        "ipp_1_1_only": False,
     }
     assert state["toner"]["black"] == 82
     assert state["adf_pages"] == 3
@@ -173,3 +174,29 @@ async def test_root_lists_the_endpoints(sim: httpx.AsyncClient) -> None:
     assert info["model"] == "Xerox VersaLink C7130"
     assert info["ipp"] == "http://printer.local/ipp/print"
     assert info["escl"] == "http://printer.local/eSCL"
+
+
+async def test_a_page_can_take_a_while_to_arrive(sim: httpx.AsyncClient) -> None:
+    await sim.patch("/sim/state", json={"scan_busy_responses": 2, "adf_pages": 2})
+    job = _path((await _start(sim, "Feeder")).headers["location"])
+
+    answers = [(await sim.get(f"{job}/NextDocument")).status_code for _ in range(7)]
+
+    # Busy twice before each of the two pages, then no more pages.
+    assert answers == [503, 503, 200, 503, 503, 200, 404]
+
+
+async def test_the_job_address_can_be_a_path_or_a_name_nobody_knows(
+    sim: httpx.AsyncClient,
+) -> None:
+    await sim.patch("/sim/state", json={"scan_location": "path"})
+    by_path = (await _start(sim)).headers["location"]
+    assert by_path.startswith("/eSCL/ScanJobs/")
+    await sim.delete(by_path)
+
+    await sim.patch("/sim/state", json={"scan_location": "wrong_host"})
+    wrong = (await _start(sim)).headers["location"]
+    assert wrong.startswith("http://scanner-")
+    assert ".invalid/eSCL/ScanJobs/" in wrong
+    # The job is still on the device the request went to.
+    assert (await sim.get("/eSCL/ScanJobs/" + wrong.rsplit("/", 1)[1] + "/NextDocument")).is_success
