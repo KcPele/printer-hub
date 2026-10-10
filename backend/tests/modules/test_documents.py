@@ -302,7 +302,7 @@ async def test_recognized_text_is_searchable_but_not_returned(
     assert "Confidential" not in str(document)
 
 
-async def test_documents_are_private_unless_role_allows(
+async def test_documents_are_their_owners_until_shared(
     client: httpx.AsyncClient, session: AsyncSession
 ) -> None:
     scene = await make_scene(session)
@@ -312,18 +312,42 @@ async def test_documents_are_private_unless_role_allows(
     admin = await member_headers(session, scene.organization, Role.ADMIN)
     document = await _create(client, scene, headers=alice)
     url = f"{_url(scene)}/{document['id']}"
+    assert document["shared"] is False
 
-    assert (await client.get(url, headers=bob)).status_code == 404
-    assert (await client.get(_url(scene), headers=bob)).json()["items"] == []
-    # An operator can read every document but not change another member's.
-    assert (await client.get(url, headers=operator)).status_code == 200
+    # Nobody else sees it, whatever their role.
+    for other in (bob, operator, admin):
+        assert (await client.get(url, headers=other)).status_code == 404
+        assert (await client.get(_url(scene), headers=other)).json()["items"] == []
+
+    shared = await client.patch(url, headers=alice, json={"shared": True})
+    assert shared.json()["shared"] is True
+
+    # Now every member sees it, but only its owner or an administrator changes it.
+    assert (await client.get(url, headers=bob)).status_code == 200
+    listed = (await client.get(_url(scene), headers=bob)).json()["items"]
+    assert [item["id"] for item in listed] == [document["id"]]
     assert (
         await client.patch(url, headers=operator, json={"file_name": "Renamed.pdf"})
     ).status_code == 403
     assert (await client.delete(url, headers=operator)).status_code == 403
-    assert (
-        await client.patch(url, headers=admin, json={"file_name": "Renamed.pdf"})
-    ).status_code == 200
+    renamed = await client.patch(url, headers=admin, json={"file_name": "Renamed.pdf"})
+    assert renamed.status_code == 200
+    # A change that leaves `shared` out leaves it as it was.
+    assert renamed.json()["shared"] is True
+
+    await client.patch(url, headers=alice, json={"shared": False})
+    assert (await client.get(url, headers=bob)).status_code == 404
+
+
+async def test_a_document_can_be_shared_from_the_start(
+    client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    scene = await make_scene(session)
+    bob = await member_headers(session, scene.organization, Role.USER)
+    document = await _create(client, scene, shared=True)
+
+    assert document["shared"] is True
+    assert (await client.get(f"{_url(scene)}/{document['id']}", headers=bob)).status_code == 200
 
 
 async def test_rename_and_retag(client: httpx.AsyncClient, session: AsyncSession) -> None:

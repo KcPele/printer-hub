@@ -44,6 +44,9 @@ class DocumentCreate(ApiModel):
     storage_mode: StorageMode = StorageMode.LOCAL
     checksum_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     tags: Tags = Field(default_factory=list)
+    shared: bool = Field(
+        default=False, description="Whether every member of the organization can see it"
+    )
     source_printer_id: uuid.UUID | None = None
     # Text recognized on the device. Accepted for cloud documents only: for a
     # local document the content, including its text, stays on the device.
@@ -55,6 +58,7 @@ class DocumentUpdate(ApiModel):
 
     file_name: str | None = Field(default=None, min_length=1, max_length=255)
     tags: Tags | None = None
+    shared: bool | None = None
     page_count: int | None = Field(default=None, ge=0, le=100_000)
     ocr_text: str | None = Field(default=None, max_length=1_000_000)
 
@@ -74,6 +78,7 @@ class DocumentRead(ApiModel):
     upload_status: UploadStatus
     checksum_sha256: str | None
     tags: list[str]
+    shared: bool
     has_ocr_text: bool
     source_printer_id: uuid.UUID | None
     retention_expires_at: datetime | None

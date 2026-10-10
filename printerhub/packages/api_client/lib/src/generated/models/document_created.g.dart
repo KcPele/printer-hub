@@ -20,6 +20,7 @@ DocumentCreated _$DocumentCreatedFromJson(Map<String, dynamic> json) =>
       retentionExpiresAt: json['retention_expires_at'] == null
           ? null
           : DateTime.parse(json['retention_expires_at'] as String),
+      shared: json['shared'] as bool,
       sizeBytes: (json['size_bytes'] as num).toInt(),
       source: DocumentSource.fromJson(json['source'] as String),
       sourcePrinterId: json['source_printer_id'] as String?,
@@ -44,6 +45,7 @@ Map<String, dynamic> _$DocumentCreatedToJson(DocumentCreated instance) =>
       'owner_id': ?instance.ownerId,
       'page_count': ?instance.pageCount,
       'retention_expires_at': ?instance.retentionExpiresAt?.toIso8601String(),
+      'shared': instance.shared,
       'size_bytes': instance.sizeBytes,
       'source': instance.source.toJson(),
       'source_printer_id': ?instance.sourcePrinterId,

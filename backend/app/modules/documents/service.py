@@ -68,7 +68,8 @@ def _escape_like(value: str) -> str:
 
 
 def _may_read(ctx: OrgContext, document: Document) -> bool:
-    return document.owner_id == ctx.user.id or ctx.has(Permission.DOCUMENTS_READ_ALL)
+    # A document is its owner's until they share it; then every member sees it.
+    return document.owner_id == ctx.user.id or document.shared
 
 
 def _ensure_may_change(ctx: OrgContext, document: Document) -> None:
@@ -98,8 +99,7 @@ async def list_documents(
     stmt = select(Document).where(
         Document.organization_id == ctx.organization.id, Document.deleted_at.is_(None)
     )
-    if not ctx.has(Permission.DOCUMENTS_READ_ALL):
-        stmt = stmt.where(Document.owner_id == ctx.user.id)
+    stmt = stmt.where(or_(Document.owner_id == ctx.user.id, Document.shared.is_(True)))
     if filters.query:
         term = filters.query.strip()
         pattern = f"%{_escape_like(term)}%"
@@ -190,6 +190,7 @@ async def create(
         upload_status=UploadStatus.PENDING if is_cloud else UploadStatus.NOT_APPLICABLE,
         checksum_sha256=payload.checksum_sha256,
         tags=payload.tags,
+        shared=payload.shared,
         ocr_text=payload.ocr_text,
         source_printer_id=payload.source_printer_id,
         retention_expires_at=(
@@ -299,6 +300,9 @@ async def update(
             "document.local_content_not_accepted",
             "Recognized text can only be stored for cloud documents.",
         )
+    if changes.get("shared") is None:
+        # Left out, or null: it stays as it is.
+        changes.pop("shared", None)
     for name, value in changes.items():
         setattr(document, name, value)
     await session.flush()

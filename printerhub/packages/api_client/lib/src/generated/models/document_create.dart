@@ -15,6 +15,7 @@ class DocumentCreate {
     required this.fileName,
     required this.mimeType,
     required this.sizeBytes,
+    this.shared = false,
     this.source = DocumentSource.upload,
     this.storageMode = StorageMode.local,
     this.checksumSha256,
@@ -41,6 +42,9 @@ class DocumentCreate {
   final String? ocrText;
   @JsonKey(name: 'page_count')
   final int? pageCount;
+
+  /// Whether every member of the organization can see it
+  final bool shared;
   @JsonKey(name: 'size_bytes')
   final int sizeBytes;
   final DocumentSource source;

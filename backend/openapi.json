@@ -2303,6 +2303,12 @@
             ],
             "title": "Page Count"
           },
+          "shared": {
+            "default": false,
+            "description": "Whether every member of the organization can see it",
+            "title": "Shared",
+            "type": "boolean"
+          },
           "size_bytes": {
             "minimum": 1.0,
             "title": "Size Bytes",
@@ -2420,6 +2426,10 @@
             ],
             "title": "Retention Expires At"
           },
+          "shared": {
+            "title": "Shared",
+            "type": "boolean"
+          },
           "size_bytes": {
             "title": "Size Bytes",
             "type": "integer"
@@ -2482,6 +2492,7 @@
           "upload_status",
           "checksum_sha256",
           "tags",
+          "shared",
           "has_ocr_text",
           "source_printer_id",
           "retention_expires_at",
@@ -2567,6 +2578,10 @@
             ],
             "title": "Retention Expires At"
           },
+          "shared": {
+            "title": "Shared",
+            "type": "boolean"
+          },
           "size_bytes": {
             "title": "Size Bytes",
             "type": "integer"
@@ -2618,6 +2633,7 @@
           "upload_status",
           "checksum_sha256",
           "tags",
+          "shared",
           "has_ocr_text",
           "source_printer_id",
           "retention_expires_at",
@@ -2676,6 +2692,17 @@
               }
             ],
             "title": "Page Count"
+          },
+          "shared": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shared"
           },
           "tags": {
             "anyOf": [
@@ -10794,7 +10821,7 @@
     },
     "/api/v1/organizations/{org_id}/documents": {
       "get": {
-        "description": "Documents, newest first. Members without `documents.read_all` see only their own.",
+        "description": "Documents, newest first: the caller's own, and those other members have shared.",
         "operationId": "list_documents",
         "parameters": [
           {

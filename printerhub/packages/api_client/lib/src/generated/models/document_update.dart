@@ -13,6 +13,7 @@ class DocumentUpdate {
     this.fileName,
     this.ocrText,
     this.pageCount,
+    this.shared,
     this.tags,
   });
 
@@ -25,6 +26,7 @@ class DocumentUpdate {
   final String? ocrText;
   @JsonKey(name: 'page_count')
   final int? pageCount;
+  final bool? shared;
   final List<String>? tags;
 
   Map<String, Object?> toJson() => _$DocumentUpdateToJson(this);

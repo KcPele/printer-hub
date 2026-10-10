@@ -655,7 +655,7 @@ export interface paths {
         };
         /**
          * List Documents
-         * @description Documents, newest first. Members without `documents.read_all` see only their own.
+         * @description Documents, newest first: the caller's own, and those other members have shared.
          */
         get: operations["list_documents"];
         put?: never;
@@ -2051,6 +2051,12 @@ export interface components {
             ocr_text?: string | null;
             /** Page Count */
             page_count?: number | null;
+            /**
+             * Shared
+             * @description Whether every member of the organization can see it
+             * @default false
+             */
+            shared?: boolean;
             /** Size Bytes */
             size_bytes: number;
             /** @default upload */
@@ -2093,6 +2099,8 @@ export interface components {
             page_count: number | null;
             /** Retention Expires At */
             retention_expires_at: string | null;
+            /** Shared */
+            shared: boolean;
             /** Size Bytes */
             size_bytes: number;
             source: components["schemas"]["DocumentSource"];
@@ -2141,6 +2149,8 @@ export interface components {
             page_count: number | null;
             /** Retention Expires At */
             retention_expires_at: string | null;
+            /** Shared */
+            shared: boolean;
             /** Size Bytes */
             size_bytes: number;
             source: components["schemas"]["DocumentSource"];
@@ -2172,6 +2182,8 @@ export interface components {
             ocr_text?: string | null;
             /** Page Count */
             page_count?: number | null;
+            /** Shared */
+            shared?: boolean | null;
             /** Tags */
             tags?: string[] | null;
         };

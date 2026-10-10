@@ -23,6 +23,7 @@ class DocumentRead {
     required this.ownerId,
     required this.pageCount,
     required this.retentionExpiresAt,
+    required this.shared,
     required this.sizeBytes,
     required this.source,
     required this.sourcePrinterId,
@@ -54,6 +55,7 @@ class DocumentRead {
   final int? pageCount;
   @JsonKey(name: 'retention_expires_at')
   final DateTime? retentionExpiresAt;
+  final bool shared;
   @JsonKey(name: 'size_bytes')
   final int sizeBytes;
   final DocumentSource source;

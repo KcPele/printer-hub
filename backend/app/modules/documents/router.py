@@ -96,7 +96,7 @@ async def list_documents(
     created_from: datetime | None = None,
     created_to: datetime | None = None,
 ) -> Page[DocumentRead]:
-    """Documents, newest first. Members without `documents.read_all` see only their own."""
+    """Documents, newest first: the caller's own, and those other members have shared."""
     documents, next_cursor = await service.list_documents(
         session,
         ctx,

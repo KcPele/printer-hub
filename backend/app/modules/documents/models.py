@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, ForeignKey, Index, String, Text
+from sqlalchemy import BigInteger, ForeignKey, Index, String, Text, false
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, IdMixin, TimestampMixin, str_enum
@@ -48,6 +48,8 @@ class Document(Base, IdMixin, TimestampMixin):
     storage_key: Mapped[str | None] = mapped_column(String(500))
     upload_status: Mapped[UploadStatus] = mapped_column(str_enum(UploadStatus))
     checksum_sha256: Mapped[str | None] = mapped_column(String(64))
+    # False keeps it to its owner; true lets every member of the organization see it.
+    shared: Mapped[bool] = mapped_column(default=False, server_default=false())
     # Lowercased.
     tags: Mapped[list[str]] = mapped_column(default=list)
     ocr_text: Mapped[str | None] = mapped_column(Text)

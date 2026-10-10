@@ -22,7 +22,7 @@ abstract class DocumentsClient {
 
   /// List Documents.
   ///
-  /// Documents, newest first. Members without `documents.read_all` see only their own.
+  /// Documents, newest first: the caller's own, and those other members have shared.
   ///
   /// [q] - Matches file name, recognized text, or a tag.
   ///

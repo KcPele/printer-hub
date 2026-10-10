@@ -11,6 +11,7 @@ DocumentCreate _$DocumentCreateFromJson(Map<String, dynamic> json) =>
       fileName: json['file_name'] as String,
       mimeType: json['mime_type'] as String,
       sizeBytes: (json['size_bytes'] as num).toInt(),
+      shared: json['shared'] as bool? ?? false,
       source: json['source'] == null
           ? DocumentSource.upload
           : DocumentSource.fromJson(json['source'] as String),
@@ -33,6 +34,7 @@ Map<String, dynamic> _$DocumentCreateToJson(DocumentCreate instance) =>
       'mime_type': instance.mimeType,
       'ocr_text': ?instance.ocrText,
       'page_count': ?instance.pageCount,
+      'shared': instance.shared,
       'size_bytes': instance.sizeBytes,
       'source': instance.source.toJson(),
       'source_printer_id': ?instance.sourcePrinterId,
