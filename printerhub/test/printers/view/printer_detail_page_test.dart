@@ -84,6 +84,12 @@ void main() {
       expect(find.textContaining('Printing · 192.168.1.40'), findsOneWidget);
       // The check as the page opened found both ways in working.
       expect(find.textContaining('Working'), findsNWidgets(2));
+      // Each is said on the line of the way in it speaks of, where there
+      // is room, and not on a line of its own.
+      expect(
+        tester.getCenter(find.textContaining('Working').first).dy,
+        closeTo(tester.getCenter(find.text('Printing · 192.168.1.40')).dy, 4),
+      );
     });
 
     testWidgets('opens printing', (tester) async {

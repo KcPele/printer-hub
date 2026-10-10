@@ -268,9 +268,8 @@ class PrinterDetailView extends StatelessWidget {
                           icon: connection.type == ConnectionType.escl
                               ? Icons.document_scanner_outlined
                               : Icons.print_outlined,
-                          text:
-                              '${PrinterWords.connection(l10n, connection)}\n'
-                              '${PrinterWords.health(l10n, connection).label}',
+                          text: PrinterWords.connection(l10n, connection),
+                          note: PrinterWords.health(l10n, connection).label,
                         ),
                       Align(
                         alignment: AlignmentDirectional.centerStart,
@@ -394,20 +393,41 @@ class _Section extends StatelessWidget {
 }
 
 class _Line extends StatelessWidget {
-  const new({required this.icon, required this.text});
+  const new({required this.icon, required this.text, this.note});
 
   final IconData icon;
   final String text;
 
+  /// Something to say of it, set quietly at the end of the line. It goes
+  /// below only when the line has no room for both.
+  final String? note;
+
   @override
   Widget build(BuildContext context) {
+    final note = this.note;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         children: [
           Icon(icon, size: 20, color: context.colors.emphasis),
           const SizedBox(width: AppSpacing.md),
-          Expanded(child: Text(text, style: context.textTheme.bodyLarge)),
+          Expanded(
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: AppSpacing.md,
+              children: [
+                Text(text, style: context.textTheme.bodyLarge),
+                if (note != null)
+                  Text(
+                    note,
+                    style: context.textTheme.bodyMedium?.copyWith(
+                      color: context.colors.textMuted,
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );
