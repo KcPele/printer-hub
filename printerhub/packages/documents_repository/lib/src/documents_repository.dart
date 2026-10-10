@@ -28,9 +28,12 @@ class DocumentsRepository {
   final FileTransfer _transfer;
   final Directory _directory;
 
-  /// Puts [file] in the workspace, and returns its record.
+  /// Puts [file] in the workspace, and returns its record. It is its
+  /// owner's alone unless [shared].
   ///
-  /// [text] is what the document says, read on the phone.
+  /// [text] is what the document says, read on the phone. [id] is the
+  /// identifier to record it under, for a document the phone already
+  /// knows by one; make it with `newRecordId`.
   ///
   /// Throws an [ApiException] when the record cannot be made, which is
   /// also how a workspace that keeps documents on devices only says so,
@@ -44,6 +47,8 @@ class DocumentsRepository {
     String source = 'printer_scan',
     String? printerId,
     String? text,
+    String? id,
+    bool shared = false,
   }) async {
     final size = await file.length();
     final created = await apiCall(
@@ -52,7 +57,7 @@ class DocumentsRepository {
         idempotencyKey: newIdempotencyKey(),
         body: DocumentCreate(
           // The documents are listed by identifier, newest first.
-          id: newRecordId(),
+          id: id ?? newRecordId(),
           fileName: name,
           mimeType: mimeType,
           sizeBytes: size,
@@ -60,6 +65,7 @@ class DocumentsRepository {
           source: DocumentSource.fromJson(source),
           storageMode: StorageMode.cloud,
           sourcePrinterId: printerId,
+          shared: shared,
           // The words in it, when the phone has read them: the workspace
           // can then find the document by what it says.
           ocrText: text == null || text.trim().isEmpty ? null : text,
@@ -165,6 +171,24 @@ class DocumentsRepository {
           orgId: organizationId,
           documentId: documentId,
           body: DocumentUpdate(fileName: name),
+        ),
+      ),
+    );
+  }
+
+  /// Lets every member of the workspace see the document, or, with
+  /// [shared] false, keeps it to its owner again.
+  Future<StoredDocument> share({
+    required String organizationId,
+    required String documentId,
+    required bool shared,
+  }) async {
+    return StoredDocument.fromApi(
+      await apiCall(
+        () => _client.api.documents.updateDocument(
+          orgId: organizationId,
+          documentId: documentId,
+          body: DocumentUpdate(shared: shared),
         ),
       ),
     );

@@ -121,6 +121,26 @@ void main() {
       expect(bodyOf(api.requests.first)['ocr_text'], 'Invoice 42');
     });
 
+    test('is its owner’s alone, under a new identifier, unless told '
+        'otherwise', () async {
+      await keep();
+      final first = bodyOf(api.requests.first);
+      expect(first['shared'], isFalse);
+      expect(first['id'], isNot('known-id'));
+
+      await repository.keep(
+        organizationId: _org,
+        file: scan,
+        name: 'Receipts.pdf',
+        mimeType: 'application/pdf',
+        id: 'known-id',
+        shared: true,
+      );
+      final second = bodyOf(api.requests[2]);
+      expect(second['id'], 'known-id');
+      expect(second['shared'], isTrue);
+    });
+
     test('sends no words when there are none to speak of', () async {
       await keep(text: ' \n');
 
@@ -310,6 +330,25 @@ void main() {
     expect(api.requests.single.method, 'PATCH');
     expect(bodyOf(api.requests.single)['file_name'], 'Renamed.pdf');
     expect(renamed.name, 'Renamed.pdf');
+  });
+
+  test('shares a document with the workspace, and takes it back', () async {
+    final shared = await repository.share(
+      organizationId: _org,
+      documentId: 'document-1',
+      shared: true,
+    );
+
+    expect(api.requests.single.method, 'PATCH');
+    expect(bodyOf(api.requests.single), {'shared': true});
+    expect(shared.ownerId, 'user-1');
+
+    await repository.share(
+      organizationId: _org,
+      documentId: 'document-1',
+      shared: false,
+    );
+    expect(bodyOf(api.requests.last), {'shared': false});
   });
 
   test('deletes a document', () async {

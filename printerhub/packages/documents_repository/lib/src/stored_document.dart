@@ -14,6 +14,8 @@ class StoredDocument extends Equatable {
     this.inCloud = false,
     this.uploaded = false,
     this.printerId,
+    this.ownerId,
+    this.shared = false,
   });
 
   factory fromApi(DocumentRead document) {
@@ -28,6 +30,8 @@ class StoredDocument extends Equatable {
       inCloud: document.storageMode == StorageMode.cloud,
       uploaded: document.uploadStatus == UploadStatus.uploaded,
       printerId: document.sourcePrinterId,
+      ownerId: document.ownerId,
+      shared: document.shared,
     );
   }
 
@@ -53,6 +57,13 @@ class StoredDocument extends Equatable {
   /// The printer it was scanned on.
   final String? printerId;
 
+  /// Whose it is. Null when that account is gone.
+  final String? ownerId;
+
+  /// True when every member of the workspace can see it. Otherwise only
+  /// its owner does.
+  final bool shared;
+
   /// True when the file can be fetched from the workspace.
   bool get canFetch => inCloud && uploaded;
 
@@ -71,5 +82,7 @@ class StoredDocument extends Equatable {
     inCloud,
     uploaded,
     printerId,
+    ownerId,
+    shared,
   ];
 }
