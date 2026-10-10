@@ -67,8 +67,15 @@ class DocumentPreview extends Equatable {
 
 /// Lets the person choose a file from the phone.
 abstract interface class DocumentPicker {
-  /// The chosen file, or null when they chose nothing.
+  /// The chosen file, a PDF or a picture, or null when they chose nothing.
   Future<PickedDocument?> pick();
+
+  /// The chosen PDF, or null when they chose nothing.
+  Future<PickedDocument?> pickPdf();
+
+  /// The chosen pictures, in the order they were chosen. Empty when they
+  /// chose none.
+  Future<List<PickedDocument>> pickPictures();
 }
 
 /// Reads and draws documents. The drawing is done by the phone's own PDF
@@ -81,6 +88,10 @@ abstract interface class PageRenderer {
   /// Draws each page of [document] as the pixels of a [page], in order,
   /// for a printer that does not read the file itself.
   Stream<Uint8List> rasterise(PickedDocument document, RasterDocument page);
+
+  /// Each page of [document] as a PNG picture, in order, at [dpi] dots to
+  /// the inch. A picture is its own one page.
+  Stream<Uint8List> pictures(PickedDocument document, {int dpi = 150});
 
   /// Hands [document] to the phone's own print dialog. True when it was
   /// sent on from there.

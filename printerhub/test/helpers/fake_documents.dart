@@ -22,6 +22,9 @@ PickedDocument pickedPdf({String name = 'Report.pdf'}) {
 /// it is null.
 class FakeDocumentPicker implements DocumentPicker {
   PickedDocument? next = pickedPdf();
+
+  /// The pictures chosen when several are asked for.
+  List<PickedDocument> pictures = [];
   int opened = 0;
 
   @override
@@ -29,7 +32,40 @@ class FakeDocumentPicker implements DocumentPicker {
     opened++;
     return next;
   }
+
+  @override
+  Future<PickedDocument?> pickPdf() => pick();
+
+  @override
+  Future<List<PickedDocument>> pickPictures() async {
+    opened++;
+    return pictures;
+  }
 }
+
+/// A picture on the phone, as the file browser would hand it over: a real
+/// file in [directory], so that what reads it has something to read.
+PickedDocument pickedPicture(Directory directory, {String name = 'Photo.jpg'}) {
+  final file = File('${directory.path}/$name')
+    ..writeAsBytesSync(name.endsWith('.png') ? tinyPng : tinyJpeg);
+  return PickedDocument.fromFile(file);
+}
+
+/// A PDF on the phone that is a real file, for what reads its bytes.
+PickedDocument pickedPdfFile(
+  Directory directory, {
+  String name = 'Report.pdf',
+}) {
+  final file = File('${directory.path}/$name')
+    ..writeAsBytesSync(utf8.encode('%PDF-1.7 a report'));
+  return PickedDocument.fromFile(file);
+}
+
+/// A PNG two pixels square, as a page drawn to a picture.
+final Uint8List tinyPng = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEklEQVR4nGP4'
+  '//+/nJwcA4QCADa5Bq9KHgy/AAAAAElFTkSuQmCC',
+);
 
 /// Stands in for the phone's PDF and image code.
 class FakePageRenderer implements PageRenderer {
@@ -60,6 +96,14 @@ class FakePageRenderer implements PageRenderer {
     for (var i = 0; i < pageCount; i++) {
       drawn++;
       yield Uint8List(page.bytesPerPage)..fillRange(0, page.bytesPerPage, 255);
+    }
+  }
+
+  @override
+  Stream<Uint8List> pictures(PickedDocument document, {int dpi = 150}) async* {
+    if (unreadable) throw const FormatException('not a PDF');
+    for (var i = 0; i < pageCount; i++) {
+      yield tinyPng;
     }
   }
 

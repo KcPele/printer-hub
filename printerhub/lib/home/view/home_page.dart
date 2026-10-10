@@ -74,6 +74,8 @@ class HomePage extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             const _Actions(hasPrinters: false),
             const SizedBox(height: AppSpacing.xxl),
+            const _Tools(),
+            const SizedBox(height: AppSpacing.xxl),
             const _GettingStarted(),
           ] else ...[
             Row(
@@ -99,6 +101,8 @@ class HomePage extends StatelessWidget {
             Text(l10n.homeActionsTitle, style: textTheme.titleLarge),
             const SizedBox(height: AppSpacing.md),
             const _Actions(hasPrinters: true),
+            const SizedBox(height: AppSpacing.xxl),
+            const _Tools(),
           ],
         ],
       ),
@@ -207,6 +211,69 @@ class _Actions extends StatelessWidget {
         ),
     ];
 
+    return _TileGrid(tiles: tiles);
+  }
+}
+
+/// The tools that work on a file, with or without a printer. Reading
+/// words is shown where the workspace has it switched on.
+class _Tools extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final reads = context.select<FeaturesCubit, bool>(
+      (features) => features.enabled('local_ocr'),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l10n.toolsTitle, style: context.textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.md),
+        _TileGrid(
+          tiles: [
+            if (reads)
+              _Tile(
+                icon: Icons.text_snippet_outlined,
+                title: l10n.toolsText,
+                body: l10n.toolsTextBody,
+                onTap: () => context.push(AppRoutes.extractText),
+              ),
+            _Tile(
+              icon: Icons.photo_library_outlined,
+              title: l10n.toolsPicturesToPdf,
+              body: l10n.toolsPicturesToPdfBody,
+              onTap: () => context.push(AppRoutes.picturesToPdf),
+            ),
+            _Tile(
+              icon: Icons.image_outlined,
+              title: l10n.toolsPictures,
+              body: l10n.toolsPicturesBody,
+              onTap: () => context.push(AppRoutes.pdfToPictures),
+            ),
+            _Tile(
+              icon: Icons.view_day_outlined,
+              title: l10n.toolsLongPicture,
+              body: l10n.toolsLongPictureBody,
+              onTap: () => context.push(AppRoutes.pdfToLongPicture),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Tiles, two to a row, each row as tall as its taller tile.
+class _TileGrid extends StatelessWidget {
+  const new({required this.tiles});
+
+  final List<Widget> tiles;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
         for (var first = 0; first < tiles.length; first += 2) ...[

@@ -552,6 +552,44 @@ void main() {
         );
       });
 
+      testWidgets('makes a document of pictures chosen from the phone', (
+        tester,
+      ) async {
+        backend.picker.pictures = [
+          pickedPicture(backend.scans, name: 'One.jpg'),
+          pickedPicture(backend.scans, name: 'Two.jpg'),
+        ];
+        await pumpPhoneOnly(tester);
+
+        await press(tester, find.text('Choose pictures'));
+        await until(tester, () => find.text('Pages').evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+        expect(find.text('Page 2'), findsOneWidget);
+        expect(find.text("From your phone's camera"), findsNothing);
+
+        backend.picker.pictures = [
+          pickedPicture(backend.scans, name: 'Three.jpg'),
+        ];
+        await press(tester, find.text('Add pictures'));
+        await until(tester, () => find.text('Page 3').evaluate().isNotEmpty);
+        expect(find.text('Page 3'), findsOneWidget);
+      });
+
+      testWidgets('asks for pictures at once when opened for them', (
+        tester,
+      ) async {
+        backend.picker.pictures = [pickedPicture(backend.scans)];
+        await tester.pumpApp(
+          const ScanPage(startWithPictures: true),
+          backend: backend,
+          printersCubit: printers,
+          router: router,
+        );
+        await until(tester, () => find.text('Pages').evaluate().isNotEmpty);
+
+        expect(find.text('Page 1'), findsOneWidget);
+      });
+
       testWidgets('does not offer to print in a workspace with no printer', (
         tester,
       ) async {

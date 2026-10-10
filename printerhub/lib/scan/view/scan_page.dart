@@ -25,9 +25,13 @@ import 'package:printers_repository/printers_repository.dart';
 /// printer's scanner, or, with no [printerId], with the phone's camera
 /// alone, for someone who has no printer yet or is away from it.
 class ScanPage extends StatelessWidget {
-  const new({this.printerId, super.key});
+  const new({this.printerId, this.startWithPictures = false, super.key});
 
   final String? printerId;
+
+  /// True opens the phone's file browser for pictures at once: the
+  /// "Pictures to PDF" tool is this screen, begun that way.
+  final bool startWithPictures;
 
   @override
   Widget build(BuildContext context) {
@@ -54,10 +58,11 @@ class ScanPage extends StatelessWidget {
         sharer: context.read<ScanSharer>(),
         textReader: context.read<ScanTextReader>(),
         camera: context.read<PageCamera>(),
+        picker: context.read<PrintDocuments>().picker,
         organizationId: context.read<SessionCubit>().state.organization!.id,
         printer: printer,
         name: name,
-      ),
+      )..startWith(pictures: startWithPictures),
       child: ScanView(printer: printer),
     );
   }
@@ -98,8 +103,11 @@ class ScanView extends StatelessWidget {
                   ? _Choose(printer: printer, camera: camera)
                   : _CameraOnly(camera: camera, onPrinter: printer != null),
             ScanStep.scanning => const _Scanning(),
-            ScanStep.review ||
-            ScanStep.saving => _Review(scans: scans, camera: camera),
+            ScanStep.review || ScanStep.saving => _Review(
+              scans: scans,
+              camera: camera,
+              pictures: printer == null,
+            ),
             ScanStep.saved => _Saved(
               printerId:
                   printer != null &&
@@ -232,6 +240,15 @@ class _CameraOnly extends StatelessWidget {
               onPressed: context.read<ScanCubit>().useCamera,
             ),
           ],
+          // With the phone alone, photos already taken can be the pages.
+          if (!onPrinter) ...[
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: context.read<ScanCubit>().addPictures,
+              icon: const Icon(Icons.photo_library_outlined),
+              label: Text(l10n.scanChoosePictures),
+            ),
+          ],
         ],
       ),
     );
@@ -277,10 +294,17 @@ class _Scanning extends StatelessWidget {
 }
 
 class _Review extends StatelessWidget {
-  const new({required this.scans, required this.camera});
+  const new({
+    required this.scans,
+    required this.camera,
+    required this.pictures,
+  });
 
   /// Whether the printer can scan more pages.
   final bool scans;
+
+  /// Whether pictures from the phone can be added: with the phone alone.
+  final bool pictures;
 
   /// Whether the phone's camera can add pages.
   final bool camera;
@@ -420,6 +444,14 @@ class _Review extends StatelessWidget {
               onPressed: saving ? null : cubit.useCamera,
               icon: const Icon(Icons.photo_camera_outlined),
               label: Text(l10n.scanCameraMore),
+            ),
+          ],
+          if (pictures) ...[
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: saving ? null : cubit.addPictures,
+              icon: const Icon(Icons.photo_library_outlined),
+              label: Text(l10n.scanAddPictures),
             ),
           ],
           const SizedBox(height: AppSpacing.sm),

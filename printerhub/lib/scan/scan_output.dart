@@ -144,7 +144,11 @@ Future<List<File>> assembleScan({
     for (final (index, page) in pages.indexed)
       await page.file.copy(
         '$base${pages.length == 1 ? '' : ' ${index + 1}'}'
-        '.${page.mimeType == 'application/pdf' ? 'pdf' : 'jpg'}',
+        '.${switch (page.mimeType) {
+          'application/pdf' => 'pdf',
+          'image/png' => 'png',
+          _ => 'jpg',
+        }}',
       ),
   ];
 }

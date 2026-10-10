@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:api_client/api_client.dart';
@@ -5,6 +6,7 @@ import 'package:bloc/bloc.dart';
 import 'package:documents_repository/documents_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:jobs_repository/jobs_repository.dart';
+import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printers_repository/printers_repository.dart';
 
@@ -51,6 +53,7 @@ class ScanState extends Equatable {
     this.kept = ScanKept.no,
     this.textRead,
     this.cameraPages = const {},
+    this.pickedPages = const {},
   });
 
   final ScanStep step;
@@ -89,6 +92,13 @@ class ScanState extends Equatable {
   /// scanner, by their file's path.
   final Set<String> cameraPages;
 
+  /// The pages that are pictures chosen from the phone, by their file's
+  /// path.
+  final Set<String> pickedPages;
+
+  /// True when [page] is a picture chosen from the phone.
+  bool fromPhone(ScannedPage page) => pickedPages.contains(page.file.path);
+
   /// True when [page] was taken with the phone's camera.
   bool fromCamera(ScannedPage page) => cameraPages.contains(page.file.path);
 
@@ -110,6 +120,7 @@ class ScanState extends Equatable {
     ScanKept kept = ScanKept.no,
     bool? textRead,
     Set<String>? cameraPages,
+    Set<String>? pickedPages,
   }) {
     return ScanState(
       step: step ?? this.step,
@@ -124,6 +135,7 @@ class ScanState extends Equatable {
       kept: kept,
       textRead: textRead,
       cameraPages: cameraPages ?? this.cameraPages,
+      pickedPages: pickedPages ?? this.pickedPages,
     );
   }
 
@@ -141,6 +153,7 @@ class ScanState extends Equatable {
     kept,
     textRead,
     cameraPages,
+    pickedPages,
   ];
 }
 
@@ -155,6 +168,7 @@ class ScanCubit extends Cubit<ScanState> {
     required this._sharer,
     required this._textReader,
     required this._camera,
+    required this._picker,
     required this._organizationId,
     required this._printer,
     required String name,
@@ -170,7 +184,9 @@ class ScanCubit extends Cubit<ScanState> {
   final ScanSharer _sharer;
   final ScanTextReader _textReader;
   final PageCamera _camera;
+  final DocumentPicker _picker;
   bool _atCamera = false;
+  bool _choosing = false;
   final String _organizationId;
 
   /// The printer whose scanner is used. Null when the scan is made with
@@ -373,6 +389,42 @@ class ScanCubit extends Cubit<ScanState> {
     }
   }
 
+  /// Begins the way the screen was opened: with [pictures], by asking
+  /// for some at once.
+  void startWith({required bool pictures}) {
+    if (pictures) unawaited(addPictures());
+  }
+
+  /// Adds pictures the person chooses from the phone as pages, in the
+  /// order chosen: several photos become one document.
+  Future<void> addPictures() async {
+    if (!_settled || state.card || _choosing) return;
+    _choosing = true;
+    try {
+      final chosen = await _picker.pickPictures();
+      if (isClosed || chosen.isEmpty) return;
+      emit(
+        state._with(
+          step: ScanStep.review,
+          pages: [
+            ...state.pages,
+            for (final picture in chosen)
+              ScannedPage(
+                file: File(picture.path),
+                mimeType: picture.mimeType ?? 'image/jpeg',
+              ),
+          ],
+          pickedPages: {
+            ...state.pickedPages,
+            for (final picture in chosen) picture.path,
+          },
+        ),
+      );
+    } finally {
+      _choosing = false;
+    }
+  }
+
   /// Stops the scanner. The pages that have arrived are kept.
   Future<void> cancel() async {
     await _scan?.cancel();
@@ -381,7 +433,9 @@ class ScanCubit extends Cubit<ScanState> {
   /// Takes one page out.
   void remove(ScannedPage page) {
     if (state.step != ScanStep.review) return;
-    _delete([page.file]);
+    // A picture chosen from the phone is the person's, not the app's to
+    // delete.
+    if (!state.fromPhone(page)) _delete([page.file]);
     final pages = [
       for (final other in state.pages)
         if (other != page) other,
@@ -484,10 +538,10 @@ class ScanCubit extends Cubit<ScanState> {
                   // A scan with a page from the camera is a camera scan,
                   // and the printer's only when the printer made some of
                   // it.
-                  source: state.pages.any(state.fromCamera)
-                      ? 'camera_scan'
-                      : 'printer_scan',
-                  printerId: state.pages.every(state.fromCamera)
+                  source: _sourceOfPages,
+                  printerId:
+                      _sourceOfPages == 'upload' ||
+                          state.pages.every(state.fromCamera)
                       ? null
                       : _printer?.id,
                   text: text,
@@ -510,6 +564,15 @@ class ScanCubit extends Cubit<ScanState> {
     }
   }
 
+  /// What a kept scan is recorded as. Any page from the camera makes it a
+  /// camera scan; pictures from the phone alone make it an upload; the
+  /// rest is the printer's.
+  String get _sourceOfPages {
+    if (state.pages.any(state.fromCamera)) return 'camera_scan';
+    if (state.pages.every(state.fromPhone)) return 'upload';
+    return 'printer_scan';
+  }
+
   /// Goes back to the pages, to add to them or change their order.
   void edit() {
     if (state.step != ScanStep.saved || state.kept == ScanKept.keeping) {
@@ -526,7 +589,11 @@ class ScanCubit extends Cubit<ScanState> {
         state.kept == ScanKept.keeping) {
       return;
     }
-    _delete([for (final page in state.pages) page.file, ...state.files]);
+    _delete([
+      for (final page in state.pages)
+        if (!state.fromPhone(page)) page.file,
+      ...state.files,
+    ]);
     emit(ScanState(name: state.name, choices: state.choices, card: state.card));
   }
 

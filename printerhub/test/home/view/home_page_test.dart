@@ -183,6 +183,50 @@ void main() {
       expect(find.byType(AppNotice), findsNothing);
     });
 
+    group('the tools', () {
+      late MockGoRouter router;
+
+      setUp(() async {
+        router = recordingRouter();
+        await backend.signedInBefore();
+      });
+
+      Future<void> pump(WidgetTester tester) async {
+        await tester.pumpApp(
+          const HomePage(),
+          backend: backend,
+          router: router,
+        );
+        await tester.pumpAndSettle();
+        await loadFeatures(tester);
+      }
+
+      testWidgets('open from Home, with or without a printer', (tester) async {
+        backend.features = {'local_ocr': true};
+        await pump(tester);
+
+        for (final (tool, route) in [
+          ('Extract text', AppRoutes.extractText),
+          ('Pictures to PDF', AppRoutes.picturesToPdf),
+          ('PDF to pictures', AppRoutes.pdfToPictures),
+          ('PDF to long picture', AppRoutes.pdfToLongPicture),
+        ]) {
+          await reveal(tester, find.text(tool));
+          await tester.tap(find.text(tool));
+          verify(() => router.push<Object?>(route)).called(1);
+        }
+      });
+
+      testWidgets('leave out reading words where the workspace has it '
+          'switched off', (tester) async {
+        await pump(tester);
+        await reveal(tester, find.text('PDF to long picture'));
+
+        expect(find.text('Tools'), findsOneWidget);
+        expect(find.text('Extract text'), findsNothing);
+      });
+    });
+
     group('with printers', () {
       late PrintersCubit printers;
       late MockGoRouter router;

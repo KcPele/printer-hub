@@ -17,6 +17,7 @@ import 'package:printerhub/session/session.dart';
 import 'package:printerhub/settings/settings.dart';
 import 'package:printerhub/shell/shell.dart';
 import 'package:printerhub/theme/theme.dart';
+import 'package:printerhub/tools/tools.dart';
 import 'package:printerhub/welcome/welcome.dart';
 import 'package:printerhub/workspace/workspace.dart';
 
@@ -35,6 +36,19 @@ abstract final class AppRoutes {
 
   /// Scanning with the phone's camera alone, with no printer.
   static const String scan = '/home/scan';
+
+  /// The same screen, begun by choosing pictures: several photos as one
+  /// PDF.
+  static const String picturesToPdf = '/home/scan/pictures';
+
+  /// Reading the words in a file.
+  static const String extractText = '/home/tools/text';
+
+  /// A PDF's pages as pictures.
+  static const String pdfToPictures = '/home/tools/pictures';
+
+  /// A PDF's pages as one tall picture.
+  static const String pdfToLongPicture = '/home/tools/long-picture';
   static const String printers = '/printers';
   static const String addPrinter = '/printers/add';
   static const String catalogue = '/printers/catalogue';
@@ -176,6 +190,27 @@ GoRouter createAppRouter({
                   GoRoute(
                     path: 'scan',
                     builder: (context, state) => const ScanPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'pictures',
+                        builder: (context, state) =>
+                            const ScanPage(startWithPictures: true),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'tools/text',
+                    builder: (context, state) => const ExtractTextPage(),
+                  ),
+                  GoRoute(
+                    path: 'tools/pictures',
+                    builder: (context, state) =>
+                        const PdfPicturesPage(long: false),
+                  ),
+                  GoRoute(
+                    path: 'tools/long-picture',
+                    builder: (context, state) =>
+                        const PdfPicturesPage(long: true),
                   ),
                 ],
               ),

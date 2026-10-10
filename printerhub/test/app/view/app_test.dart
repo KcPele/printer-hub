@@ -21,6 +21,7 @@ import 'package:printerhub/scan/scan.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/settings/settings.dart';
 import 'package:printerhub/theme/theme.dart';
+import 'package:printerhub/tools/tools.dart';
 import 'package:printerhub/welcome/welcome.dart';
 import 'package:printerhub/workspace/workspace.dart';
 
@@ -415,6 +416,34 @@ void main() {
 
         expect(find.byType(ScanPage), findsOneWidget);
         expect(find.text("Use your phone's camera"), findsOneWidget);
+      });
+
+      testWidgets('opens each tool from Home', (tester) async {
+        backend.features = {'local_ocr': true};
+        backend.picker.pictures = [];
+        await pump(tester);
+        await tester.pumpAndSettle();
+
+        for (final (tool, screen) in [
+          ('Extract text', ExtractTextPage),
+          ('Pictures to PDF', ScanPage),
+          ('PDF to pictures', PdfPicturesPage),
+          ('PDF to long picture', PdfPicturesPage),
+        ]) {
+          final tile = find.text(tool);
+          await tester.scrollUntilVisible(
+            tile,
+            120,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(tile);
+          await tester.pumpAndSettle();
+          expect(find.byType(screen), findsOneWidget);
+
+          await tester.pageBack();
+          await tester.pumpAndSettle();
+        }
       });
 
       testWidgets('opens scanning from a printer’s page', (tester) async {

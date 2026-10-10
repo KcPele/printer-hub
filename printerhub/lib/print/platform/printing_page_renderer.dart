@@ -85,6 +85,21 @@ class PrintingPageRenderer implements PageRenderer {
   }
 
   @override
+  Stream<Uint8List> pictures(PickedDocument document, {int dpi = 150}) async* {
+    final bytes = await File(document.path).readAsBytes();
+    if (document.mimeType != 'application/pdf') {
+      final image = await _decode(bytes);
+      final png = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      yield png!.buffer.asUint8List();
+      return;
+    }
+    await for (final page in Printing.raster(bytes, dpi: dpi.toDouble())) {
+      yield await page.toPng();
+    }
+  }
+
+  @override
   Future<bool> systemPrint(PickedDocument document) async {
     final bytes = await File(document.path).readAsBytes();
     return await Printing.layoutPdf(

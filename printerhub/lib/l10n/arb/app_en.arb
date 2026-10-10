@@ -2807,6 +2807,112 @@
     "@scanPhoneBody": {
         "description": "Explains scanning with the phone alone"
     },
+    "toolsTitle": "Tools",
+    "@toolsTitle": {
+        "description": "Heading on Home over the tools that work on a file"
+    },
+    "toolsText": "Extract text",
+    "@toolsText": {
+        "description": "Name of the tool that reads the words in a file"
+    },
+    "toolsTextBody": "The words in a PDF or a picture",
+    "@toolsTextBody": {
+        "description": "Line under the extract text tile"
+    },
+    "toolsTextExplanation": "Choose a PDF or a picture. Its words are read on this phone, and nothing is sent anywhere to be read.",
+    "@toolsTextExplanation": {
+        "description": "Explains the extract text tool"
+    },
+    "toolsPicturesToPdf": "Pictures to PDF",
+    "@toolsPicturesToPdf": {
+        "description": "Name of the tool that makes one PDF of several pictures"
+    },
+    "toolsPicturesToPdfBody": "Several photos as one document",
+    "@toolsPicturesToPdfBody": {
+        "description": "Line under the pictures to PDF tile"
+    },
+    "toolsPictures": "PDF to pictures",
+    "@toolsPictures": {
+        "description": "Name of the tool that turns each page of a PDF into a picture"
+    },
+    "toolsPicturesBody": "Each page as a picture",
+    "@toolsPicturesBody": {
+        "description": "Line under the PDF to pictures tile"
+    },
+    "toolsPicturesExplanation": "Choose a PDF. Each page becomes a picture you can share.",
+    "@toolsPicturesExplanation": {
+        "description": "Explains the PDF to pictures tool"
+    },
+    "toolsLongPicture": "PDF to long picture",
+    "@toolsLongPicture": {
+        "description": "Name of the tool that joins a PDF's pages into one tall picture"
+    },
+    "toolsLongPictureBody": "Every page in one tall picture",
+    "@toolsLongPictureBody": {
+        "description": "Line under the PDF to long picture tile"
+    },
+    "toolsLongPictureExplanation": "Choose a PDF. Its pages are joined, top to bottom, into one tall picture that is easy to send in a chat.",
+    "@toolsLongPictureExplanation": {
+        "description": "Explains the PDF to long picture tool"
+    },
+    "toolsChooseFile": "Choose a file",
+    "@toolsChooseFile": {
+        "description": "Button that opens the phone's file browser for a PDF or a picture"
+    },
+    "toolsChoosePdf": "Choose a PDF",
+    "@toolsChoosePdf": {
+        "description": "Button that opens the phone's file browser for a PDF"
+    },
+    "toolsChooseAnother": "Choose another",
+    "@toolsChooseAnother": {
+        "description": "Button that starts a tool again with another file"
+    },
+    "toolsCopy": "Copy the text",
+    "@toolsCopy": {
+        "description": "Button that copies the extracted text"
+    },
+    "toolsCopied": "Copied.",
+    "@toolsCopied": {
+        "description": "Shown after the extracted text was copied"
+    },
+    "toolsShareText": "Share as a text file",
+    "@toolsShareText": {
+        "description": "Button that shares the extracted text as a file"
+    },
+    "toolsPicturesReady": "{count, plural, =1{Your picture is ready} other{Your {count} pictures are ready}}",
+    "@toolsPicturesReady": {
+        "description": "Shown when a PDF has been turned into pictures",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "toolsUnreadable": "That file could not be read. Try another.",
+    "@toolsUnreadable": {
+        "description": "Shown when a tool cannot read the chosen file"
+    },
+    "toolsNoText": "No words were found in that file.",
+    "@toolsNoText": {
+        "description": "Shown when a file has no text to extract"
+    },
+    "toolsTooLong": "That PDF has more than {pages} pages, which is too many for one picture. Use PDF to pictures instead.",
+    "@toolsTooLong": {
+        "description": "Shown when a PDF is too long to join into one picture",
+        "placeholders": {
+            "pages": {
+                "type": "int"
+            }
+        }
+    },
+    "scanChoosePictures": "Choose pictures",
+    "@scanChoosePictures": {
+        "description": "Button on the phone-only scan screen that adds pictures from the phone"
+    },
+    "scanAddPictures": "Add pictures",
+    "@scanAddPictures": {
+        "description": "Button beside the pages that adds pictures from the phone"
+    },
     "scanPrint": "Print it",
     "@scanPrint": {
         "description": "Button that prints a finished scan"

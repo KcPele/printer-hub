@@ -32,6 +32,7 @@ void main() {
       sharer: backend.sharer,
       textReader: backend.textReader,
       camera: backend.camera,
+      picker: backend.picker,
       organizationId: _org,
       printer: null,
       name: 'Scan today',
@@ -49,6 +50,7 @@ void main() {
       sharer: backend.sharer,
       textReader: backend.textReader,
       camera: backend.camera,
+      picker: backend.picker,
       organizationId: _org,
       printer: on ?? printer,
       name: 'Scan today',
@@ -526,6 +528,118 @@ void main() {
       expect(cubit.state.choices.source, 'adf');
       expect(backend.scansStarted, isEmpty);
       expect(ScanCubit.takesCards(null), isFalse);
+    });
+  });
+
+  group('pictures from the phone', () {
+    const documents = 'POST /organizations/$_org/documents';
+
+    test('become pages in the order chosen, and one PDF', () async {
+      backend.picker.pictures = [
+        pickedPicture(backend.scans, name: 'One.jpg'),
+        pickedPicture(backend.scans, name: 'Two.png'),
+      ];
+      final cubit = phoneOnly()..rename('Album');
+
+      await cubit.addPictures();
+
+      expect(cubit.state.step, ScanStep.review);
+      expect(cubit.state.pages.map((page) => page.mimeType), [
+        'image/jpeg',
+        'image/png',
+      ]);
+      expect(cubit.state.pages.every(cubit.state.fromPhone), isTrue);
+
+      await cubit.save();
+      expect(cubit.state.files.single.path, endsWith('/Album.pdf'));
+
+      await cubit.keep();
+      final sent = backend.lastBody(documents);
+      expect(sent['source'], 'upload');
+      expect(sent['source_printer_id'], isNull);
+    });
+
+    test('kept as pictures, a PNG stays a PNG', () async {
+      backend.picker.pictures = [pickedPicture(backend.scans, name: 'A.png')];
+      final cubit = phoneOnly()
+        ..change(const ScanChoices(format: 'image/jpeg'))
+        ..rename('Shot');
+      await cubit.addPictures();
+
+      await cubit.save();
+
+      expect(cubit.state.files.single.path, endsWith('/Shot.png'));
+    });
+
+    test('are never deleted: they are the person’s own', () async {
+      final picture = pickedPicture(backend.scans);
+      backend.picker.pictures = [picture];
+      final cubit = phoneOnly();
+      await cubit.addPictures();
+
+      cubit.remove(cubit.state.pages.single);
+      expect(File(picture.path).existsSync(), isTrue);
+
+      await cubit.addPictures();
+      cubit.startOver();
+      expect(File(picture.path).existsSync(), isTrue);
+      expect(cubit.state.pages, isEmpty);
+    });
+
+    test('change nothing when none is chosen, and are asked for once at '
+        'a time', () async {
+      final cubit = phoneOnly();
+      final first = cubit.addPictures();
+      await cubit.addPictures();
+      await first;
+
+      expect(backend.picker.opened, 1);
+      expect(cubit.state.step, ScanStep.choosing);
+    });
+
+    test('are asked for at once when the screen is opened for them', () async {
+      backend.picker.pictures = [pickedPicture(backend.scans)];
+      final cubit = phoneOnly()..startWith(pictures: true);
+      await pumpEventQueue();
+
+      expect(cubit.state.pages, hasLength(1));
+
+      phoneOnly().startWith(pictures: false);
+      await pumpEventQueue();
+      expect(backend.picker.opened, 1);
+    });
+
+    test('with the camera’s pages make a camera scan; with the '
+        'scanner’s, the printer’s', () async {
+      backend.picker.pictures = [pickedPicture(backend.scans)];
+      final withCamera = phoneOnly();
+      await withCamera.addPictures();
+      await withCamera.useCamera();
+      await withCamera.save();
+      await withCamera.keep();
+      expect(backend.lastBody(documents)['source'], 'camera_scan');
+
+      final withScanner = build();
+      await withScanner.scan();
+      await withScanner.addPictures();
+      await withScanner.save();
+      await withScanner.keep();
+      final sent = backend.lastBody(documents);
+      expect(sent['source'], 'printer_scan');
+      expect(sent['source_printer_id'], 'printer-1');
+    });
+
+    test('are not taken for an ID card, or once the screen has gone', () async {
+      backend.picker.pictures = [pickedPicture(backend.scans)];
+      final card = build()..asCard(card: true);
+      await card.addPictures();
+      expect(card.state.pages, isEmpty);
+
+      final gone = phoneOnly();
+      final adding = gone.addPictures();
+      await gone.close();
+      await adding;
+      expect(gone.state.pages, isEmpty);
     });
   });
 
