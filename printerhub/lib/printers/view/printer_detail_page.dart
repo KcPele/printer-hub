@@ -309,6 +309,15 @@ class PrinterDetailView extends StatelessWidget {
                   label: Text(l10n.scanAction),
                 ),
                 const SizedBox(height: AppSpacing.sm),
+                // It scans and it prints, so it copies.
+                if (printer.capabilities?.print.supported ?? true) ...[
+                  OutlinedButton.icon(
+                    onPressed: () => context.push(AppRoutes.copyOn(printer.id)),
+                    icon: const Icon(Icons.copy_outlined),
+                    label: Text(l10n.copyAction),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
               ] else if (context.read<PageCamera>().available &&
                   context.select<FeaturesCubit, bool>(
                     (features) => features.enabled('camera_scan'),

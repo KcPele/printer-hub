@@ -317,6 +317,42 @@ void main() {
         verify(() => router.go(AppRoutes.printOn('printer-2'))).called(1);
       });
 
+      testWidgets('starts a copy on a printer that scans and prints', (
+        tester,
+      ) async {
+        await pump(tester);
+        await reveal(tester, find.text('Scan and print in one go'));
+
+        await tester.tap(find.text('Scan and print in one go'));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BottomSheet),
+            matching: find.text('Printer 3'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        verify(() => router.go(AppRoutes.copyOn('printer-3'))).called(1);
+      });
+
+      testWidgets('offers no copy when no printer both scans and prints', (
+        tester,
+      ) async {
+        backend.printerList = [printerBody(scans: false)];
+        await tester.runAsync(printers.load);
+        await pump(tester);
+        await reveal(tester, find.text('Your documents'));
+
+        expect(find.text('Print a file'), findsOneWidget);
+        expect(find.text('Scan and print in one go'), findsNothing);
+
+        // And none to pick when asked for one that does both.
+        await tester.tap(find.text('Print a file'));
+        await tester.pumpAndSettle();
+        verify(() => router.go(AppRoutes.printOn('printer-1'))).called(1);
+      });
+
       testWidgets('starts nothing when no printer is picked', (tester) async {
         await pump(tester);
         await reveal(tester, find.text('Print a file'));

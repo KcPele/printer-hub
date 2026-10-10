@@ -11,6 +11,7 @@ import 'package:printerhub/activity/activity.dart';
 import 'package:printerhub/app/app.dart';
 import 'package:printerhub/auth/auth.dart';
 import 'package:printerhub/catalogue/catalogue.dart';
+import 'package:printerhub/copy/copy.dart';
 import 'package:printerhub/documents/documents.dart';
 import 'package:printerhub/gallery/gallery.dart';
 import 'package:printerhub/home/home.dart';
@@ -464,6 +465,32 @@ void main() {
           await tester.pageBack();
           await tester.pumpAndSettle();
         }
+      });
+
+      testWidgets('opens copying from a printer’s page', (tester) async {
+        backend.printerList = [printerBody()];
+        await pump(tester);
+        await openArea(tester, 'Printers');
+        await tester.tap(find.text('Front desk'));
+        await tester.pumpAndSettle();
+
+        final copy = find.widgetWithText(OutlinedButton, 'Copy');
+        await tester.scrollUntilVisible(
+          copy,
+          200,
+          scrollable: find
+              .descendant(
+                of: find.byType(PrinterDetailPage),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.ensureVisible(copy);
+        await tester.pumpAndSettle();
+        await tester.tap(copy);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CopyPage), findsOneWidget);
       });
 
       testWidgets('opens scanning from a printer’s page', (tester) async {

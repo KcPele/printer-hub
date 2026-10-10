@@ -107,6 +107,19 @@ void main() {
           .called(1);
     });
 
+    testWidgets('opens copying on a printer that scans and prints', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      final copy = find.widgetWithText(OutlinedButton, 'Copy');
+      await scrollTo(tester, copy);
+      await tester.tap(copy);
+
+      verify(() => router.push<Object?>(AppRoutes.copyOn('printer-1')))
+          .called(1);
+    });
+
     testWidgets('does not offer scanning on a printer without a scanner', (
       tester,
     ) async {
@@ -115,6 +128,7 @@ void main() {
 
       await scrollTo(tester, find.text('Check status'));
       expect(find.widgetWithText(OutlinedButton, 'Scan'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Copy'), findsNothing);
     });
 
     testWidgets('offers the phone’s camera for a printer without a scanner, '
@@ -159,6 +173,8 @@ void main() {
 
       await scrollTo(tester, find.text('Check status'));
       expect(find.widgetWithText(FilledButton, 'Print'), findsNothing);
+      // It scans but does not print, so it does not copy.
+      expect(find.widgetWithText(OutlinedButton, 'Copy'), findsNothing);
     });
 
     testWidgets('opens the ways the printer is reached', (tester) async {

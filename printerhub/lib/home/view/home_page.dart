@@ -172,6 +172,12 @@ class _Actions extends StatelessWidget {
     if (printer != null) router.go(AppRoutes.printOn(printer.id));
   }
 
+  Future<void> _copy(BuildContext context) async {
+    final router = GoRouter.of(context);
+    final printer = await choosePrinter(context, andScan: true);
+    if (printer != null) router.go(AppRoutes.copyOn(printer.id));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -181,6 +187,8 @@ class _Actions extends StatelessWidget {
           (features) => features.enabled('camera_scan'),
         );
     final prints = hasPrinters && printersThatPrint(context).isNotEmpty;
+    final copies =
+        hasPrinters && printersThatPrint(context, andScan: true).isNotEmpty;
 
     final tiles = [
       if (prints)
@@ -189,6 +197,13 @@ class _Actions extends StatelessWidget {
           title: l10n.homeActionPrint,
           body: l10n.homeActionPrintBody,
           onTap: () => _print(context),
+        ),
+      if (copies)
+        ToolTile(
+          icon: Icons.copy_outlined,
+          title: l10n.homeActionCopy,
+          body: l10n.homeActionCopyBody,
+          onTap: () => _copy(context),
         ),
       if (camera)
         ToolTile(

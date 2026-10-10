@@ -6,10 +6,16 @@ import 'package:printerhub/printers/cubit/printers_cubit.dart';
 import 'package:printerhub/printers/widgets/printer_card.dart';
 import 'package:printers_repository/printers_repository.dart';
 
-/// The workspace's printers that can print.
-List<PrinterRead> printersThatPrint(BuildContext context) => [
+/// The workspace's printers that can print. With [andScan], only those
+/// that can scan too, and so can copy.
+List<PrinterRead> printersThatPrint(
+  BuildContext context, {
+  bool andScan = false,
+}) => [
   for (final printer in context.read<PrintersCubit>().state.printers)
-    if (printer.capabilities?.print.supported ?? true) printer,
+    if ((printer.capabilities?.print.supported ?? true) &&
+        (!andScan || (printer.capabilities?.scan.supported ?? false)))
+      printer,
 ];
 
 /// The printer to print on, for a document that arrives without one: a
@@ -17,8 +23,11 @@ List<PrinterRead> printersThatPrint(BuildContext context) => [
 ///
 /// With one printer there is nothing to ask. With several the person
 /// chooses. Null when there is none, or they chose none.
-Future<PrinterRead?> choosePrinter(BuildContext context) async {
-  final printers = printersThatPrint(context);
+Future<PrinterRead?> choosePrinter(
+  BuildContext context, {
+  bool andScan = false,
+}) async {
+  final printers = printersThatPrint(context, andScan: andScan);
   if (printers.length < 2) return printers.firstOrNull;
 
   final cubit = context.read<PrintersCubit>();

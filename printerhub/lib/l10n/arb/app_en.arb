@@ -2747,6 +2747,10 @@
     "@scanCardTurn": {
         "description": "Shown after the front of an ID card has been scanned"
     },
+    "scanCardTurnCamera": "Turn the card over and take its back.",
+    "@scanCardTurnCamera": {
+        "description": "Shown after the front of an ID card has been taken with the phone's camera"
+    },
     "scanCardBackAction": "Scan the back",
     "@scanCardBackAction": {
         "description": "Button that scans the second side of an ID card"
@@ -2960,6 +2964,92 @@
     "scanWatermarkHint": "A word across every page, such as COPY or DRAFT",
     "@scanWatermarkHint": {
         "description": "Hint under the watermark field"
+    },
+    "copyTitle": "Copy",
+    "@copyTitle": {
+        "description": "Title of the copy screen"
+    },
+    "copyAction": "Copy",
+    "@copyAction": {
+        "description": "Button that scans and then prints"
+    },
+    "copyLead": "Put the page on the glass, or the pages in the feeder. The printer scans them and prints the copies.",
+    "@copyLead": {
+        "description": "Explains copying"
+    },
+    "copyCopies": "Copies",
+    "@copyCopies": {
+        "description": "Label of how many copies to make"
+    },
+    "copyFewer": "One fewer",
+    "@copyFewer": {
+        "description": "Tooltip of the button that lowers the number of copies"
+    },
+    "copyMore": "One more",
+    "@copyMore": {
+        "description": "Tooltip of the button that raises the number of copies"
+    },
+    "copyColor": "Colour",
+    "@copyColor": {
+        "description": "Switch for copying in colour"
+    },
+    "copyColorBody": "Off copies in black and white",
+    "@copyColorBody": {
+        "description": "Explains the colour switch on the copy screen"
+    },
+    "copyFrom": "Copy from",
+    "@copyFrom": {
+        "description": "Label of the choice between the glass and the feeder"
+    },
+    "copyStop": "Stop",
+    "@copyStop": {
+        "description": "Button that stops a copy in progress"
+    },
+    "copyDoneTitle": "Copied",
+    "@copyDoneTitle": {
+        "description": "Shown when a copy has finished"
+    },
+    "copyDoneBody": "{count, plural, =1{Your copy is waiting at the printer.} other{Your {count} copies are waiting at the printer.}}",
+    "@copyDoneBody": {
+        "description": "Says the copies are at the printer",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "copyAgain": "Copy something else",
+    "@copyAgain": {
+        "description": "Button that goes back to make another copy"
+    },
+    "copyName": "Copy {date}",
+    "@copyName": {
+        "description": "Name of a copy's scan and print in the history",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "copyNothingScanned": "Nothing was scanned, so there is nothing to copy.",
+    "@copyNothingScanned": {
+        "description": "Shown when the scanner delivered no page for a copy"
+    },
+    "copyUnreadable": "The scan could not be read to print it.",
+    "@copyUnreadable": {
+        "description": "Shown when the scanned pages could not be opened for printing"
+    },
+    "copyNotPrinted": "The scan was made, but it could not be printed.",
+    "@copyNotPrinted": {
+        "description": "Shown when a copy's print did not start or finish, with no more known"
+    },
+    "homeActionCopy": "Copy",
+    "@homeActionCopy": {
+        "description": "Tile on Home that starts a copy"
+    },
+    "homeActionCopyBody": "Scan and print in one go",
+    "@homeActionCopyBody": {
+        "description": "Line under the copy tile on Home"
     },
     "scanPrint": "Print it",
     "@scanPrint": {
