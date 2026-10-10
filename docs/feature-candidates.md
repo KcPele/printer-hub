@@ -14,31 +14,37 @@ Sizes are estimates: **S** is a day or two, **M** is several days, **L** is a we
 | Tool | Where it is |
 |---|---|
 | ID card, front and back on one page | Scan screen of a printer with a glass: the "ID card" switch |
-| Extract text | The words of a scan are read on the phone when it is kept in the workspace, and Documents finds it by them. There is no screen that shows the text yet (see "Build next") |
+| Extract text | The words of a scan are read on the phone when it is kept in the workspace, and Documents finds it by them |
 | Import files | "Print a file" picks a PDF, JPEG, or PNG. A file shared or opened from another app opens in PrinterHub |
 | Scan with the phone's camera | Scan screen, and now Home, with no printer needed. Written and unit-tested; not yet run on a phone |
 | Print what was scanned | "Print it" on a finished scan |
 | Keep, find, rename, delete documents | Documents, under Activity and on Home |
 
-## Build next: works with what the app already has
+## Built: the eleven tools
 
-These need no new service and no new kind of permission. Each reuses something that exists.
+All eleven were built on 2026-10-10. Each passes `make app-check` (unit and screen tests, full coverage). **None has been run on a phone yet**, and the ones that print were not run against the printer simulator after being written: that is the next thing to do.
 
-| # | Feature | What the person gets | How it is built | Size | Proved on |
-|---|---|---|---|---|---|
-| 1 | **Extract text** as a tool | Pick a picture, a PDF, or a scan; see its words; copy them or share them as a text file | `ScanTextReader` already reads pictures. A PDF is drawn to pictures first with `PageRenderer`. One new screen | S | iOS simulator; Android phone |
-| 2 | **Pictures to PDF** (Import Images) | Pick several photos, put them in order, get one PDF to print, share, or keep | The picker learns to pick several. They join the scan's review screen as pages; `assembleScan` makes the PDF | S | iOS simulator |
-| 3 | **PDF to pictures** | A PDF's pages as JPEGs, to share | `PageRenderer` draws each page; the share sheet takes the files | S | iOS simulator |
-| 4 | **PDF to one long picture** | Every page stacked into one tall image, for sending in a chat | The same drawing, joined top to bottom. Capped at a sensible number of pages | S | iOS simulator |
-| 5 | **ID card with the camera** | The ID card layout without a printer's glass | The camera gives a straightened picture of each side. `assembleScan` lays them two to a sheet. The card's true size is not known from a photo, so both sides are fitted to the standard card size | S | Android phone |
-| 6 | **Timestamp** | The date and time, and optionally a note, printed on a page or photo | Drawn onto the page when the PDF is made (`assembleScan`), not burned into the original | S | iOS simulator |
-| 7 | **Watermark** | A word such as COPY or DRAFT across each page of a scan | The same place as the timestamp: text drawn over each page at an angle, pale | S | iOS simulator |
-| 8 | **Sign** | Draw a signature once, keep it on the phone, place it on a page of a scan | A drawing pad saves the signature as a picture in the phone's secure storage. Placing it is dragging it over the page before the PDF is made | M | iOS simulator |
-| 9 | **Page clean-up** (Whiteboard, Slides) | A scan mode that makes pen on a whiteboard, or a projected slide, crisp: brighter background, stronger lines | An image filter applied to each page before the PDF is made, with "Original" always one tap away. Three filters to start: Document, Whiteboard, Black and white | M | iOS simulator |
-| 10 | **Copy** | One button: scan on this printer and print the result on it (or another), with the number of copies | It is scan, then print, which both exist. The API already has a copy job to record it as one thing | M | Printer simulator |
-| 11 | **Print photos** | Pick photos, choose a size (10×15, 13×18, passport sheet) and how many to a sheet | Pages laid out with the PDF writer at the paper's true size, then the normal print | M | Printer simulator |
+Home shows the first four tools and a "See all" link to the Tools screen, which lists every one. The list is made in one place, `toolTiles` in `printerhub/lib/tools/tool_list.dart`.
 
-Numbers 1 to 4 and 6 to 7 are small and independent: they could ship together as a "Tools" section on Home. Number 10 is the one the product requirements already ask for (FR-CPY).
+| # | Feature | Where it is in the app | How it was built | Still to prove |
+|---|---|---|---|---|
+| 1 | **Extract text** | Tools: pick a picture or a PDF, see its words, copy them or share a text file | `ScanTextReader` reads pictures; a PDF's pages are drawn first with `PageRenderer` (`ExtractTextCubit`) | Reading on an Android phone |
+| 2 | **Pictures to PDF** | Tools: pick several pictures; they open as pages in the scan's review screen | `ScanCubit.addPictures`, then `assembleScan` | A phone's photo picker |
+| 3 | **PDF to pictures** | Tools: a PDF's pages as JPEGs, to the share sheet | `pagesAsPictures` in `tools_output.dart` | A large PDF on a phone |
+| 4 | **PDF to one long picture** | Tools: every page stacked into one image. At most 20 pages | `pagesAsLongPicture` | The same |
+| 5 | **ID card with the camera** | The "ID card" switch now works with the phone's camera, with or without a printer | The camera's two pictures are laid two to a sheet, each fitted to the standard card size | A phone: no camera runs on a simulator |
+| 6 | **Timestamp** | "Finishing touches" on a scan's review screen: "Date and time" | Drawn on each sheet when the PDF is made (`ScanFinish.stamp`). PDF only | How it reads on paper |
+| 7 | **Watermark** | The same card: a word across every sheet | `ScanFinish.watermark`, pale and at an angle | How it reads on paper |
+| 8 | **Sign** | The same card: "Add your signature". Draw it once, drag it into place, choose its size and its sheet | `SignCubit` and `SignPage`. The signature is a PNG in the phone's secure storage (`SignatureStore`) and is never sent to the API. Set on the sheet by `assembleScan`. Not offered for an ID card | Drawing with a finger on a phone |
+| 9 | **Page clean-up** | The same card: "Look", with Document, Whiteboard, and Black and white. "As scanned" is always there | `pictureWithLook`, applied when the scan is saved; the pages themselves are not changed | Real whiteboard photos |
+| 10 | **Copy** | A Copy button on a printer that scans and prints, and a tile on Home | `CopyCubit` runs a scan and then a print. It is recorded as two jobs, a scan and a print, not as one copy job | The printer simulator, then a real device |
+| 11 | **Print photos** | Tools: pick photos, a paper, and one, two, four, or passport-size to a sheet | `photoSheet` lays them out at the paper's true size, then the normal print | True size on paper |
+
+What these do not do, so nobody is surprised:
+
+- Timestamp, watermark, and signature are for a scan saved as a PDF. They cannot be put on a PDF that came from somewhere else (see "Later").
+- A signature is placed on one sheet. Signing several sheets means saving once per signature, which the app does not offer yet.
+- Passport-size is the common 35 by 45 mm. Other countries' sizes are part of "ID photo maker" below.
 
 ## Later: possible on the phone, bigger or with a catch
 
@@ -63,14 +69,8 @@ These are in the scanner app because it sends the document to its own servers. P
 
 If these ever matter, the honest path is a document-processing service the workspace opts into, with the privacy consequences stated. That is a product decision, not a small feature.
 
-## What to build first
+## What to do next
 
-A suggested order, smallest and most useful first:
-
-1. **Extract text**, **Pictures to PDF**, **PDF to pictures**: three small tools that make Home's tools section worth opening.
-2. **Copy**: the requirement the product already has, and the reason someone stands at a printer.
-3. **Timestamp** and **Watermark**: one piece of work, since they are drawn in the same place.
-4. **Sign**, then **Page clean-up**.
-5. **Print photos**.
-
-Each is added the way the app's rules say: a tile appears on Home only when the thing it starts works, the feature sits behind a workspace switch where the backend has one, and nothing is called done before it has run on a phone.
+1. Run the eleven on the iOS simulator against the printer simulator: Copy and Print photos first, since they send something to a printer.
+2. Run them on an Android phone, with the camera, file sharing, and text reading that also wait for one.
+3. Then choose from "Later". Searchable PDF and merging or reordering scans are the closest to what exists.

@@ -270,7 +270,8 @@ A new install opens on the welcome screens: three introductions, then the theme 
 | Home | Printers at a glance, recent activity, quick actions |
 | Printers | List, detail (status, supplies, trays, connections), Add Printer, catalogue, diagnostics |
 | Print | Choose file, preview, options, progress, result |
-| Scan | Options, progress, page review and edit, save or share, ID card, camera capture |
+| Scan | Options, progress, page review and edit, finishing touches (look, date, watermark, signature), save or share, ID card, camera capture |
+| Tools | All tools, extract text, PDF to pictures, print photos, copy |
 | Activity | Job history with filters, job detail with attempts |
 | Documents | Recent, search, detail |
 | Notifications | List |
@@ -411,6 +412,8 @@ Steps 1 to 4 and 7 are done. Step 6 is written and waits for a phone: no part of
 | 8 | **Android** | The app builds and runs on Android in all three flavors, and every flow above works there | Fix what the first build shows: permissions (local network, NFC, Bluetooth, camera, notifications), the cleartext rule for printers, back-button behaviour, the launch screen | An emulator for everything but radios and camera; a phone for those | Install the Android command-line tools and accept the SDK licences (`flutter doctor` names both), and create an emulator or plug in a phone |
 | 9 | **First session with a real printer** | The checklist in `docs/printer-compatibility.md`, run on the C7130 or any AirPrint or Mopria printer, with the model and firmware noted beside each result. What differs from the simulator becomes a fix, a test, and a knob in the simulator | A script that records what the printer says about itself, then the eleven steps | The printer itself | A printer on the same network as the phone, and an hour with it |
 | 10 | **Release (A7)** | Accessibility pass, golden tests for the new screens in all three themes, store listings, and the FRD §60 acceptance run | As §11 | The acceptance run | Store accounts, and step 9 done |
+
+**Tools, added 2026-10-10.** Eleven tools that work with what the app already had were built outside this list: extract text, pictures to PDF, PDF to pictures, PDF to one long picture, ID card with the camera, timestamp, watermark, sign, page clean-up, copy, and print photos. `docs/feature-candidates.md` says where each is and what is still to prove. All pass `make app-check`; none has run on a phone, so they join step 8.
 
 Not in this list, by the owner's decision:
 
