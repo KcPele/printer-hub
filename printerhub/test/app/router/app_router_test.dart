@@ -11,9 +11,11 @@ import 'package:printerhub/home/home.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/notifications/notifications.dart';
 import 'package:printerhub/printers/printers.dart';
+import 'package:printerhub/scan/scan.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
 import 'package:printerhub/welcome/welcome.dart';
+import 'package:printerhub/workspace/workspace.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 import '../../helpers/helpers.dart';
@@ -59,6 +61,7 @@ void main() {
               value: backend.printers,
             ),
             RepositoryProvider<PrinterFinders>.value(value: backend.finders),
+            RepositoryProvider<PageCamera>.value(value: backend.camera),
           ],
           child: MultiBlocProvider(
             providers: [
@@ -77,6 +80,12 @@ void main() {
                 create: (_) => UnreadCubit(
                   notificationsRepository: backend.notifications,
                   signedInChanges: const Stream.empty(),
+                ),
+              ),
+              BlocProvider(
+                create: (_) => FeaturesCubit(
+                  organizationsRepository: backend.organizations,
+                  organizationChanges: const Stream.empty(),
                 ),
               ),
             ],

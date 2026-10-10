@@ -32,6 +32,9 @@ abstract final class AppRoutes {
   static const String verifyEmail = '/verify-email';
   static const String home = '/home';
   static const String notifications = '/home/notifications';
+
+  /// Scanning with the phone's camera alone, with no printer.
+  static const String scan = '/home/scan';
   static const String printers = '/printers';
   static const String addPrinter = '/printers/add';
   static const String catalogue = '/printers/catalogue';
@@ -170,6 +173,10 @@ GoRouter createAppRouter({
                     path: 'notifications',
                     builder: (context, state) => const NotificationsPage(),
                   ),
+                  GoRoute(
+                    path: 'scan',
+                    builder: (context, state) => const ScanPage(),
+                  ),
                 ],
               ),
             ],
@@ -213,7 +220,7 @@ GoRouter createAppRouter({
                       GoRoute(
                         path: 'scan',
                         builder: (context, state) => ScanPage(
-                          printerId: state.pathParameters['printerId']!,
+                          printerId: state.pathParameters['printerId'],
                         ),
                       ),
                       GoRoute(

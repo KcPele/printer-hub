@@ -475,6 +475,96 @@ void main() {
       });
     });
 
+    group('with the phone alone', () {
+      Future<void> pumpPhoneOnly(WidgetTester tester) async {
+        backend.features = {'camera_scan': true};
+        final listed = await tester.runAsync(() => backend.printers.list(_org));
+        printers.emit(
+          PrintersState(status: PrintersStatus.ready, printers: listed!),
+        );
+        await tester.pumpApp(
+          const ScanPage(),
+          backend: backend,
+          printersCubit: printers,
+          router: router,
+        );
+        await tester.pumpAndSettle();
+        await tester.runAsync(
+          BlocProvider.of<FeaturesCubit>(tester.element(find.byType(ScanView)))
+              .load,
+        );
+        await tester.pump();
+      }
+
+      Future<void> takeAndSave(WidgetTester tester) async {
+        await press(tester, find.text("Use your phone's camera"));
+        await until(tester, () => find.text('Pages').evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+        await press(tester, find.widgetWithText(FilledButton, 'Save'));
+        await settle(tester);
+      }
+
+      testWidgets('scans with the camera, and prints on a printer of the '
+          'workspace', (tester) async {
+        await pumpPhoneOnly(tester);
+
+        expect(find.text('Scan with your phone'), findsOneWidget);
+        expect(find.text('This printer has no scanner.'), findsNothing);
+        expect(find.text('How to scan it'), findsNothing);
+
+        await press(tester, find.text("Use your phone's camera"));
+        await until(tester, () => find.text('Pages').evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+        expect(find.text("From your phone's camera"), findsOneWidget);
+        expect(find.text('Scan more pages'), findsNothing);
+
+        await press(tester, find.widgetWithText(FilledButton, 'Save'));
+        await settle(tester);
+        await press(tester, find.text('Print it'));
+        await tester.pumpAndSettle();
+
+        final pushed = verify(
+          () => router.push<Object?>(
+            AppRoutes.printOn('printer-1'),
+            extra: captureAny(named: 'extra'),
+          ),
+        )..called(1);
+        expect(pushed.captured.single, isA<PickedDocument>());
+      });
+
+      testWidgets('asks which printer when the workspace has several, and '
+          'prints nothing when none is picked', (tester) async {
+        backend.printerList = [
+          printerBody(),
+          printerBody(id: 'printer-2', name: 'Back office'),
+        ];
+        await pumpPhoneOnly(tester);
+        await takeAndSave(tester);
+
+        await press(tester, find.text('Print it'));
+        await tester.pumpAndSettle();
+        expect(find.text('Which printer?'), findsOneWidget);
+        await tester.tapAt(const Offset(20, 20));
+        await tester.pumpAndSettle();
+
+        verifyNever(
+          () => router.push<Object?>(any(), extra: any(named: 'extra')),
+        );
+      });
+
+      testWidgets('does not offer to print in a workspace with no printer', (
+        tester,
+      ) async {
+        backend.printerList = [];
+        await pumpPhoneOnly(tester);
+        await takeAndSave(tester);
+
+        expect(find.text('Your scan is ready'), findsOneWidget);
+        expect(find.text('Print it'), findsNothing);
+        expect(find.text('Keep in your workspace'), findsOneWidget);
+      });
+    });
+
     testWidgets('offers no camera on a phone without one, or in a workspace '
         'that has it switched off', (tester) async {
       await pump(tester);

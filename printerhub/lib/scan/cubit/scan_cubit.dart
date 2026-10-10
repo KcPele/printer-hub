@@ -172,7 +172,10 @@ class ScanCubit extends Cubit<ScanState> {
   final PageCamera _camera;
   bool _atCamera = false;
   final String _organizationId;
-  final PrinterRead _printer;
+
+  /// The printer whose scanner is used. Null when the scan is made with
+  /// the phone alone, from Home: then only the camera adds pages.
+  final PrinterRead? _printer;
   final Directory _directory;
 
   PrinterScan? _scan;
@@ -184,8 +187,8 @@ class ScanCubit extends Cubit<ScanState> {
 
   /// [choices] with anything [printer] does not offer changed to something
   /// it does.
-  static ScanChoices fitted(ScanChoices choices, PrinterRead printer) {
-    final offers = printer.capabilities?.scan;
+  static ScanChoices fitted(ScanChoices choices, PrinterRead? printer) {
+    final offers = printer?.capabilities?.scan;
     if (offers == null) return choices;
     final sources = [for (final source in offers.sources) ?source.json];
     final colors = [for (final mode in offers.colorModes) ?mode.json];
@@ -223,8 +226,10 @@ class ScanCubit extends Cubit<ScanState> {
   }
 
   /// True when [printer] can scan an ID card: it has a glass to lay one
-  /// on, or has not said what it has.
-  static bool takesCards(PrinterRead printer) {
+  /// on, or has not said what it has. Never without a printer: a card's
+  /// size is only known on the glass.
+  static bool takesCards(PrinterRead? printer) {
+    if (printer == null) return false;
     final sources = [
       for (final source
           in printer.capabilities?.scan.sources ?? const <Never>[])
@@ -268,7 +273,8 @@ class ScanCubit extends Cubit<ScanState> {
 
   /// Scans, adding the pages that arrive to the ones already there.
   Future<void> scan() async {
-    if (!_settled) return;
+    final printer = _printer;
+    if (!_settled || printer == null) return;
     final before = state.step;
     final choices = _asked;
     emit(state._with(step: ScanStep.scanning));
@@ -277,10 +283,10 @@ class ScanCubit extends Cubit<ScanState> {
     try {
       job = await _jobsRepository.startScan(
         organizationId: _organizationId,
-        printerId: _printer.id,
+        printerId: printer.id,
         title: state.name,
         choices: choices,
-        connectionId: _printer.connections
+        connectionId: printer.connections
             .where((connection) => connection.type == ConnectionType.escl)
             .firstOrNull
             ?.id,
@@ -294,7 +300,7 @@ class ScanCubit extends Cubit<ScanState> {
         ? ScanPaper.card
         : ScanPaper.named(choices.mediaSize);
     final scan = _printersRepository.scan(
-      printer: _printer,
+      printer: printer,
       request: ScanRequest(
         source: choices.source,
         color: choices.color == 'color',
@@ -483,7 +489,7 @@ class ScanCubit extends Cubit<ScanState> {
                       : 'printer_scan',
                   printerId: state.pages.every(state.fromCamera)
                       ? null
-                      : _printer.id,
+                      : _printer?.id,
                   text: text,
                 );
           _waiting.remove(file.path);

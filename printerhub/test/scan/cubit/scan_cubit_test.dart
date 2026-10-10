@@ -23,6 +23,24 @@ void main() {
   });
   tearDown(() => backend.close());
 
+  /// A scan made with the phone alone, as from Home.
+  ScanCubit phoneOnly() {
+    final cubit = ScanCubit(
+      printersRepository: backend.printers,
+      jobsRepository: backend.jobs,
+      documentsRepository: backend.documentsKept,
+      sharer: backend.sharer,
+      textReader: backend.textReader,
+      camera: backend.camera,
+      organizationId: _org,
+      printer: null,
+      name: 'Scan today',
+      directory: backend.scans,
+    );
+    addTearDown(cubit.close);
+    return cubit;
+  }
+
   ScanCubit build({PrinterRead? on, Directory? directory}) {
     final cubit = ScanCubit(
       printersRepository: backend.printers,
@@ -477,6 +495,37 @@ void main() {
       await cubit.keep();
 
       expect(backend.lastBody(documents)['source'], 'printer_scan');
+    });
+  });
+
+  group('with the phone alone', () {
+    test('takes pages with the camera, and keeps them with no printer '
+        'to their name', () async {
+      final cubit = phoneOnly()..rename('Receipt');
+      expect(cubit.state.choices, const ScanChoices());
+
+      await cubit.useCamera();
+      await cubit.save();
+      await cubit.keep();
+
+      expect(cubit.state.kept, ScanKept.yes);
+      final sent = backend.lastBody('POST /organizations/$_org/documents');
+      expect(sent['source'], 'camera_scan');
+      expect(sent['source_printer_id'], isNull);
+    });
+
+    test('has no scanner to run, and no glass for a card', () async {
+      final cubit = phoneOnly()
+        ..asCard(card: true)
+        ..change(const ScanChoices(source: 'adf'));
+
+      await cubit.scan();
+
+      expect(cubit.state.card, isFalse);
+      expect(cubit.state.step, ScanStep.choosing);
+      expect(cubit.state.choices.source, 'adf');
+      expect(backend.scansStarted, isEmpty);
+      expect(ScanCubit.takesCards(null), isFalse);
     });
   });
 

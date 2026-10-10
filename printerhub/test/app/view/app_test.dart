@@ -396,6 +396,27 @@ void main() {
         });
       });
 
+      testWidgets('opens scanning with the phone alone from Home', (
+        tester,
+      ) async {
+        backend.features = {'camera_scan': true};
+        await pump(tester);
+        await tester.pumpAndSettle();
+
+        final scan = find.text('Scan with your phone');
+        await tester.scrollUntilVisible(
+          scan,
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(scan);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ScanPage), findsOneWidget);
+        expect(find.text("Use your phone's camera"), findsOneWidget);
+      });
+
       testWidgets('opens scanning from a printer’s page', (tester) async {
         backend.printerList = [printerBody()];
         await pump(tester);

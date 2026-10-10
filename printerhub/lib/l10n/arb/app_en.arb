@@ -1390,6 +1390,50 @@
             }
         }
     },
+    "homeAddPrinter": "Add a printer",
+    "@homeAddPrinter": {
+        "description": "Button and tile on Home that starts adding a printer"
+    },
+    "homeSeeCatalogue": "See which printers work",
+    "@homeSeeCatalogue": {
+        "description": "Link on Home to the catalogue of printer families"
+    },
+    "homePhoneTitle": "With your phone alone",
+    "@homePhoneTitle": {
+        "description": "Heading on Home, before any printer is added, over what needs no printer"
+    },
+    "homeActionsTitle": "What would you like to do?",
+    "@homeActionsTitle": {
+        "description": "Heading on Home over the things that can be started from it"
+    },
+    "homeActionPrint": "Print a file",
+    "@homeActionPrint": {
+        "description": "Tile on Home that starts printing"
+    },
+    "homeActionPrintBody": "A PDF or a picture from your phone",
+    "@homeActionPrintBody": {
+        "description": "Line under the print tile on Home"
+    },
+    "homeActionScan": "Scan with your phone",
+    "@homeActionScan": {
+        "description": "Tile on Home that opens the phone's document camera"
+    },
+    "homeActionScanBody": "The camera finds each page and straightens it",
+    "@homeActionScanBody": {
+        "description": "Line under the camera scan tile on Home"
+    },
+    "homeActionDocuments": "Your documents",
+    "@homeActionDocuments": {
+        "description": "Tile on Home that opens the workspace's documents"
+    },
+    "homeActionDocumentsBody": "Scans and files kept in your workspace",
+    "@homeActionDocumentsBody": {
+        "description": "Line under the documents tile on Home"
+    },
+    "homeActionAddBody": "Nearby, by address, or by its code",
+    "@homeActionAddBody": {
+        "description": "Line under the add a printer tile on Home"
+    },
     "homePrinters": "Your printers",
     "@homePrinters": {
         "description": "Heading above the printers on Home"
@@ -2754,6 +2798,14 @@
     "scanFailedCamera": "The camera could not be used. Try again.",
     "@scanFailedCamera": {
         "description": "Shown when the phone's document camera fails"
+    },
+    "scanPhoneTitle": "Scan with your phone",
+    "@scanPhoneTitle": {
+        "description": "Heading of the scan screen when it is opened with no printer"
+    },
+    "scanPhoneBody": "Your phone's camera finds each page and straightens it. Save the pages as a PDF, share them, or print them later.",
+    "@scanPhoneBody": {
+        "description": "Explains scanning with the phone alone"
     },
     "scanPrint": "Print it",
     "@scanPrint": {

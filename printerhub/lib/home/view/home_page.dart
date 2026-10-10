@@ -6,11 +6,15 @@ import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/notifications/notifications.dart';
 import 'package:printerhub/printers/printers.dart';
+import 'package:printerhub/printers/widgets/printer_choice_sheet.dart';
+import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/session/session.dart';
+import 'package:printerhub/workspace/cubit/features_cubit.dart';
 import 'package:printers_repository/printers_repository.dart';
 
-/// Home: the workspace's printers at a glance, or, before there are any,
-/// what the app is for and how to begin.
+/// Home: the workspace's printers at a glance and what can be done right
+/// now. Before there are any printers, it says what the app is for, offers
+/// to add one, and still offers what the phone can do on its own.
 class HomePage extends StatelessWidget {
   const new({super.key});
 
@@ -63,9 +67,15 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
-          if (printers.isEmpty)
-            const _Introduction()
-          else ...[
+          if (printers.isEmpty) ...[
+            const _Welcome(),
+            const SizedBox(height: AppSpacing.xxl),
+            Text(l10n.homePhoneTitle, style: textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.md),
+            const _Actions(hasPrinters: false),
+            const SizedBox(height: AppSpacing.xxl),
+            const _GettingStarted(),
+          ] else ...[
             Row(
               children: [
                 Expanded(
@@ -85,6 +95,10 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.md),
             ],
+            const SizedBox(height: AppSpacing.lg),
+            Text(l10n.homeActionsTitle, style: textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.md),
+            const _Actions(hasPrinters: true),
           ],
         ],
       ),
@@ -92,9 +106,9 @@ class HomePage extends StatelessWidget {
   }
 }
 
-/// What a person with no printers sees: what the app is for and how to
-/// begin.
-class _Introduction extends StatelessWidget {
+/// What a person with no printers sees first: what the app is for, and
+/// the way to begin.
+class _Welcome extends StatelessWidget {
   const new();
 
   @override
@@ -102,32 +116,181 @@ class _Introduction extends StatelessWidget {
     final l10n = context.l10n;
     final textTheme = context.textTheme;
 
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Center(
+            child: AppIllustration(AppIllustrations.printer, width: 200),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Text(
+            l10n.homeHeroTitle,
+            style: textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            l10n.homeHeroBody,
+            style: textTheme.bodyMedium?.copyWith(
+              color: context.colors.textMuted,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppSubmitButton(
+            label: l10n.homeAddPrinter,
+            onPressed: () => context.go(AppRoutes.addPrinter),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          TextButton(
+            onPressed: () => context.go(AppRoutes.catalogue),
+            child: Text(l10n.homeSeeCatalogue),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What can be done from Home, two to a row. Only what works is shown:
+/// the camera where the phone has one and the workspace has it switched
+/// on, printing where there is a printer that prints.
+class _Actions extends StatelessWidget {
+  const new({required this.hasPrinters});
+
+  final bool hasPrinters;
+
+  Future<void> _print(BuildContext context) async {
+    final router = GoRouter.of(context);
+    final printer = await choosePrinter(context);
+    if (printer != null) router.go(AppRoutes.printOn(printer.id));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final camera =
+        context.read<PageCamera>().available &&
+        context.select<FeaturesCubit, bool>(
+          (features) => features.enabled('camera_scan'),
+        );
+    final prints = hasPrinters && printersThatPrint(context).isNotEmpty;
+
+    final tiles = [
+      if (prints)
+        _Tile(
+          icon: Icons.print_outlined,
+          title: l10n.homeActionPrint,
+          body: l10n.homeActionPrintBody,
+          onTap: () => _print(context),
+        ),
+      if (camera)
+        _Tile(
+          icon: Icons.photo_camera_outlined,
+          title: l10n.homeActionScan,
+          body: l10n.homeActionScanBody,
+          onTap: () => context.push(AppRoutes.scan),
+        ),
+      _Tile(
+        icon: Icons.folder_outlined,
+        title: l10n.homeActionDocuments,
+        body: l10n.homeActionDocumentsBody,
+        onTap: () => context.go(AppRoutes.documents),
+      ),
+      if (hasPrinters)
+        _Tile(
+          icon: Icons.add,
+          title: l10n.homeAddPrinter,
+          body: l10n.homeActionAddBody,
+          onTap: () => context.go(AppRoutes.addPrinter),
+        ),
+    ];
+
+    return Column(
+      children: [
+        for (var first = 0; first < tiles.length; first += 2) ...[
+          if (first > 0) const SizedBox(height: AppSpacing.md),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: tiles[first]),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: first + 1 < tiles.length
+                      ? tiles[first + 1]
+                      : const SizedBox(),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// One thing to do: its sign, what it is, and a line about it.
+class _Tile extends StatelessWidget {
+  const new({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final textTheme = context.textTheme;
+
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.primary,
+              shape: BoxShape.circle,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: Icon(icon, color: colors.onPrimary),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Text(title, style: textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            body,
+            style: textTheme.bodySmall?.copyWith(color: colors.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The three steps from no printer to a finished job.
+class _GettingStarted extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AppCard(
-          child: Column(
-            children: [
-              const AppIllustration(AppIllustrations.printer, width: 220),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                l10n.homeHeroTitle,
-                style: textTheme.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                l10n.homeHeroBody,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: context.colors.textMuted,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xxl),
-        Text(l10n.homeStartTitle, style: textTheme.titleLarge),
+        Text(l10n.homeStartTitle, style: context.textTheme.titleLarge),
         const SizedBox(height: AppSpacing.md),
         AppCard(
           child: Column(

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:app_ui/app_ui.dart';
 import 'package:documents_repository/documents_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +12,7 @@ import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/printers/cubit/printers_cubit.dart';
+import 'package:printerhub/printers/widgets/printer_choice_sheet.dart';
 import 'package:printerhub/scan/cubit/scan_cubit.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/scan/scan_words.dart';
@@ -17,19 +21,21 @@ import 'package:printerhub/session/session.dart';
 import 'package:printerhub/workspace/cubit/features_cubit.dart';
 import 'package:printers_repository/printers_repository.dart';
 
-/// Scans on one printer: say how, scan, look the pages over, and keep the
-/// result.
+/// Scans: say how, scan, look the pages over, and keep the result. On one
+/// printer's scanner, or, with no [printerId], with the phone's camera
+/// alone, for someone who has no printer yet or is away from it.
 class ScanPage extends StatelessWidget {
-  const new({required this.printerId, super.key});
+  const new({this.printerId, super.key});
 
-  final String printerId;
+  final String? printerId;
 
   @override
   Widget build(BuildContext context) {
+    final id = printerId;
     final printer = context.select<PrintersCubit, PrinterRead?>(
-      (cubit) => cubit.state.printer(printerId),
+      (cubit) => id == null ? null : cubit.state.printer(id),
     );
-    if (printer == null) {
+    if (id != null && printer == null) {
       return Scaffold(
         appBar: AppBar(),
         body: Center(child: Text(context.l10n.printerNotFound)),
@@ -60,15 +66,18 @@ class ScanPage extends StatelessWidget {
 class ScanView extends StatelessWidget {
   const new({required this.printer, super.key});
 
-  final PrinterRead printer;
+  /// The printer whose scanner is used, or null for the phone alone.
+  final PrinterRead? printer;
 
   @override
   Widget build(BuildContext context) {
     final step = context.select<ScanCubit, ScanStep>(
       (cubit) => cubit.state.step,
     );
+    final printer = this.printer;
     // A printer that has not said what it can do is taken to scan.
-    final scans = printer.capabilities?.scan.supported ?? true;
+    final scans =
+        printer != null && (printer.capabilities?.scan.supported ?? true);
     // The phone's camera, where the phone has one and the workspace has
     // it switched on.
     final camera =
@@ -87,14 +96,19 @@ class ScanView extends StatelessWidget {
             ScanStep.choosing =>
               scans
                   ? _Choose(printer: printer, camera: camera)
-                  : _CameraOnly(camera: camera),
+                  : _CameraOnly(camera: camera, onPrinter: printer != null),
             ScanStep.scanning => const _Scanning(),
             ScanStep.review ||
             ScanStep.saving => _Review(scans: scans, camera: camera),
             ScanStep.saved => _Saved(
-              printerId: (printer.capabilities?.print.supported ?? true)
+              printerId:
+                  printer != null &&
+                      (printer.capabilities?.print.supported ?? true)
                   ? printer.id
                   : null,
+              // Made with the phone alone, it prints on any printer the
+              // workspace has.
+              anyPrinter: printer == null,
             ),
           },
         ),
@@ -170,9 +184,13 @@ class _Choose extends StatelessWidget {
 /// The scan screen of a printer with no scanner: the phone's camera does
 /// the scanning, where there is one.
 class _CameraOnly extends StatelessWidget {
-  const new({required this.camera});
+  const new({required this.camera, required this.onPrinter});
 
   final bool camera;
+
+  /// True when this is the scan screen of a printer, which then has no
+  /// scanner. False when the scan is made with the phone alone.
+  final bool onPrinter;
 
   @override
   Widget build(BuildContext context) {
@@ -191,14 +209,14 @@ class _CameraOnly extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           Text(
-            l10n.scanNoScanner,
+            onPrinter ? l10n.scanNoScanner : l10n.scanPhoneTitle,
             style: context.textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
           if (camera) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
-              l10n.scanCameraInstead,
+              onPrinter ? l10n.scanCameraInstead : l10n.scanPhoneBody,
               style: context.textTheme.bodyLarge?.copyWith(
                 color: context.colors.textMuted,
               ),
@@ -422,11 +440,26 @@ class _Review extends StatelessWidget {
 }
 
 class _Saved extends StatelessWidget {
-  const new({required this.printerId});
+  const new({required this.printerId, this.anyPrinter = false});
 
   /// The printer the scan can be printed on: the one it was made on, when
   /// that prints.
   final String? printerId;
+
+  /// True when the scan belongs to no printer, and is printed on one the
+  /// person picks from the workspace's.
+  final bool anyPrinter;
+
+  /// Opens printing of [file] on [printerId], or on a printer the person
+  /// picks.
+  Future<void> _print(BuildContext context, File file) async {
+    final router = GoRouter.of(context);
+    final id = printerId ?? (await choosePrinter(context))?.id;
+    if (id == null) return;
+    unawaited(
+      router.push(AppRoutes.printOn(id), extra: PickedDocument.fromFile(file)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -487,14 +520,13 @@ class _Saved extends StatelessWidget {
           AppSubmitButton(label: l10n.scanShare, onPressed: cubit.share),
           const SizedBox(height: AppSpacing.sm),
           // One file is one print. Several pictures are shared instead.
-          if (state.files.length == 1 && printerId != null) ...[
+          if (state.files.length == 1 &&
+              (printerId != null ||
+                  (anyPrinter && printersThatPrint(context).isNotEmpty))) ...[
             OutlinedButton.icon(
               onPressed: keeping
                   ? null
-                  : () => context.push(
-                      AppRoutes.printOn(printerId!),
-                      extra: PickedDocument.fromFile(state.files.single),
-                    ),
+                  : () => _print(context, state.files.single),
               icon: const Icon(Icons.print_outlined),
               label: Text(l10n.scanPrint),
             ),
