@@ -206,6 +206,7 @@ class _CameraOnly extends StatelessWidget {
     final failure = context.select<ScanCubit, String?>(
       (cubit) => cubit.state.failure,
     );
+    final card = context.select<ScanCubit, bool>((cubit) => cubit.state.card);
 
     return SingleChildScrollView(
       padding: _padding,
@@ -230,18 +231,27 @@ class _CameraOnly extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: AppSpacing.md),
+            // With no glass, the camera takes the two sides of a card.
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.scanCard),
+              subtitle: Text(l10n.scanCardBody),
+              value: card,
+              onChanged: (on) => context.read<ScanCubit>().asCard(card: on),
+            ),
             if (failure != null) ...[
               const SizedBox(height: AppSpacing.lg),
               AppNotice(message: ScanWords.failure(l10n, failure)),
             ],
-            const SizedBox(height: AppSpacing.xl),
+            const SizedBox(height: AppSpacing.lg),
             AppSubmitButton(
-              label: l10n.scanCamera,
+              label: card ? l10n.scanCardFrontAction : l10n.scanCamera,
               onPressed: context.read<ScanCubit>().useCamera,
             ),
           ],
           // With the phone alone, photos already taken can be the pages.
-          if (!onPrinter) ...[
+          if (!onPrinter && !card) ...[
             const SizedBox(height: AppSpacing.sm),
             OutlinedButton.icon(
               onPressed: context.read<ScanCubit>().addPictures,
@@ -349,7 +359,10 @@ class _Review extends StatelessWidget {
           ],
           if (state.awaitsBack) ...[
             const SizedBox(height: AppSpacing.sm),
-            AppNotice(status: AppStatus.info, message: l10n.scanCardTurn),
+            AppNotice(
+              status: AppStatus.info,
+              message: scans ? l10n.scanCardTurn : l10n.scanCardTurnCamera,
+            ),
           ],
           const SizedBox(height: AppSpacing.lg),
           Text(l10n.scanPagesTitle, style: textTheme.titleLarge),
@@ -438,15 +451,23 @@ class _Review extends StatelessWidget {
                     : l10n.scanMore,
               ),
             ),
-          if (camera && !state.card) ...[
+          // A card's sides come from the camera only where there is no
+          // glass to scan them on.
+          if (camera && (!state.card || !scans)) ...[
             const SizedBox(height: AppSpacing.sm),
             OutlinedButton.icon(
               onPressed: saving ? null : cubit.useCamera,
               icon: const Icon(Icons.photo_camera_outlined),
-              label: Text(l10n.scanCameraMore),
+              label: Text(
+                state.awaitsBack
+                    ? l10n.scanCardBackAction
+                    : state.card
+                    ? l10n.scanCardAnother
+                    : l10n.scanCameraMore,
+              ),
             ),
           ],
-          if (pictures) ...[
+          if (pictures && !state.card) ...[
             const SizedBox(height: AppSpacing.sm),
             OutlinedButton.icon(
               onPressed: saving ? null : cubit.addPictures,

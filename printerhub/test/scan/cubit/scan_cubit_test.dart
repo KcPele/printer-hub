@@ -517,6 +517,8 @@ void main() {
     });
 
     test('has no scanner to run, and no glass for a card', () async {
+      // Nor a camera, on this phone, to take a card's sides instead.
+      backend.camera.available = false;
       final cubit = phoneOnly()
         ..asCard(card: true)
         ..change(const ScanChoices(source: 'adf'));
@@ -643,6 +645,42 @@ void main() {
     });
   });
 
+  group('an ID card with the phone’s camera', () {
+    test('takes the two sides where there is no glass, and lays them on '
+        'one sheet', () async {
+      backend.camera.pages = 2;
+      final cubit = phoneOnly()
+        ..asCard(card: true)
+        ..rename('Licence');
+      expect(cubit.state.card, isTrue);
+
+      await cubit.useCamera();
+      expect(cubit.state.pages, hasLength(2));
+      expect(cubit.state.awaitsBack, isFalse);
+      await cubit.save();
+
+      final pdf = String.fromCharCodes(
+        cubit.state.files.single.readAsBytesSync(),
+      );
+      expect(RegExp(r'/Type\s*/Page\b').allMatches(pdf), hasLength(1));
+    });
+
+    test('is not offered on a phone with no camera and no glass', () {
+      backend.camera.available = false;
+      final cubit = phoneOnly()..asCard(card: true);
+
+      expect(cubit.state.card, isFalse);
+    });
+
+    test('leaves a card to the glass where there is one', () async {
+      final cubit = build()..asCard(card: true);
+
+      await cubit.useCamera();
+
+      expect(backend.camera.opened, 0);
+    });
+  });
+
   group('finishing touches', () {
     test('are chosen while looking the pages over, and used when the '
         'scan is saved', () async {
@@ -763,7 +801,8 @@ void main() {
       expect(cubit.state.pages, isEmpty);
     });
 
-    test('needs a glass to lay it on', () {
+    test('needs a glass to lay it on, or a camera to take it with', () {
+      backend.camera.available = false;
       final feederOnly = scanner({
         'sources': ['adf'],
       });

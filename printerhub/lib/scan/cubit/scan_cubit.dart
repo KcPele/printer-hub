@@ -279,8 +279,12 @@ class ScanCubit extends Cubit<ScanState> {
 
   /// Scans an ID card, or goes back to scanning documents. Chosen before
   /// the first page, since the two are put together differently.
+  ///
+  /// Without a glass to lay the card on, the phone's camera takes the two
+  /// sides, where the phone has one.
   void asCard({required bool card}) {
-    if (state.step == ScanStep.choosing && takesCards(_printer)) {
+    if (state.step == ScanStep.choosing &&
+        (takesCards(_printer) || _camera.available)) {
       emit(state._with(card: card));
     }
   }
@@ -377,7 +381,10 @@ class ScanCubit extends Cubit<ScanState> {
   /// where there is one. They are kept as a camera scan, never as the
   /// printer's.
   Future<void> useCamera() async {
-    if (!_settled || state.card || _atCamera) return;
+    if (!_settled || _atCamera) return;
+    // A card is scanned on the glass where there is one: its size is
+    // known there.
+    if (state.card && takesCards(_printer)) return;
     _atCamera = true;
     try {
       final taken = await _camera.capture();

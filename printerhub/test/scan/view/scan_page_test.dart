@@ -552,6 +552,32 @@ void main() {
         );
       });
 
+      testWidgets('scans the two sides of an ID card with the camera', (
+        tester,
+      ) async {
+        await pumpPhoneOnly(tester);
+
+        await press(tester, find.text('ID card'));
+        await tester.pumpAndSettle();
+        // Photos picked from the phone are not a card's two sides.
+        expect(find.text('Choose pictures'), findsNothing);
+
+        await press(tester, find.text('Scan the front'));
+        await until(tester, () => find.text('Pages').evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+        expect(find.text('Front'), findsOneWidget);
+        expect(
+          find.text('Turn the card over and take its back.'),
+          findsOneWidget,
+        );
+        expect(find.text('Add pictures'), findsNothing);
+
+        await press(tester, find.text('Scan the back'));
+        await until(tester, () => find.text('Back').evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+        expect(find.text('Scan another card'), findsOneWidget);
+      });
+
       testWidgets('makes a document of pictures chosen from the phone', (
         tester,
       ) async {
