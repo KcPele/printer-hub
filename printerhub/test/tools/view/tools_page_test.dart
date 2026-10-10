@@ -36,6 +36,7 @@ void main() {
       ('Scan with your phone', AppRoutes.scan),
       ('Pictures to PDF', AppRoutes.picturesToPdf),
       ('Extract text', AppRoutes.extractText),
+      ('Print photos', AppRoutes.photoSheet),
       ('PDF to pictures', AppRoutes.pdfToPictures),
       ('PDF to long picture', AppRoutes.pdfToLongPicture),
     ]) {

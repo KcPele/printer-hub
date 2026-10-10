@@ -50,6 +50,12 @@ List<Widget> toolTiles(BuildContext context, {bool withScan = true}) {
         onTap: () => context.push(AppRoutes.extractText),
       ),
     ToolTile(
+      icon: Icons.photo_size_select_large_outlined,
+      title: l10n.toolsPhotos,
+      body: l10n.toolsPhotosBody,
+      onTap: () => context.push(AppRoutes.photoSheet),
+    ),
+    ToolTile(
       icon: Icons.image_outlined,
       title: l10n.toolsPictures,
       body: l10n.toolsPicturesBody,

@@ -3051,6 +3051,84 @@
     "@homeActionCopyBody": {
         "description": "Line under the copy tile on Home"
     },
+    "toolsPhotos": "Print photos",
+    "@toolsPhotos": {
+        "description": "Name of the tool that lays photos out on a sheet to print"
+    },
+    "toolsPhotosBody": "Several to a page, or passport size",
+    "@toolsPhotosBody": {
+        "description": "Line under the print photos tile"
+    },
+    "toolsPhotosExplanation": "Choose photos and how to lay them out. They are put on a sheet at the paper's true size, ready to print.",
+    "@toolsPhotosExplanation": {
+        "description": "Explains the print photos tool"
+    },
+    "toolsPhotosChoose": "Choose photos",
+    "@toolsPhotosChoose": {
+        "description": "Button that opens the phone's file browser for photos"
+    },
+    "toolsPhotosAdd": "Add more photos",
+    "@toolsPhotosAdd": {
+        "description": "Button that adds photos to the ones already chosen"
+    },
+    "toolsPhotosRemove": "Take this photo out",
+    "@toolsPhotosRemove": {
+        "description": "Tooltip of the button that removes a chosen photo"
+    },
+    "toolsPhotosLayout": "Layout",
+    "@toolsPhotosLayout": {
+        "description": "Label of the choice of how photos are laid out"
+    },
+    "toolsPhotosOne": "One to a page",
+    "@toolsPhotosOne": {
+        "description": "Photo layout with one photo on each sheet"
+    },
+    "toolsPhotosTwo": "Two to a page",
+    "@toolsPhotosTwo": {
+        "description": "Photo layout with two photos on each sheet"
+    },
+    "toolsPhotosFour": "Four to a page",
+    "@toolsPhotosFour": {
+        "description": "Photo layout with four photos on each sheet"
+    },
+    "toolsPhotosPassport": "Passport photos (35 × 45 mm)",
+    "@toolsPhotosPassport": {
+        "description": "Photo layout that fills a sheet with passport-size copies"
+    },
+    "toolsPhotosPassportBody": "{count, plural, =1{One copy of each photo fits on this paper.} other{{count} copies of each photo fit on this paper, a sheet for each photo. Print at full size, with no scaling.}}",
+    "@toolsPhotosPassportBody": {
+        "description": "Says how many passport photos fit on the chosen paper",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "toolsPhotosMake": "Make the sheet",
+    "@toolsPhotosMake": {
+        "description": "Button that lays the photos out"
+    },
+    "toolsPhotosMakeAgain": "Make it again",
+    "@toolsPhotosMakeAgain": {
+        "description": "Button that lays the photos out again after a change"
+    },
+    "toolsPhotosReady": "Your photos are ready",
+    "@toolsPhotosReady": {
+        "description": "Shown when the photo sheet has been made"
+    },
+    "toolsPhotosReadyBody": "Print them at full size for the sizes to come out right.",
+    "@toolsPhotosReadyBody": {
+        "description": "Advice shown with a finished photo sheet"
+    },
+    "toolsPhotosName": "Photos {date}",
+    "@toolsPhotosName": {
+        "description": "Name of a photo sheet's file",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
     "scanPrint": "Print it",
     "@scanPrint": {
         "description": "Button that prints a finished scan"

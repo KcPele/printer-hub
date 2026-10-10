@@ -15,4 +15,12 @@ void main() {
     expect(ToolWords.failure(l10n, 'tools.unreadable'), contains('could not'));
     expect(ToolWords.failure(l10n, null), contains('could not'));
   });
+
+  test('every photo layout has its own words', () async {
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+
+    expect({
+      for (final layout in PhotoLayout.values) ToolWords.layout(l10n, layout),
+    }, hasLength(PhotoLayout.values.length));
+  });
 }

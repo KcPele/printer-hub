@@ -205,16 +205,18 @@ void main() {
         backend.features = {'local_ocr': true};
         await pump(tester);
 
+        // The first four; the rest are on the Tools screen.
         for (final (tool, route) in [
-          ('Extract text', AppRoutes.extractText),
           ('Pictures to PDF', AppRoutes.picturesToPdf),
+          ('Extract text', AppRoutes.extractText),
+          ('Print photos', AppRoutes.photoSheet),
           ('PDF to pictures', AppRoutes.pdfToPictures),
-          ('PDF to long picture', AppRoutes.pdfToLongPicture),
         ]) {
           await reveal(tester, find.text(tool));
           await tester.tap(find.text(tool));
           verify(() => router.push<Object?>(route)).called(1);
         }
+        expect(find.text('PDF to long picture'), findsNothing);
       });
 
       testWidgets('are all a tap away', (tester) async {
@@ -237,6 +239,7 @@ void main() {
       testWidgets('leave out reading words where the workspace has it '
           'switched off', (tester) async {
         await pump(tester);
+        // With one tool fewer, the next takes its place among the four.
         await reveal(tester, find.text('PDF to long picture'));
 
         expect(find.text('Tools'), findsOneWidget);

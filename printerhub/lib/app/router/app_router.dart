@@ -48,6 +48,9 @@ abstract final class AppRoutes {
   /// Reading the words in a file.
   static const String extractText = '/home/tools/text';
 
+  /// Photos laid out on a sheet to print.
+  static const String photoSheet = '/home/tools/photos';
+
   /// A PDF's pages as pictures.
   static const String pdfToPictures = '/home/tools/pictures';
 
@@ -212,6 +215,10 @@ GoRouter createAppRouter({
                       GoRoute(
                         path: 'text',
                         builder: (context, state) => const ExtractTextPage(),
+                      ),
+                      GoRoute(
+                        path: 'photos',
+                        builder: (context, state) => const PhotoSheetPage(),
                       ),
                       GoRoute(
                         path: 'pictures',

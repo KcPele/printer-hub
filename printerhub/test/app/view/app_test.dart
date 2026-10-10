@@ -439,7 +439,7 @@ void main() {
         expect(find.byType(ToolsPage), findsOneWidget);
       });
 
-      testWidgets('opens each tool from Home', (tester) async {
+      testWidgets('opens each tool from the Tools screen', (tester) async {
         backend.features = {'local_ocr': true};
         backend.picker.pictures = [];
         await pump(tester);
@@ -448,21 +448,30 @@ void main() {
         for (final (tool, screen) in [
           ('Extract text', ExtractTextPage),
           ('Pictures to PDF', ScanPage),
+          ('Print photos', PhotoSheetPage),
           ('PDF to pictures', PdfPicturesPage),
           ('PDF to long picture', PdfPicturesPage),
         ]) {
+          GoRouter.of(tester.element(find.byType(HomePage)))
+              .go(AppRoutes.tools);
+          await tester.pumpAndSettle();
           final tile = find.text(tool);
           await tester.scrollUntilVisible(
             tile,
             120,
-            scrollable: find.byType(Scrollable).first,
+            scrollable: find
+                .descendant(
+                  of: find.byType(ToolsPage),
+                  matching: find.byType(Scrollable),
+                )
+                .first,
           );
           await tester.pumpAndSettle();
           await tester.tap(tile);
           await tester.pumpAndSettle();
           expect(find.byType(screen), findsOneWidget);
 
-          await tester.pageBack();
+          GoRouter.of(tester.element(find.byType(screen))).go(AppRoutes.home);
           await tester.pumpAndSettle();
         }
       });

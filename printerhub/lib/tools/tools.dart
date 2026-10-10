@@ -1,11 +1,14 @@
 export 'cubit/extract_text_cubit.dart';
 export 'cubit/pdf_pictures_cubit.dart';
+export 'cubit/photo_sheet_cubit.dart';
 export 'cubit/tool_state.dart';
+export 'photo_sheet.dart';
 export 'tool_list.dart';
 export 'tool_words.dart';
 export 'tools_output.dart';
 export 'view/extract_text_page.dart';
 export 'view/pdf_pictures_page.dart';
+export 'view/photo_sheet_page.dart';
 export 'view/tool_scaffold.dart';
 export 'view/tools_page.dart';
 export 'widgets/tool_tiles.dart';
