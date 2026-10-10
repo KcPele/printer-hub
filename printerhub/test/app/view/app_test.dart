@@ -451,6 +451,12 @@ void main() {
           ('Print photos', PhotoSheetPage),
           ('PDF to pictures', PdfPicturesPage),
           ('PDF to long picture', PdfPicturesPage),
+          ('Merge files', ScanPage),
+          ('Pages per sheet', PagesPerSheetPage),
+          ('Scan a code', ScanCodePage),
+          ('Make a QR code', CodeSheetPage),
+          ('Print a note', NotePage),
+          ('Printable pages', PrintablePage),
         ]) {
           GoRouter.of(tester.element(find.byType(HomePage)))
               .go(AppRoutes.tools);

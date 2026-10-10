@@ -601,6 +601,81 @@ void main() {
         expect(find.text('Page 3'), findsOneWidget);
       });
 
+      testWidgets('joins PDFs and pictures, says a PDF’s pages are pictures '
+          'now, and turns a page', (tester) async {
+        backend.picker.files = [
+          pickedPdf(),
+          pickedPicture(backend.scans, name: 'One.jpg'),
+        ];
+        await pumpPhoneOnly(tester);
+
+        await press(tester, find.text('Choose PDFs or pictures'));
+        await tester.pump();
+        expect(find.text('Reading your files'), findsOneWidget);
+        await until(tester, () => find.text('Page 3').evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+        expect(find.text('Reading your files'), findsNothing);
+        expect(find.textContaining('kept as pictures'), findsOneWidget);
+
+        final before = cubitOf(tester).state.pages.first;
+        await press(tester, find.byTooltip('Turn this page').first);
+        await until(tester, () => cubitOf(tester).state.pages.first != before);
+        expect(cubitOf(tester).state.pages, hasLength(3));
+
+        backend.picker.files = [pickedPicture(backend.scans, name: 'Two.jpg')];
+        await press(tester, find.text('Add a PDF or pictures'));
+        await tester.pump();
+        await until(tester, () => find.text('Page 4').evaluate().isNotEmpty);
+        expect(find.text('Page 4'), findsOneWidget);
+      });
+
+      testWidgets('shows that files are being read, in the pages too', (
+        tester,
+      ) async {
+        backend.picker.pictures = [pickedPicture(backend.scans)];
+        backend.picker.files = [pickedPdf()];
+        await pumpPhoneOnly(tester);
+        await press(tester, find.text('Choose pictures'));
+        await until(tester, () => find.text('Pages').evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+
+        await press(tester, find.text('Add a PDF or pictures'));
+        await tester.pump();
+
+        expect(find.text('Reading your files'), findsOneWidget);
+        await until(tester, () => find.text('Page 3').evaluate().isNotEmpty);
+      });
+
+      testWidgets('says when a file cannot be read', (tester) async {
+        backend.renderer.unreadable = true;
+        backend.picker.files = [pickedPdf()];
+        await pumpPhoneOnly(tester);
+
+        await press(tester, find.text('Choose PDFs or pictures'));
+        await until(
+          tester,
+          () => find.textContaining('could not be read').evaluate().isNotEmpty,
+        );
+
+        expect(find.textContaining('could not be read'), findsOneWidget);
+      });
+
+      testWidgets('asks for files at once when opened for them', (
+        tester,
+      ) async {
+        backend.picker.files = [pickedPicture(backend.scans)];
+        await tester.pumpApp(
+          const ScanPage(startWithFiles: true),
+          backend: backend,
+          printersCubit: printers,
+          router: router,
+        );
+        await until(tester, () => find.text('Pages').evaluate().isNotEmpty);
+
+        expect(backend.picker.opened, 1);
+        expect(find.text('Page 1'), findsOneWidget);
+      });
+
       testWidgets('asks for pictures at once when opened for them', (
         tester,
       ) async {

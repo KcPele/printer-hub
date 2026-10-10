@@ -62,6 +62,7 @@ abstract final class ScanWords {
       'scan.storage' => l10n.scanFailedStorage,
       'scan.keep_interrupted' => l10n.scanKeepInterrupted,
       'scan.camera' => l10n.scanFailedCamera,
+      'scan.unreadable_file' => l10n.scanUnreadableFile,
       _ => l10n.scanFailedRefused,
     };
   }

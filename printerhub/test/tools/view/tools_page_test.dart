@@ -39,11 +39,28 @@ void main() {
       ('Print photos', AppRoutes.photoSheet),
       ('PDF to pictures', AppRoutes.pdfToPictures),
       ('PDF to long picture', AppRoutes.pdfToLongPicture),
+      ('Pages per sheet', AppRoutes.pagesPerSheet),
+      ('Scan a code', AppRoutes.scanCode),
+      ('Make a QR code', AppRoutes.codeSheet),
+      ('Print a note', AppRoutes.note),
+      ('Printable pages', AppRoutes.printable),
     ]) {
       await tester.scrollUntilVisible(find.text(tool), 120);
+      await tester.ensureVisible(find.text(tool));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(tool));
       verify(() => router.push<Object?>(route)).called(1);
     }
+
+    // Joining files and keeping some pages are one screen, begun with
+    // files.
+    for (final tool in ['Merge files', 'Take pages from a PDF']) {
+      await tester.scrollUntilVisible(find.text(tool), 120);
+      await tester.ensureVisible(find.text(tool));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(tool));
+    }
+    verify(() => router.push<Object?>(AppRoutes.filesToPdf)).called(2);
   });
 
   testWidgets('leaves out what cannot work here', (tester) async {

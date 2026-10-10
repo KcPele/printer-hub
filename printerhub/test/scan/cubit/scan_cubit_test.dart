@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:api_client/api_client.dart';
 import 'package:api_client/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:printerhub/scan/scan.dart';
 import 'package:printers_repository/printers_repository.dart';
@@ -33,6 +35,7 @@ void main() {
       textReader: backend.textReader,
       camera: backend.camera,
       picker: backend.picker,
+      renderer: backend.renderer,
       organizationId: _org,
       printer: null,
       name: 'Scan today',
@@ -51,6 +54,7 @@ void main() {
       textReader: backend.textReader,
       camera: backend.camera,
       picker: backend.picker,
+      renderer: backend.renderer,
       organizationId: _org,
       printer: on ?? printer,
       name: 'Scan today',
@@ -642,6 +646,243 @@ void main() {
       await gone.close();
       await adding;
       expect(gone.state.pages, isEmpty);
+    });
+  });
+
+  group('files from the phone', () {
+    test('become pages in the order chosen: a picture a page, a PDF drawn '
+        'a page at a time', () async {
+      backend.renderer.pageCount = 2;
+      final picture = pickedPicture(backend.scans);
+      backend.picker.files = [pickedPdf(), picture];
+      final cubit = phoneOnly();
+
+      final adding = cubit.addFiles();
+      await pumpEventQueue();
+      expect(cubit.state.reading, isTrue);
+      await adding;
+
+      final state = cubit.state;
+      expect(state.reading, isFalse);
+      expect(state.step, ScanStep.review);
+      expect(state.pages, hasLength(3));
+      expect(state.pages.map((page) => page.mimeType).toSet(), {'image/jpeg'});
+      // A PDF's pages are pictures now, and the app's own.
+      expect(state.redrawn, isTrue);
+      expect(state.pages.map(state.fromPhone), [false, false, true]);
+      expect(state.pages.take(2).every((page) => page.file.existsSync()), true);
+      expect(state.pages.first.file.path, isNot(state.pages[1].file.path));
+      expect(state.pages.last.file.path, picture.path);
+    });
+
+    test('that are all pictures leave nothing redrawn', () async {
+      backend.picker.files = [pickedPicture(backend.scans, name: 'A.png')];
+      final cubit = phoneOnly();
+
+      await cubit.addFiles();
+
+      expect(cubit.state.pages.single.mimeType, 'image/png');
+      expect(cubit.state.redrawn, isFalse);
+    });
+
+    test('join the pages already there', () async {
+      backend.picker.pictures = [pickedPicture(backend.scans, name: 'A.jpg')];
+      backend.picker.files = [pickedPdf()];
+      final cubit = phoneOnly();
+      await cubit.addPictures();
+
+      await cubit.addFiles();
+
+      expect(cubit.state.pages, hasLength(3));
+      expect(cubit.state.fromPhone(cubit.state.pages.first), isTrue);
+    });
+
+    test('come to nothing when one cannot be read, and what was drawn '
+        'before it goes', () async {
+      backend.renderer.unreadableNames.add('Broken.pdf');
+      final picture = pickedPicture(backend.scans);
+      backend.picker.files = [
+        pickedPdf(name: 'Good.pdf'),
+        picture,
+        pickedPdf(name: 'Broken.pdf'),
+      ];
+      final cubit = phoneOnly();
+      final before = backend.scans.listSync().length;
+
+      await cubit.addFiles();
+
+      expect(cubit.state.failure, 'scan.unreadable_file');
+      expect(cubit.state.step, ScanStep.choosing);
+      expect(cubit.state.pages, isEmpty);
+      expect(cubit.state.reading, isFalse);
+      // The person's own picture is still there, and nothing else is new.
+      expect(File(picture.path).existsSync(), isTrue);
+      expect(backend.scans.listSync(), hasLength(before));
+    });
+
+    test('change nothing when none is chosen, and are asked for once at '
+        'a time', () async {
+      final cubit = phoneOnly();
+      final first = cubit.addFiles();
+      await cubit.addFiles();
+      await first;
+
+      expect(backend.picker.opened, 1);
+      expect(cubit.state.step, ScanStep.choosing);
+    });
+
+    test('are not an ID card’s two sides', () async {
+      backend.picker.files = [pickedPdf()];
+      final cubit = phoneOnly()..asCard(card: true);
+
+      await cubit.addFiles();
+
+      expect(backend.picker.opened, 0);
+    });
+
+    test('are asked for at once when the screen is opened for them', () async {
+      backend.picker.files = [pickedPicture(backend.scans)];
+      final cubit = phoneOnly()..startWith(pictures: false, files: true);
+      await cubit.stream.firstWhere((state) => state.step == ScanStep.review);
+
+      expect(cubit.state.pages, hasLength(1));
+    });
+
+    test('say nothing once the screen has gone', () async {
+      backend.picker.files = [pickedPdf()];
+      final chosen = phoneOnly();
+      final choosing = chosen.addFiles();
+      await chosen.close();
+      await choosing;
+
+      final drawn = phoneOnly();
+      final drawing = drawn.addFiles();
+      await drawn.stream.firstWhere((state) => state.reading);
+      await drawn.close();
+      await drawing;
+
+      backend.renderer.unreadable = true;
+      final failed = phoneOnly();
+      final failing = failed.addFiles();
+      await failed.stream.firstWhere((state) => state.reading);
+      await failed.close();
+      await failing;
+    });
+  });
+
+  group('turning a page', () {
+    Future<ScanCubit> scanned(List<int> page) async {
+      backend.scanPages = [page];
+      final cubit = build();
+      await cubit.scan();
+      return cubit;
+    }
+
+    /// A picture wider than it is tall.
+    Uint8List wide() => img.encodeJpg(img.Image(width: 6, height: 2));
+
+    test('gives it a quarter turn, as a new picture in the same '
+        'place', () async {
+      backend.scanPages = [tinyJpeg, wide(), tinyJpeg];
+      final cubit = build()..change(const ScanChoices(source: 'adf'));
+      await cubit.scan();
+      final [first, second, third] = cubit.state.pages;
+
+      await cubit.rotate(second);
+
+      final turned = cubit.state.pages[1];
+      expect(cubit.state.pages, [first, turned, third]);
+      final picture = img.decodeJpg(turned.file.readAsBytesSync())!;
+      expect((picture.width, picture.height), (2, 6));
+      // The page it was is the app's own, and goes.
+      expect(second.file.existsSync(), isFalse);
+    });
+
+    test('leaves a picture chosen from the phone as it was', () async {
+      final picture = pickedPicture(backend.scans);
+      backend.picker.pictures = [picture];
+      final cubit = phoneOnly();
+      await cubit.addPictures();
+
+      await cubit.rotate(cubit.state.pages.single);
+
+      final turned = cubit.state.pages.single;
+      expect(turned.file.path, isNot(picture.path));
+      expect(File(picture.path).existsSync(), isTrue);
+      // The turned page is the app's, and goes when it is taken out.
+      expect(cubit.state.fromPhone(turned), isFalse);
+      cubit.remove(turned);
+      expect(turned.file.existsSync(), isFalse);
+    });
+
+    test('keeps a camera page a camera page', () async {
+      final cubit = phoneOnly();
+      await cubit.useCamera();
+
+      await cubit.rotate(cubit.state.pages.first);
+
+      expect(cubit.state.pages.every(cubit.state.fromCamera), isTrue);
+    });
+
+    test('says when the page cannot be read as a picture', () async {
+      final cubit = await scanned('not a picture'.codeUnits);
+      final page = cubit.state.pages.single;
+
+      await cubit.rotate(page);
+
+      expect(cubit.state.failure, 'scan.unreadable_file');
+      expect(cubit.state.pages, [page]);
+    });
+
+    test('does nothing to a page that is a PDF, or away from the '
+        'pages', () async {
+      final cubit = await scanned(tinyJpeg);
+      final page = cubit.state.pages.single;
+
+      await cubit.rotate(
+        ScannedPage(file: page.file, mimeType: 'application/pdf'),
+      );
+      expect(cubit.state.pages, [page]);
+
+      await cubit.save();
+      await cubit.rotate(page);
+      expect(cubit.state.pages, [page]);
+    });
+
+    test('turns one page at a time', () async {
+      final cubit = await scanned(wide());
+      final page = cubit.state.pages.single;
+
+      final first = cubit.rotate(page);
+      await cubit.rotate(page);
+      await first;
+
+      final picture = img.decodeJpg(
+        cubit.state.pages.single.file.readAsBytesSync(),
+      )!;
+      expect((picture.width, picture.height), (2, 6));
+    });
+
+    test('drops the turned page when the page went meanwhile, or the '
+        'screen did', () async {
+      final cubit = await scanned(tinyJpeg);
+      final page = cubit.state.pages.single;
+      final before = backend.scans.listSync().length;
+      final turning = cubit.rotate(page);
+      cubit.remove(page);
+      await turning;
+      expect(cubit.state.pages, isEmpty);
+      expect(backend.scans.listSync(), hasLength(before - 1));
+
+      final closed = await scanned(tinyJpeg);
+      final closing = closed.rotate(closed.state.pages.single);
+      await closed.close();
+      await closing;
+
+      final unreadable = await scanned('not a picture'.codeUnits);
+      final failing = unreadable.rotate(unreadable.state.pages.single);
+      await unreadable.close();
+      await failing;
     });
   });
 

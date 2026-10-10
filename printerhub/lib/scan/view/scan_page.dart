@@ -27,13 +27,22 @@ import 'package:printers_repository/printers_repository.dart';
 /// printer's scanner, or, with no [printerId], with the phone's camera
 /// alone, for someone who has no printer yet or is away from it.
 class ScanPage extends StatelessWidget {
-  const new({this.printerId, this.startWithPictures = false, super.key});
+  const new({
+    this.printerId,
+    this.startWithPictures = false,
+    this.startWithFiles = false,
+    super.key,
+  });
 
   final String? printerId;
 
   /// True opens the phone's file browser for pictures at once: the
   /// "Pictures to PDF" tool is this screen, begun that way.
   final bool startWithPictures;
+
+  /// True opens it for PDFs and pictures at once: the "Merge files" and
+  /// "Take pages from a PDF" tools are this screen, begun that way.
+  final bool startWithFiles;
 
   @override
   Widget build(BuildContext context) {
@@ -61,10 +70,11 @@ class ScanPage extends StatelessWidget {
         textReader: context.read<ScanTextReader>(),
         camera: context.read<PageCamera>(),
         picker: context.read<PrintDocuments>().picker,
+        renderer: context.read<PrintDocuments>().renderer,
         organizationId: context.read<SessionCubit>().state.organization!.id,
         printer: printer,
         name: name,
-      )..startWith(pictures: startWithPictures),
+      )..startWith(pictures: startWithPictures, files: startWithFiles),
       child: ScanView(printer: printer),
     );
   }
@@ -209,6 +219,9 @@ class _CameraOnly extends StatelessWidget {
       (cubit) => cubit.state.failure,
     );
     final card = context.select<ScanCubit, bool>((cubit) => cubit.state.card);
+    final reading = context.select<ScanCubit, bool>(
+      (cubit) => cubit.state.reading,
+    );
 
     return SingleChildScrollView(
       padding: _padding,
@@ -256,10 +269,22 @@ class _CameraOnly extends StatelessWidget {
           if (!onPrinter && !card) ...[
             const SizedBox(height: AppSpacing.sm),
             OutlinedButton.icon(
-              onPressed: context.read<ScanCubit>().addPictures,
+              onPressed: reading ? null : context.read<ScanCubit>().addPictures,
               icon: const Icon(Icons.photo_library_outlined),
               label: Text(l10n.scanChoosePictures),
             ),
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: reading ? null : context.read<ScanCubit>().addFiles,
+              icon: const Icon(Icons.folder_open_outlined),
+              label: Text(l10n.scanChooseFiles),
+            ),
+            if (reading) ...[
+              const SizedBox(height: AppSpacing.lg),
+              const LinearProgressIndicator(),
+              const SizedBox(height: AppSpacing.sm),
+              Text(l10n.scanReadingFiles, textAlign: TextAlign.center),
+            ],
           ],
         ],
       ),
@@ -327,7 +352,9 @@ class _Review extends StatelessWidget {
     final textTheme = context.textTheme;
     final cubit = context.read<ScanCubit>();
     final state = context.watch<ScanCubit>().state;
-    final saving = state.step == ScanStep.saving;
+    // Nothing is changed while the pages are put together, or while more
+    // are being read in.
+    final saving = state.step == ScanStep.saving || state.reading;
     final failure = state.failure;
 
     return SingleChildScrollView(
@@ -429,6 +456,12 @@ class _Review extends StatelessWidget {
                             ],
                           ),
                         ),
+                        if (page.mimeType != 'application/pdf')
+                          IconButton(
+                            tooltip: l10n.scanRotatePage,
+                            onPressed: saving ? null : () => cubit.rotate(page),
+                            icon: const Icon(Icons.rotate_right),
+                          ),
                         IconButton(
                           tooltip: l10n.scanRemovePage,
                           onPressed: saving ? null : () => cubit.remove(page),
@@ -476,6 +509,22 @@ class _Review extends StatelessWidget {
               icon: const Icon(Icons.photo_library_outlined),
               label: Text(l10n.scanAddPictures),
             ),
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: saving ? null : cubit.addFiles,
+              icon: const Icon(Icons.folder_open_outlined),
+              label: Text(l10n.scanAddFiles),
+            ),
+          ],
+          if (state.reading) ...[
+            const SizedBox(height: AppSpacing.md),
+            const LinearProgressIndicator(),
+            const SizedBox(height: AppSpacing.sm),
+            Text(l10n.scanReadingFiles, textAlign: TextAlign.center),
+          ],
+          if (state.redrawn) ...[
+            const SizedBox(height: AppSpacing.md),
+            AppNotice(status: AppStatus.info, message: l10n.scanRedrawn),
           ],
           const SizedBox(height: AppSpacing.lg),
           _Finishing(enabled: !saving),

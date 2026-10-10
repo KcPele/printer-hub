@@ -3188,5 +3188,275 @@
     "printerChoiceTitle": "Which printer?",
     "@printerChoiceTitle": {
         "description": "Title of the sheet that asks which printer to use"
+    },
+    "toolsMadeReady": "Your page is ready",
+    "@toolsMadeReady": {
+        "description": "Shown when a tool has made a document to print"
+    },
+    "toolsMake": "Make it",
+    "@toolsMake": {
+        "description": "Button that makes the document a tool was asked for"
+    },
+    "toolsMakeAgain": "Make it again",
+    "@toolsMakeAgain": {
+        "description": "Button that makes a tool's document again after a change"
+    },
+    "toolsHeading": "Heading (optional)",
+    "@toolsHeading": {
+        "description": "Label of the field for words set large at the top of a made page"
+    },
+    "toolsCode": "Scan a code",
+    "@toolsCode": {
+        "description": "Title of the tool that reads a QR code or barcode"
+    },
+    "toolsCodeBody": "Read a QR code or a barcode",
+    "@toolsCodeBody": {
+        "description": "What the code reading tool does, on its tile"
+    },
+    "toolsCodeLead": "Point the camera at a QR code or a barcode.",
+    "@toolsCodeLead": {
+        "description": "Instruction above the camera on the code reading screen"
+    },
+    "toolsCodeLink": "A link",
+    "@toolsCodeLink": {
+        "description": "Says a code that was read holds a link"
+    },
+    "toolsCodeWifi": "A Wi-Fi network",
+    "@toolsCodeWifi": {
+        "description": "Says a code that was read joins a Wi-Fi network"
+    },
+    "toolsCodeText": "Text",
+    "@toolsCodeText": {
+        "description": "Says a code that was read holds plain words"
+    },
+    "toolsCodeOpen": "Open the link",
+    "@toolsCodeOpen": {
+        "description": "Button that opens a link read from a code"
+    },
+    "toolsCodeUnopened": "Nothing on this phone could open that link.",
+    "@toolsCodeUnopened": {
+        "description": "Shown when a link read from a code could not be opened"
+    },
+    "toolsCodeCopy": "Copy",
+    "@toolsCodeCopy": {
+        "description": "Button that copies what a code says"
+    },
+    "toolsCodeCopyPassword": "Copy the password",
+    "@toolsCodeCopyPassword": {
+        "description": "Button that copies the Wi-Fi password read from a code"
+    },
+    "toolsCodeCopied": "Copied",
+    "@toolsCodeCopied": {
+        "description": "Confirmation after copying what a code says"
+    },
+    "toolsCodePassword": "Password: {password}",
+    "@toolsCodePassword": {
+        "description": "The Wi-Fi password read from a code",
+        "placeholders": {
+            "password": {
+                "type": "String"
+            }
+        }
+    },
+    "toolsCodeNoPassword": "No password",
+    "@toolsCodeNoPassword": {
+        "description": "Says a Wi-Fi network read from a code is open"
+    },
+    "toolsCodeAgain": "Scan another",
+    "@toolsCodeAgain": {
+        "description": "Button that goes back to the camera for another code"
+    },
+    "toolsCodeSheet": "Make a QR code",
+    "@toolsCodeSheet": {
+        "description": "Title of the tool that prints a sign with a QR code"
+    },
+    "toolsCodeSheetBody": "Print a link or your Wi-Fi as a code",
+    "@toolsCodeSheetBody": {
+        "description": "What the QR sign tool does, on its tile"
+    },
+    "toolsCodeSheetExplanation": "Print a sign with a QR code on it. Anyone who points a phone at it opens the link, or joins the Wi-Fi.",
+    "@toolsCodeSheetExplanation": {
+        "description": "Explanation on the QR sign screen"
+    },
+    "toolsCodeSheetLink": "Link or text",
+    "@toolsCodeSheetLink": {
+        "description": "Choice of a QR code that holds a link or words"
+    },
+    "toolsCodeSheetWifi": "Wi-Fi",
+    "@toolsCodeSheetWifi": {
+        "description": "Choice of a QR code that joins a Wi-Fi network"
+    },
+    "toolsCodeSheetText": "What the code says",
+    "@toolsCodeSheetText": {
+        "description": "Label of the field for a QR code's link or words"
+    },
+    "toolsCodeSheetNetwork": "Network name",
+    "@toolsCodeSheetNetwork": {
+        "description": "Label of the Wi-Fi network name field"
+    },
+    "toolsCodeSheetPassword": "Password",
+    "@toolsCodeSheetPassword": {
+        "description": "Label of the Wi-Fi password field"
+    },
+    "toolsCodeSheetPasswordHelp": "Leave it empty for a network with no password. It goes in the code and is never printed in words.",
+    "@toolsCodeSheetPasswordHelp": {
+        "description": "Help under the Wi-Fi password field"
+    },
+    "toolsCodeSheetName": "QR code {date}",
+    "@toolsCodeSheetName": {
+        "description": "Name of a QR sign's file",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "toolsNote": "Print a note",
+    "@toolsNote": {
+        "description": "Title of the tool that prints typed words"
+    },
+    "toolsNoteBody": "Type or paste words and print them",
+    "@toolsNoteBody": {
+        "description": "What the note tool does, on its tile"
+    },
+    "toolsNoteExplanation": "Type or paste what you want on paper. No file needed.",
+    "@toolsNoteExplanation": {
+        "description": "Explanation on the note screen"
+    },
+    "toolsNoteText": "Your note",
+    "@toolsNoteText": {
+        "description": "Label of the field for a note's words"
+    },
+    "toolsNoteName": "Note {date}",
+    "@toolsNoteName": {
+        "description": "Name of a note's file",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "toolsPrintable": "Printable pages",
+    "@toolsPrintable": {
+        "description": "Title of the tool that prints ruled pages and calendars"
+    },
+    "toolsPrintableBody": "Lined paper, a calendar, a checklist",
+    "@toolsPrintableBody": {
+        "description": "What the printable pages tool does, on its tile"
+    },
+    "toolsPrintableExplanation": "Pages you can print with nothing to scan or open.",
+    "@toolsPrintableExplanation": {
+        "description": "Explanation on the printable pages screen"
+    },
+    "toolsPrintableKind": "Page",
+    "@toolsPrintableKind": {
+        "description": "Label of the choice of printable page"
+    },
+    "toolsPrintableLined": "Lined paper",
+    "@toolsPrintableLined": {
+        "description": "A printable page with lines to write on"
+    },
+    "toolsPrintableGrid": "Squared paper",
+    "@toolsPrintableGrid": {
+        "description": "A printable page of small squares"
+    },
+    "toolsPrintableDots": "Dotted paper",
+    "@toolsPrintableDots": {
+        "description": "A printable page of dots"
+    },
+    "toolsPrintableChecklist": "Checklist",
+    "@toolsPrintableChecklist": {
+        "description": "A printable page of boxes to tick"
+    },
+    "toolsPrintableCalendar": "Calendar for a month",
+    "@toolsPrintableCalendar": {
+        "description": "A printable calendar of one month"
+    },
+    "toolsPrintableMonthBefore": "The month before",
+    "@toolsPrintableMonthBefore": {
+        "description": "Tooltip of the button that moves the calendar back a month"
+    },
+    "toolsPrintableMonthAfter": "The month after",
+    "@toolsPrintableMonthAfter": {
+        "description": "Tooltip of the button that moves the calendar on a month"
+    },
+    "toolsPrintableName": "Page {date}",
+    "@toolsPrintableName": {
+        "description": "Name of a printable page's file",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "toolsPerSheet": "Pages per sheet",
+    "@toolsPerSheet": {
+        "description": "Title of the tool that sets several pages of a PDF on one sheet"
+    },
+    "toolsPerSheetBody": "Print 2 or 4 pages on one sheet",
+    "@toolsPerSheetBody": {
+        "description": "What the pages per sheet tool does, on its tile"
+    },
+    "toolsPerSheetExplanation": "Save paper by printing several pages of a PDF on each sheet. The pages are redrawn as pictures, so the result is for printing: its words can no longer be selected.",
+    "@toolsPerSheetExplanation": {
+        "description": "Explanation on the pages per sheet screen"
+    },
+    "toolsPerSheetCount": "{count} to a sheet",
+    "@toolsPerSheetCount": {
+        "description": "A choice of how many pages go on one sheet",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "toolsPerSheetName": "Pages {date}",
+    "@toolsPerSheetName": {
+        "description": "Name of the file made by the pages per sheet tool",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "toolsMerge": "Merge files",
+    "@toolsMerge": {
+        "description": "Title of the tool that joins PDFs and pictures into one PDF"
+    },
+    "toolsMergeBody": "Join PDFs and pictures into one PDF",
+    "@toolsMergeBody": {
+        "description": "What the merge tool does, on its tile"
+    },
+    "toolsExtract": "Take pages from a PDF",
+    "@toolsExtract": {
+        "description": "Title of the tool that keeps only some pages of a PDF"
+    },
+    "toolsExtractBody": "Keep only the pages you want",
+    "@toolsExtractBody": {
+        "description": "What the extract pages tool does, on its tile"
+    },
+    "scanAddFiles": "Add a PDF or pictures",
+    "@scanAddFiles": {
+        "description": "Button that adds the pages of files chosen from the phone to a scan"
+    },
+    "scanChooseFiles": "Choose PDFs or pictures",
+    "@scanChooseFiles": {
+        "description": "Button on the phone-only scan screen that adds files from the phone"
+    },
+    "scanRotatePage": "Turn this page",
+    "@scanRotatePage": {
+        "description": "Tooltip of the button that turns a page a quarter turn"
+    },
+    "scanUnreadableFile": "One of those files could not be read.",
+    "@scanUnreadableFile": {
+        "description": "Shown when a file chosen for a scan cannot be drawn"
+    },
+    "scanRedrawn": "Pages from a PDF are kept as pictures. They print the same, but their words can no longer be selected.",
+    "@scanRedrawn": {
+        "description": "Shown in a scan that holds pages drawn from a PDF"
+    },
+    "scanReadingFiles": "Reading your files",
+    "@scanReadingFiles": {
+        "description": "Shown while the pages of chosen files are being drawn"
     }
 }

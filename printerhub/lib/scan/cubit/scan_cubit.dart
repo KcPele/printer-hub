@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:api_client/api_client.dart';
 import 'package:bloc/bloc.dart';
 import 'package:documents_repository/documents_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:image/image.dart' as img;
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
@@ -55,10 +58,19 @@ class ScanState extends Equatable {
     this.cameraPages = const {},
     this.pickedPages = const {},
     this.finish = const ScanFinish(),
+    this.reading = false,
+    this.redrawn = false,
   });
 
   final ScanStep step;
   final ScanChoices choices;
+
+  /// True while the pages of files chosen from the phone are being drawn.
+  final bool reading;
+
+  /// True once a page drawn from a PDF is among the pages: the words on
+  /// it are a picture now.
+  final bool redrawn;
 
   /// True when an ID card is being scanned: its front, then its back,
   /// from the glass, to be put on one sheet.
@@ -127,6 +139,8 @@ class ScanState extends Equatable {
     Set<String>? cameraPages,
     Set<String>? pickedPages,
     ScanFinish? finish,
+    bool reading = false,
+    bool? redrawn,
   }) {
     return ScanState(
       step: step ?? this.step,
@@ -143,6 +157,8 @@ class ScanState extends Equatable {
       cameraPages: cameraPages ?? this.cameraPages,
       pickedPages: pickedPages ?? this.pickedPages,
       finish: finish ?? this.finish,
+      reading: reading,
+      redrawn: redrawn ?? this.redrawn,
     );
   }
 
@@ -162,6 +178,8 @@ class ScanState extends Equatable {
     cameraPages,
     pickedPages,
     finish,
+    reading,
+    redrawn,
   ];
 }
 
@@ -177,6 +195,7 @@ class ScanCubit extends Cubit<ScanState> {
     required this._textReader,
     required this._camera,
     required this._picker,
+    required this._renderer,
     required this._organizationId,
     required this._printer,
     required String name,
@@ -193,6 +212,8 @@ class ScanCubit extends Cubit<ScanState> {
   final ScanTextReader _textReader;
   final PageCamera _camera;
   final DocumentPicker _picker;
+  final PageRenderer _renderer;
+  int _made = 0;
   bool _atCamera = false;
   bool _choosing = false;
   final String _organizationId;
@@ -411,10 +432,124 @@ class ScanCubit extends Cubit<ScanState> {
   }
 
   /// Begins the way the screen was opened: with [pictures], by asking
-  /// for some at once.
-  void startWith({required bool pictures}) {
+  /// for some at once,
+  /// or with [files], by asking for PDFs and pictures.
+  void startWith({required bool pictures, bool files = false}) {
     if (pictures) unawaited(addPictures());
+    if (files) unawaited(addFiles());
   }
+
+  /// Adds files the person chooses from the phone as pages, in the order
+  /// chosen: a picture is a page, and a PDF is drawn, a picture a page.
+  /// It is how files are joined into one, and how some pages of a PDF
+  /// are kept without the rest.
+  Future<void> addFiles() async {
+    if (!_settled || state.card || _choosing) return;
+    _choosing = true;
+    final step = state.step;
+    try {
+      final chosen = await _picker.pickFiles();
+      if (isClosed || chosen.isEmpty) return;
+      emit(state._with(reading: true));
+
+      final pages = <ScannedPage>[];
+      final picked = <String>{};
+      var redrawn = false;
+      try {
+        for (final file in chosen) {
+          if (file.mimeType != 'application/pdf') {
+            pages.add(
+              ScannedPage(
+                file: File(file.path),
+                mimeType: file.mimeType ?? 'image/jpeg',
+              ),
+            );
+            picked.add(file.path);
+            continue;
+          }
+          await for (final page in _renderer.pictures(file)) {
+            pages.add(await _ownPage(await Isolate.run(() => _asJpeg(page))));
+            redrawn = true;
+          }
+        }
+      } on Object {
+        // What was drawn before the file that could not be read is the
+        // app's own, and goes.
+        _delete([
+          for (final page in pages)
+            if (!picked.contains(page.file.path)) page.file,
+        ]);
+        if (!isClosed) {
+          emit(state._with(step: step, failure: 'scan.unreadable_file'));
+        }
+        return;
+      }
+      if (isClosed) return;
+      emit(
+        state._with(
+          step: ScanStep.review,
+          pages: [...state.pages, ...pages],
+          pickedPages: {...state.pickedPages, ...picked},
+          redrawn: state.redrawn || redrawn,
+        ),
+      );
+    } finally {
+      _choosing = false;
+    }
+  }
+
+  /// Turns [page] a quarter turn to the right. The turned page is a new
+  /// picture: one chosen from the phone is left as it was.
+  Future<void> rotate(ScannedPage page) async {
+    if (state.step != ScanStep.review ||
+        state.reading ||
+        _choosing ||
+        page.mimeType == 'application/pdf') {
+      return;
+    }
+    _choosing = true;
+    try {
+      final bytes = await page.file.readAsBytes();
+      final turned = await _ownPage(await Isolate.run(() => _turned(bytes)));
+      if (isClosed || !state.pages.contains(page)) {
+        _delete([turned.file]);
+        return;
+      }
+      final fromCamera = state.fromCamera(page);
+      if (!state.fromPhone(page)) _delete([page.file]);
+      emit(
+        state._with(
+          pages: [
+            for (final other in state.pages)
+              if (other == page) turned else other,
+          ],
+          cameraPages: {...state.cameraPages, if (fromCamera) turned.file.path},
+        ),
+      );
+    } on Object {
+      if (!isClosed) emit(state._with(failure: 'scan.unreadable_file'));
+    } finally {
+      _choosing = false;
+    }
+  }
+
+  /// Writes [jpeg] as a page of this scan.
+  Future<ScannedPage> _ownPage(Uint8List jpeg) async {
+    final file = File(
+      '${_directory.path}/page-${DateTime.now().microsecondsSinceEpoch}'
+      '-${_made++}.jpg',
+    );
+    await file.writeAsBytes(jpeg, flush: true);
+    return ScannedPage(file: file, mimeType: 'image/jpeg');
+  }
+
+  static Uint8List _asJpeg(Uint8List png) =>
+      img.encodeJpg(img.decodePng(png)!, quality: 85);
+
+  static Uint8List _turned(Uint8List picture) => img.encodeJpg(
+    img.copyRotate(img.decodeImage(picture)!, angle: 90),
+    quality: 90,
+  );
 
   /// Adds pictures the person chooses from the phone as pages, in the
   /// order chosen: several photos become one document.

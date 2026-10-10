@@ -67,5 +67,47 @@ List<Widget> toolTiles(BuildContext context, {bool withScan = true}) {
       body: l10n.toolsLongPictureBody,
       onTap: () => context.push(AppRoutes.pdfToLongPicture),
     ),
+    ToolTile(
+      icon: Icons.merge_outlined,
+      title: l10n.toolsMerge,
+      body: l10n.toolsMergeBody,
+      onTap: () => context.push(AppRoutes.filesToPdf),
+    ),
+    ToolTile(
+      icon: Icons.content_cut_outlined,
+      title: l10n.toolsExtract,
+      body: l10n.toolsExtractBody,
+      onTap: () => context.push(AppRoutes.filesToPdf),
+    ),
+    ToolTile(
+      icon: Icons.grid_view_outlined,
+      title: l10n.toolsPerSheet,
+      body: l10n.toolsPerSheetBody,
+      onTap: () => context.push(AppRoutes.pagesPerSheet),
+    ),
+    ToolTile(
+      icon: Icons.qr_code_scanner_outlined,
+      title: l10n.toolsCode,
+      body: l10n.toolsCodeBody,
+      onTap: () => context.push(AppRoutes.scanCode),
+    ),
+    ToolTile(
+      icon: Icons.qr_code_2_outlined,
+      title: l10n.toolsCodeSheet,
+      body: l10n.toolsCodeSheetBody,
+      onTap: () => context.push(AppRoutes.codeSheet),
+    ),
+    ToolTile(
+      icon: Icons.edit_note_outlined,
+      title: l10n.toolsNote,
+      body: l10n.toolsNoteBody,
+      onTap: () => context.push(AppRoutes.note),
+    ),
+    ToolTile(
+      icon: Icons.calendar_month_outlined,
+      title: l10n.toolsPrintable,
+      body: l10n.toolsPrintableBody,
+      onTap: () => context.push(AppRoutes.printable),
+    ),
   ];
 }

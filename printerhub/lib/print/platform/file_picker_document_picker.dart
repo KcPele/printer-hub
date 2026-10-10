@@ -18,10 +18,17 @@ class FilePickerDocumentPicker implements DocumentPicker {
   Future<PickedDocument?> pickPdf() => _one(const ['pdf']);
 
   @override
-  Future<List<PickedDocument>> pickPictures() async {
+  Future<List<PickedDocument>> pickPictures() =>
+      _several(const ['jpg', 'jpeg', 'png']);
+
+  @override
+  Future<List<PickedDocument>> pickFiles() =>
+      _several(const ['pdf', 'jpg', 'jpeg', 'png']);
+
+  Future<List<PickedDocument>> _several(List<String> endings) async {
     final files = await FilePicker.pickFiles(
       type: FileType.custom,
-      allowedExtensions: const ['jpg', 'jpeg', 'png'],
+      allowedExtensions: endings,
     );
     return [for (final file in files) ?await _picked(file)];
   }

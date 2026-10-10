@@ -20,6 +20,7 @@ import 'package:printerhub/printers/widgets/printer_choice_sheet.dart';
 import 'package:printerhub/scan/scan.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
+import 'package:printerhub/tools/code.dart';
 import 'package:printerhub/workspace/workspace.dart';
 import 'package:printers_repository/printers_repository.dart';
 
@@ -39,6 +40,7 @@ class App extends StatelessWidget {
     required this.scanTextReader,
     required this.pageCamera,
     required this.signatureStore,
+    required this.linkOpener,
     required this.incoming,
     this.keptOrganizations,
     super.key,
@@ -71,6 +73,9 @@ class App extends StatelessWidget {
   /// Where the person's signature is kept on this phone.
   final SignatureStore signatureStore;
 
+  /// Opens a link read from a code in the phone's browser.
+  final LinkOpener linkOpener;
+
   /// The files other apps hand to this one to print.
   final IncomingDocuments incoming;
 
@@ -101,6 +106,7 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: scanTextReader),
         RepositoryProvider.value(value: pageCamera),
         RepositoryProvider.value(value: signatureStore),
+        RepositoryProvider.value(value: linkOpener),
       ],
       child: MultiBlocProvider(
         providers: [

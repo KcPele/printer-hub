@@ -43,6 +43,16 @@ abstract final class AppRoutes {
   static const String picturesToPdf = '/home/scan/pictures';
 
   /// Every tool the app has.
+  /// Joining PDFs and pictures, or keeping some pages of a PDF: the scan
+  /// screen, begun with files.
+  static const String filesToPdf = '/home/scan/files';
+
+  static const String scanCode = '/home/tools/code';
+  static const String codeSheet = '/home/tools/qr';
+  static const String note = '/home/tools/note';
+  static const String printable = '/home/tools/printable';
+  static const String pagesPerSheet = '/home/tools/per-sheet';
+
   static const String tools = '/home/tools';
 
   /// Reading the words in a file.
@@ -206,6 +216,11 @@ GoRouter createAppRouter({
                         builder: (context, state) =>
                             const ScanPage(startWithPictures: true),
                       ),
+                      GoRoute(
+                        path: 'files',
+                        builder: (context, state) =>
+                            const ScanPage(startWithFiles: true),
+                      ),
                     ],
                   ),
                   GoRoute(
@@ -215,6 +230,26 @@ GoRouter createAppRouter({
                       GoRoute(
                         path: 'text',
                         builder: (context, state) => const ExtractTextPage(),
+                      ),
+                      GoRoute(
+                        path: 'code',
+                        builder: (context, state) => const ScanCodePage(),
+                      ),
+                      GoRoute(
+                        path: 'qr',
+                        builder: (context, state) => const CodeSheetPage(),
+                      ),
+                      GoRoute(
+                        path: 'note',
+                        builder: (context, state) => const NotePage(),
+                      ),
+                      GoRoute(
+                        path: 'printable',
+                        builder: (context, state) => const PrintablePage(),
+                      ),
+                      GoRoute(
+                        path: 'per-sheet',
+                        builder: (context, state) => const PagesPerSheetPage(),
                       ),
                       GoRoute(
                         path: 'photos',

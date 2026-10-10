@@ -184,6 +184,9 @@ class TestBackend {
   /// What the scanner says of its feeder.
   String scannerFeeder = 'ScannerAdfLoaded';
 
+  /// The phone's browser.
+  final FakeLinkOpener links = FakeLinkOpener();
+
   /// The phone's share sheet.
   final FakeScanSharer sharer = FakeScanSharer();
 

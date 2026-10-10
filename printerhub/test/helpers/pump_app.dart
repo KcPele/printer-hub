@@ -19,6 +19,7 @@ import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/scan/scan.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
+import 'package:printerhub/tools/code.dart';
 import 'package:printerhub/workspace/workspace.dart';
 import 'package:printers_repository/printers_repository.dart';
 
@@ -144,6 +145,7 @@ extension PumpApp on WidgetTester {
           RepositoryProvider<ScanTextReader>.value(value: api.textReader),
           RepositoryProvider<PageCamera>.value(value: api.camera),
           RepositoryProvider<SignatureStore>.value(value: api.signatures),
+          RepositoryProvider<LinkOpener>.value(value: api.links),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -189,6 +191,7 @@ extension PumpApp on WidgetTester {
         scanTextReader: backend.textReader,
         pageCamera: backend.camera,
         signatureStore: backend.signatures,
+        linkOpener: backend.links,
         incoming: backend.otherApps,
         keptOrganizations: await backend.organizations.kept(),
       ),

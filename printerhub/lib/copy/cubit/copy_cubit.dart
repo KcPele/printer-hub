@@ -123,6 +123,7 @@ class CopyCubit extends Cubit<CopyState> {
          textReader: textReader,
          camera: camera,
          picker: documents.picker,
+         renderer: documents.renderer,
          organizationId: organizationId,
          printer: printer,
          name: name,

@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/scan/scan.dart';
+import 'package:printerhub/tools/code.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 /// A PDF on the phone, as the file browser would hand it over.
@@ -40,6 +41,15 @@ class FakeDocumentPicker implements DocumentPicker {
   Future<List<PickedDocument>> pickPictures() async {
     opened++;
     return pictures;
+  }
+
+  /// The files chosen when PDFs and pictures are asked for.
+  List<PickedDocument> files = [];
+
+  @override
+  Future<List<PickedDocument>> pickFiles() async {
+    opened++;
+    return files;
   }
 }
 
@@ -77,6 +87,9 @@ class FakePageRenderer implements PageRenderer {
   /// True makes every file unreadable.
   bool unreadable = false;
 
+  /// The names of files that cannot be drawn as pictures.
+  final Set<String> unreadableNames = {};
+
   /// Whether the phone's print dialog sends the document on.
   bool systemAccepts = true;
   final List<PickedDocument> systemPrinted = [];
@@ -101,7 +114,9 @@ class FakePageRenderer implements PageRenderer {
 
   @override
   Stream<Uint8List> pictures(PickedDocument document, {int dpi = 150}) async* {
-    if (unreadable) throw const FormatException('not a PDF');
+    if (unreadable || unreadableNames.contains(document.name)) {
+      throw const FormatException('not a PDF');
+    }
     for (var i = 0; i < pageCount; i++) {
       yield tinyPng;
     }
@@ -190,6 +205,20 @@ class FakeScanTextReader implements ScanTextReader {
     asked.add([for (final picture in pictures) picture.path]);
     if (fails) throw const FormatException('unreadable');
     return [for (final _ in pictures) text].join('\n');
+  }
+}
+
+/// Stands in for the phone's browser, and keeps the links it was asked
+/// to open.
+class FakeLinkOpener implements LinkOpener {
+  /// False when nothing on the phone opens links.
+  bool opens = true;
+  final List<Uri> opened = [];
+
+  @override
+  Future<bool> open(Uri link) async {
+    opened.add(link);
+    return opens;
   }
 }
 

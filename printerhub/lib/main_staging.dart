@@ -19,6 +19,7 @@ Future<void> main() async {
       scanTextReader: dependencies.scanTextReader,
       pageCamera: dependencies.pageCamera,
       signatureStore: dependencies.signatureStore,
+      linkOpener: dependencies.linkOpener,
       incoming: dependencies.incoming,
       keptOrganizations: dependencies.keptOrganizations,
     ),

@@ -76,6 +76,10 @@ abstract interface class DocumentPicker {
   /// The chosen pictures, in the order they were chosen. Empty when they
   /// chose none.
   Future<List<PickedDocument>> pickPictures();
+
+  /// The chosen files, PDFs and pictures, in the order they were chosen.
+  /// Empty when they chose none.
+  Future<List<PickedDocument>> pickFiles();
 }
 
 /// Reads and draws documents. The drawing is done by the phone's own PDF
