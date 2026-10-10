@@ -14,6 +14,7 @@ class OrganizationsRepository {
   new({required this._client, required this._store});
 
   static const String _cacheKey = 'organizations.list';
+  static const String _featuresKey = 'organizations.features';
 
   final PrinterHubClient _client;
   final SecureStore _store;
@@ -281,6 +282,29 @@ class OrganizationsRepository {
     final resolved = await apiCall(
       () => _client.api.featureFlags.getFeatureFlags(orgId: organizationId),
     );
+    // Kept for when the API cannot be reached: what works with the phone
+    // alone should not vanish with the network.
+    await _store.write(
+      '$_featuresKey.$organizationId',
+      jsonEncode(resolved.flags),
+    );
     return resolved.flags;
+  }
+
+  /// What was switched on for a workspace the last time the API was
+  /// reached, without using the network. Empty when that never happened.
+  Future<Map<String, bool>> keptFeatures(String organizationId) async {
+    final json = await _store.read('$_featuresKey.$organizationId');
+    if (json == null) return const {};
+    try {
+      return {
+        for (final MapEntry(:key, :value)
+            in (jsonDecode(json) as Map<String, dynamic>).entries)
+          key: value as bool,
+      };
+    } on Object {
+      // Written by an older version of the app.
+      return const {};
+    }
   }
 }

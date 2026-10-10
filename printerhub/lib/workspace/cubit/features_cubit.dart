@@ -8,7 +8,8 @@ import 'package:organizations_repository/organizations_repository.dart';
 /// workspace: another workspace has its own.
 ///
 /// A screen asks `context.read<FeaturesCubit>().enabled('local_ocr')`.
-/// Something that is not named, or not yet known, is off.
+/// Something that is not named, or was never known, is off. What was
+/// known the last time the API was reached holds while it cannot be.
 class FeaturesCubit extends Cubit<Map<String, bool>> {
   new({
     required this._organizationsRepository,
@@ -31,11 +32,18 @@ class FeaturesCubit extends Cubit<Map<String, bool>> {
   Future<void> load() async {
     final organizationId = _organizationId;
     if (organizationId == null) return;
+    // What was known last time holds until the API answers, and after it
+    // if it cannot be reached.
+    final kept = await _organizationsRepository.keptFeatures(organizationId);
+    if (!isClosed && organizationId == _organizationId && state.isEmpty) {
+      emit(kept);
+    }
     try {
       final features = await _organizationsRepository.features(organizationId);
       if (!isClosed && organizationId == _organizationId) emit(features);
     } on ApiException {
-      // Everything stays off until they can be read.
+      // What was known last time stands. With nothing known, everything
+      // stays off.
     }
   }
 

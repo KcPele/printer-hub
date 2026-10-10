@@ -69,6 +69,29 @@ void main() {
     expect(cubit.state, isEmpty);
   });
 
+  test('goes by what was known last time when the API cannot be '
+      'reached', () async {
+    await build().load();
+    backend.offline = true;
+
+    final cubit = build();
+    await cubit.load();
+
+    // The camera and the reading of words do not vanish with the network.
+    expect(cubit.enabled('local_ocr'), isTrue);
+    expect(cubit.enabled('print.pin'), isFalse);
+  });
+
+  test('takes the API’s word over what it remembered', () async {
+    await build().load();
+    backend.features = {'local_ocr': false};
+
+    final cubit = build();
+    await cubit.load();
+
+    expect(cubit.enabled('local_ocr'), isFalse);
+  });
+
   test('leaves everything off when it cannot be read', () async {
     backend.offline = true;
     final cubit = build();

@@ -198,6 +198,26 @@ void main() {
       expect(api.requests.single.path, '$_path/feature-flags');
       expect(features, {'scan.ocr': true, 'print.secure': false});
     });
+
+    test('remembers what was switched on, for when the API cannot be '
+        'reached', () async {
+      expect(await repository.keptFeatures(_org), isEmpty);
+
+      await repository.features(_org);
+
+      expect(await repository.keptFeatures(_org), {
+        'scan.ocr': true,
+        'print.secure': false,
+      });
+      // Another workspace has its own.
+      expect(await repository.keptFeatures('another'), isEmpty);
+    });
+
+    test('remembers nothing it cannot read', () async {
+      await store.write('organizations.features.$_org', 'not json');
+
+      expect(await repository.keptFeatures(_org), isEmpty);
+    });
   });
 
   test('rules change one at a time, and compare by value', () {
