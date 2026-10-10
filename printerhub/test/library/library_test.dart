@@ -130,6 +130,22 @@ void main() {
       expect(other.lastSynced(_org), library.lastSynced(_org));
     });
 
+    test('is still found after the app’s folder has moved, as it does '
+        'when the app is updated', () async {
+      final item = await add('Note.pdf');
+      final moved = Directory('${backend.scans.path}/moved');
+      folder.renameSync(moved.path);
+
+      final other = Library(directory: moved, documents: backend.documentsKept);
+      addTearDown(other.close);
+      other.open();
+
+      final read = other.of(_org).single;
+      expect(read.id, item.id);
+      expect(read.path, startsWith(moved.path));
+      expect(File(read.path).readAsStringSync(), '%PDF made here');
+    });
+
     test('leaves out a file the phone has cleared away', () async {
       final item = await add('Note.pdf');
       File(item.path).deleteSync();

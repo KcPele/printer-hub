@@ -60,7 +60,13 @@ class Library {
       final kept =
           jsonDecode(_index.readAsStringSync()) as Map<String, dynamic>;
       for (final item in kept['items'] as List<dynamic>) {
-        final read = LibraryItem.fromJson(item as Map<String, dynamic>);
+        final written = item as Map<String, dynamic>;
+        final read = LibraryItem.fromJson({
+          ...written,
+          // Where the app's folder is changes when the app is updated, so
+          // a file is written down by its place inside the library.
+          'path': '${_directory.path}/${written['path']}',
+        });
         // A file the phone has cleared away is not offered.
         if (File(read.path).existsSync()) _items.add(read);
       }
@@ -81,7 +87,13 @@ class Library {
     File('${_index.path}.new')
       ..writeAsStringSync(
         jsonEncode({
-          'items': [for (final item in _items) item.toJson()],
+          'items': [
+            for (final item in _items)
+              {
+                ...item.toJson(),
+                'path': item.path.substring(_directory.path.length + 1),
+              },
+          ],
           'synced': {
             for (final MapEntry(:key, :value) in _synced.entries)
               key: value.toUtc().toIso8601String(),
