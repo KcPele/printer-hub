@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:api_client/api_client.dart';
 import 'package:api_client/testing.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:documents_repository/documents_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:printerhub/documents/documents.dart';
+import 'package:printerhub/library/library_item.dart';
 
 import '../../helpers/helpers.dart';
 
@@ -27,6 +30,7 @@ void main() {
 
   DocumentsCubit build() => DocumentsCubit(
     documentsRepository: backend.documentsKept,
+    library: backend.library,
     sharer: backend.sharer,
     organizationId: _org,
   );
@@ -82,7 +86,7 @@ void main() {
 
   blocTest<DocumentsCubit, DocumentsState>(
     'says why the list cannot be read, and keeps what was searched for',
-    setUp: () => backend.offline = true,
+    setUp: () => backend.fail('GET $_documents', 500, 'server.error'),
     build: build,
     act: (cubit) => cubit.search('receipts'),
     skip: 1,
@@ -90,9 +94,156 @@ void main() {
       isA<DocumentsState>()
           .having((s) => s.status, 'status', DocumentsStatus.failed)
           .having((s) => s.query, 'query', 'receipts')
-          .having((s) => s.error, 'error', isA<ApiUnreachable>()),
+          .having((s) => s.error, 'error', isA<ApiProblem>()),
     ],
   );
+
+  group('what was made on this phone', () {
+    /// Something a tool made, kept on the phone and not yet sent.
+    Future<LibraryItem> made(String name, {String? text}) {
+      final file = File('${backend.scans.path}/$name')
+        ..writeAsStringSync('%PDF made here');
+      return backend.library.add(
+        organizationId: _org,
+        file: file,
+        mimeType: 'application/pdf',
+        text: text,
+      );
+    }
+
+    test('comes first while it waits to be sent, and opens with no '
+        'network', () async {
+      final note = await made('Note.pdf');
+      final cubit = await loaded();
+
+      expect(names(cubit.state).first, 'Note.pdf');
+      expect(names(cubit.state), hasLength(4));
+      expect(cubit.state.waiting, {note.id});
+      expect(cubit.state.onPhone, {note.id});
+      expect(cubit.state.offline, isFalse);
+      final document = cubit.state.documents.first;
+      expect(document.canFetch, isFalse);
+      expect(cubit.state.canOpen(document), isTrue);
+      expect(cubit.state.canOpen(cubit.state.documents.last), isTrue);
+
+      backend.offline = true;
+      final file = await cubit.fetch(document);
+      expect(file!.path, note.path);
+      await cubit.open(document);
+      expect(backend.sharer.shared.single.files.single.path, note.path);
+    });
+
+    test('is listed once after it reaches the account', () async {
+      final note = await made('Note.pdf');
+      final cubit = await loaded();
+
+      await backend.library.sync(_org);
+      await pumpEventQueue();
+
+      // The list was read again by itself.
+      expect(names(cubit.state).where((name) => name == 'Note.pdf'), [
+        'Note.pdf',
+      ]);
+      expect(cubit.state.waiting, isEmpty);
+      expect(cubit.state.onPhone, {note.id});
+      expect(cubit.state.documents.first.canFetch, isTrue);
+    });
+
+    test('is all there is to see when the account cannot be '
+        'reached', () async {
+      await made('Note.pdf', text: 'Buy toner');
+      final receipts = await made('Receipts.pdf');
+      await backend.library.sync(_org);
+      await made('Later.pdf');
+      backend.offline = true;
+
+      final cubit = await loaded();
+
+      expect(cubit.state.status, DocumentsStatus.ready);
+      expect(cubit.state.offline, isTrue);
+      expect(names(cubit.state), ['Later.pdf', 'Receipts.pdf', 'Note.pdf']);
+      expect(cubit.state.waiting, hasLength(1));
+      expect(cubit.state.onPhone, hasLength(3));
+
+      // Found by its name, or by what it says.
+      await cubit.search('RECEIPTS');
+      expect(names(cubit.state), ['Receipts.pdf']);
+      expect(cubit.state.documents.single.id, receipts.id);
+      await cubit.search('toner');
+      expect(names(cubit.state), ['Note.pdf']);
+    });
+
+    test('is renamed and deleted on the phone while it waits', () async {
+      final note = await made('Note.pdf');
+      final cubit = await loaded();
+
+      await cubit.rename(cubit.state.documents.first, 'List.pdf');
+      expect(names(cubit.state).first, 'List.pdf');
+      expect(backend.library.of(_org).single.name, 'List.pdf');
+      expect(backend.sent('PATCH $_documents/${note.id}'), isEmpty);
+
+      await cubit.remove(cubit.state.documents.first);
+      expect(names(cubit.state), hasLength(3));
+      expect(backend.library.of(_org), isEmpty);
+      expect(backend.sent('DELETE $_documents/${note.id}'), isEmpty);
+    });
+
+    test('is renamed and deleted in the account too once it is '
+        'there', () async {
+      final note = await made('Note.pdf');
+      await backend.library.sync(_org);
+      final cubit = await loaded();
+      final document = cubit.state.documents.first;
+
+      await cubit.rename(document, 'List.pdf');
+      expect(backend.library.of(_org).single.name, 'List.pdf');
+      expect(backend.sent('PATCH $_documents/${note.id}'), hasLength(1));
+
+      await cubit.remove(cubit.state.documents.first);
+      expect(backend.library.of(_org), isEmpty);
+      expect(backend.documentList, hasLength(3));
+    });
+
+    test('does not read the list again while a change is being '
+        'made', () async {
+      await made('Note.pdf');
+      final cubit = await loaded();
+      final reads = backend.sent('GET $_documents').length;
+
+      final renaming = cubit.rename(cubit.state.documents.first, 'List.pdf');
+      await made('Other.pdf');
+      await renaming;
+
+      expect(backend.sent('GET $_documents'), hasLength(reads));
+    });
+  });
+
+  group('sharing', () {
+    test('lets the workspace see a document, and takes it back', () async {
+      final cubit = await loaded();
+      final document = cubit.state.documents.first;
+      expect(document.shared, isFalse);
+
+      await cubit.share(document, shared: true);
+      expect(cubit.state.documents.first.shared, isTrue);
+      expect(backend.lastBody('PATCH $_documents/document-3'), {
+        'shared': true,
+      });
+
+      await cubit.share(cubit.state.documents.first, shared: false);
+      expect(cubit.state.documents.first.shared, isFalse);
+    });
+
+    test('says why it could not be', () async {
+      backend.fail('PATCH $_documents/document-3', 403, 'permission.denied');
+      final cubit = await loaded();
+
+      await cubit.share(cubit.state.documents.first, shared: true);
+
+      expect(cubit.state.error, isA<ApiProblem>());
+      expect(cubit.state.documents.first.shared, isFalse);
+    });
+  });
 
   test('drops an answer that a newer search has overtaken', () async {
     final cubit = build();
@@ -123,6 +274,14 @@ void main() {
     final failing = other.load();
     await other.close();
     await expectLater(failing, completes);
+
+    backend
+      ..offline = false
+      ..fail('GET $_documents', 500, 'server.error');
+    final refused = build();
+    final refusing = refused.load();
+    await refused.close();
+    await expectLater(refusing, completes);
   });
 
   group('more', () {

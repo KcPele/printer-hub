@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/scan/scan.dart';
 import 'package:printerhub/tools/code.dart';
@@ -206,6 +207,24 @@ class FakeScanTextReader implements ScanTextReader {
     if (fails) throw const FormatException('unreadable');
     return [for (final _ in pictures) text].join('\n');
   }
+}
+
+/// Stands in for the library, and remembers what it was handed to keep.
+class KeptFiles {
+  final List<({File file, String mimeType, int? pageCount})> kept = [];
+
+  KeepFile get keep =>
+      (
+        file, {
+        required mimeType,
+        pageCount,
+        source = 'upload',
+        printerId,
+        text,
+      }) async {
+        kept.add((file: file, mimeType: mimeType, pageCount: pageCount));
+        return null;
+      };
 }
 
 /// Stands in for the phone's browser, and keeps the links it was asked

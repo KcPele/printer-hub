@@ -283,7 +283,8 @@ void main() {
         await pump(tester);
 
         expect(find.text('Your printers'), findsOneWidget);
-        expect(find.byType(PrinterCard), findsNWidgets(3));
+        // Two, however many there are: the rest are a tap away.
+        expect(find.byType(PrinterCard), findsNWidgets(2));
         expect(find.text('Getting started'), findsNothing);
       });
 

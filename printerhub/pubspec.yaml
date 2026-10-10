@@ -42,6 +42,7 @@ dependencies:
   organizations_repository:
     path: packages/organizations_repository
   package_info_plus: ^10.2.2
+  path_provider: ^2.1.6
   pdf: ^3.13.1
   preferences_repository:
     path: packages/preferences_repository

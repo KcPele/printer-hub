@@ -31,6 +31,7 @@ class NoteChoices extends Equatable {
 class NoteCubit extends MakeCubit<NoteChoices> {
   new({
     required super.sharer,
+    required super.keep,
     required super.name,
     this._font = pdfFont,
     super.directory,

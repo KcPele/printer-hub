@@ -2,7 +2,9 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/scan/scan_output.dart';
+import 'package:printerhub/session/session.dart';
 import 'package:printerhub/tools/cubit/code_sheet_cubit.dart';
 import 'package:printerhub/tools/made_pages.dart';
 import 'package:printerhub/tools/view/make_scaffold.dart';
@@ -18,8 +20,13 @@ class CodeSheetPage extends StatelessWidget {
       MaterialLocalizations.of(context).formatMediumDate(DateTime.now()),
     );
     return BlocProvider(
-      create: (context) =>
-          CodeSheetCubit(sharer: context.read<ScanSharer>(), name: name),
+      create: (context) => CodeSheetCubit(
+        sharer: context.read<ScanSharer>(),
+        keep: context.read<Library>().keeper(
+          context.read<SessionCubit>().state.organization!.id,
+        ),
+        name: name,
+      ),
       child: const CodeSheetView(),
     );
   }

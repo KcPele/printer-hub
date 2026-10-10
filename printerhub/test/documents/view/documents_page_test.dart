@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:api_client/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -408,15 +410,114 @@ void main() {
       expect(find.text('Later.pdf'), findsOneWidget);
     });
 
+    group('what was made on this phone', () {
+      /// Something made here, kept on the phone and not yet sent.
+      Future<void> make(WidgetTester tester, String name) async {
+        await tester.runAsync(
+          () => backend.library.add(
+            organizationId: _org,
+            file: File('${backend.scans.path}/$name')
+              ..writeAsStringSync('%PDF made here'),
+            mimeType: 'application/pdf',
+          ),
+        );
+      }
+
+      testWidgets('is listed first, marked as waiting, and opens with no '
+          'network', (tester) async {
+        await make(tester, 'Note.pdf');
+        await pump(tester);
+
+        expect(find.text('Note.pdf'), findsOneWidget);
+        expect(find.text('Waiting to sync'), findsOneWidget);
+
+        backend.offline = true;
+        await tester.tap(find.text('Note.pdf'));
+        await settle(tester);
+
+        expect(backend.sharer.shared.single.name, 'Note.pdf');
+      });
+
+      testWidgets('is what the list shows when the account cannot be '
+          'reached', (tester) async {
+        await make(tester, 'Note.pdf');
+        backend.offline = true;
+        await pump(tester);
+
+        expect(find.textContaining('You are offline'), findsOneWidget);
+        expect(find.text('Note.pdf'), findsOneWidget);
+        expect(find.text('Contract.pdf'), findsNothing);
+      });
+
+      testWidgets('offline with nothing on the phone says so, not that '
+          'there are no documents', (tester) async {
+        backend.offline = true;
+        await pump(tester);
+
+        expect(find.textContaining('You are offline'), findsOneWidget);
+        expect(find.text('No documents yet'), findsNothing);
+      });
+    });
+
+    group('sharing', () {
+      setUp(() {
+        backend.documentList = [
+          documentBody(
+            id: 'document-3',
+            name: 'Contract.pdf',
+            ownerId: backend.documentOwnerId,
+          ),
+          documentBody(id: 'document-2', name: 'Theirs.pdf', shared: true),
+        ];
+      });
+
+      testWidgets('lets the workspace see a document of one’s own, and '
+          'takes it back', (tester) async {
+        await pump(tester);
+        // Someone else's, shared with the workspace.
+        expect(find.text('Shared with your workspace'), findsOneWidget);
+
+        await menu(tester, 'Contract.pdf', 'Share with your workspace');
+        await tester.pumpAndSettle();
+        expect(find.text('Shared with your workspace'), findsNWidgets(2));
+        expect(backend.documentList.first['shared'], isTrue);
+
+        await menu(tester, 'Contract.pdf', 'Stop sharing');
+        await tester.pumpAndSettle();
+        expect(find.text('Shared with your workspace'), findsOneWidget);
+        expect(backend.documentList.first['shared'], isFalse);
+      });
+
+      testWidgets('is not offered for someone else’s document', (tester) async {
+        await pump(tester);
+
+        await tester.tap(
+          find.descendant(
+            of: find.ancestor(
+              of: find.text('Theirs.pdf'),
+              matching: find.byType(Row),
+            ),
+            matching: find.byTooltip('Show menu'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Rename'), findsOneWidget);
+        expect(find.text('Share with your workspace'), findsNothing);
+        expect(find.text('Stop sharing'), findsNothing);
+      });
+    });
+
     testWidgets('says why the list cannot be read, and tries again', (
       tester,
     ) async {
-      backend.offline = true;
+      const list = 'GET /organizations/$_org/documents';
+      backend.fail(list, 500, 'server.error');
       await pump(tester);
 
       expect(find.text('Your documents could not be read'), findsOneWidget);
 
-      backend.offline = false;
+      backend.routes.remove(list);
       await tester.tap(find.text('Try again'));
       await tester.pumpAndSettle();
 

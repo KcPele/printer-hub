@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/tools/photo_sheet.dart';
@@ -65,6 +66,7 @@ class PhotoSheetCubit extends Cubit<PhotoSheetState> {
   new({
     required this._picker,
     required this._sharer,
+    required this._keep,
     required this._name,
     Directory? directory,
   }) : _directory = directory ?? Directory.systemTemp,
@@ -72,6 +74,7 @@ class PhotoSheetCubit extends Cubit<PhotoSheetState> {
 
   final DocumentPicker _picker;
   final ScanSharer _sharer;
+  final KeepFile _keep;
   final String _name;
   final Directory _directory;
   bool _choosing = false;
@@ -126,6 +129,7 @@ class PhotoSheetCubit extends Cubit<PhotoSheetState> {
         directory: _directory,
       );
       if (!isClosed) emit(state._with(file: file));
+      await _keep(file, mimeType: 'application/pdf');
     } on Object {
       if (!isClosed) emit(state._with(failure: 'tools.unreadable'));
     }

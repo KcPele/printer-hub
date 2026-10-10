@@ -20,6 +20,7 @@ Future<void> main() async {
       pageCamera: dependencies.pageCamera,
       signatureStore: dependencies.signatureStore,
       linkOpener: dependencies.linkOpener,
+      library: dependencies.library,
       incoming: dependencies.incoming,
       keptOrganizations: dependencies.keptOrganizations,
     ),

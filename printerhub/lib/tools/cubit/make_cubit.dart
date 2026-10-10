@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/scan/scan_output.dart';
 
 /// Where a tool that makes a document has got to: what was asked for,
@@ -39,12 +40,16 @@ abstract class MakeCubit<C> extends Cubit<MakeState<C>> {
   new({
     required C choices,
     required this._sharer,
+    required this._keep,
     required this.name,
     Directory? directory,
   }) : directory = directory ?? Directory.systemTemp,
        super(MakeState(choices: choices));
 
   final ScanSharer _sharer;
+
+  /// Keeps what is made, without being asked.
+  final KeepFile _keep;
 
   /// What the document is called.
   final String name;
@@ -72,6 +77,7 @@ abstract class MakeCubit<C> extends Cubit<MakeState<C>> {
     try {
       final file = await build(choices);
       if (!isClosed) emit(MakeState(choices: choices, file: file));
+      await _keep(file, mimeType: 'application/pdf');
     } on Object {
       if (!isClosed) {
         emit(MakeState(choices: choices, failure: 'tools.unreadable'));

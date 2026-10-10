@@ -5,9 +5,11 @@ import '../../helpers/helpers.dart';
 
 void main() {
   late TestBackend backend;
+  late KeptFiles kept;
 
   setUp(() {
     backend = TestBackend();
+    kept = KeptFiles();
     backend.picker.next = pickedPdfFile(backend.scans);
   });
   tearDown(() => backend.close());
@@ -17,6 +19,7 @@ void main() {
       picker: backend.picker,
       renderer: backend.renderer,
       sharer: backend.sharer,
+      keep: kept.keep,
       long: long,
       directory: backend.scans,
     );
@@ -36,6 +39,11 @@ void main() {
     expect(cubit.state.status, ToolStatus.done);
     expect(cubit.state.name, 'Report');
     expect(names(cubit.state), ['Report 1.jpg', 'Report 2.jpg']);
+    // Each is kept without being asked.
+    expect(kept.kept.map((file) => file.file.path), [
+      for (final file in cubit.state.files) file.path,
+    ]);
+    expect(kept.kept.first.mimeType, 'image/jpeg');
   });
 
   test('makes one tall picture of every page', () async {

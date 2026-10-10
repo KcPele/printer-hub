@@ -13,6 +13,8 @@ import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printerhub/activity/activity.dart';
 import 'package:printerhub/app/app.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/library/cubit/sync_cubit.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/notifications/notifications.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
@@ -115,6 +117,14 @@ extension PumpApp on WidgetTester {
       organizationChanges: const Stream.empty(),
     );
     addTearDown(features.close);
+    final sync = SyncCubit(
+      library: api.library,
+      organizationId: session.state.organization?.id,
+      organizationChanges: const Stream.empty(),
+      // No clock ticking under a screen being tested.
+      every: null,
+    );
+    addTearDown(sync.close);
 
     await pumpWidget(
       MultiRepositoryProvider(
@@ -146,6 +156,7 @@ extension PumpApp on WidgetTester {
           RepositoryProvider<PageCamera>.value(value: api.camera),
           RepositoryProvider<SignatureStore>.value(value: api.signatures),
           RepositoryProvider<LinkOpener>.value(value: api.links),
+          RepositoryProvider<Library>.value(value: api.library),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -154,6 +165,7 @@ extension PumpApp on WidgetTester {
             BlocProvider.value(value: printers),
             BlocProvider.value(value: unread),
             BlocProvider.value(value: features),
+            BlocProvider.value(value: sync),
           ],
           child: BlocBuilder<ThemeCubit, AppThemeId>(
             builder: (context, theme) => MaterialApp(
@@ -192,6 +204,7 @@ extension PumpApp on WidgetTester {
         pageCamera: backend.camera,
         signatureStore: backend.signatures,
         linkOpener: backend.links,
+        library: backend.library,
         incoming: backend.otherApps,
         keptOrganizations: await backend.organizations.kept(),
       ),

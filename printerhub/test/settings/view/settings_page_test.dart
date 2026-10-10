@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:api_client/testing.dart';
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +18,65 @@ void main() {
 
     setUp(() => backend = TestBackend());
     tearDown(() => backend.close());
+
+    group('sync', () {
+      const org = '0198c0de-0000-7000-8000-00000000000b';
+
+      testWidgets('says everything is in the account when it is', (
+        tester,
+      ) async {
+        await tester.runAsync(backend.signedInBefore);
+        await tester.pumpApp(const SettingsPage(), backend: backend);
+        await tester.scrollUntilVisible(find.text('Sync now'), 200);
+
+        expect(find.text('Everything is in your account'), findsOneWidget);
+        expect(find.text('Not synced yet'), findsOneWidget);
+        expect(find.textContaining('saved to your account'), findsOneWidget);
+      });
+
+      testWidgets('says what waits on the phone, and sends it when '
+          'asked', (tester) async {
+        await tester.runAsync(backend.signedInBefore);
+        await tester.runAsync(
+          () => backend.library.add(
+            organizationId: org,
+            file: File('${backend.scans.path}/Note.pdf')
+              ..writeAsStringSync('%PDF'),
+            mimeType: 'application/pdf',
+          ),
+        );
+        await tester.pumpApp(const SettingsPage(), backend: backend);
+        await tester.pump();
+        await tester.scrollUntilVisible(find.text('Sync now'), 200);
+        expect(
+          find.text('1 document is waiting on this phone'),
+          findsOneWidget,
+        );
+
+        await tester.ensureVisible(find.text('Sync now'));
+        await tester.pump();
+        await tester.tap(find.text('Sync now'));
+        await tester.pump();
+        expect(find.text('Syncing'), findsOneWidget);
+        for (var i = 0; i < 50; i++) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 5)),
+          );
+          await tester.pump(const Duration(milliseconds: 20));
+          if (find.text('Syncing').evaluate().isEmpty) break;
+        }
+
+        expect(find.text('Everything is in your account'), findsOneWidget);
+        expect(find.textContaining('Last synced'), findsOneWidget);
+        expect(backend.documentList, hasLength(1));
+      });
+
+      testWidgets('is not shown to someone with no workspace', (tester) async {
+        await tester.pumpApp(const SettingsPage(), backend: backend);
+
+        expect(find.text('Sync now'), findsNothing);
+      });
+    });
 
     testWidgets('shows the theme in use', (tester) async {
       await tester.pumpApp(

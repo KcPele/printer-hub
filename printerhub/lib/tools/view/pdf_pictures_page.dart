@@ -2,8 +2,10 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
+import 'package:printerhub/session/session.dart';
 import 'package:printerhub/tools/cubit/pdf_pictures_cubit.dart';
 import 'package:printerhub/tools/view/tool_scaffold.dart';
 
@@ -21,6 +23,9 @@ class PdfPicturesPage extends StatelessWidget {
         picker: context.read<PrintDocuments>().picker,
         renderer: context.read<PrintDocuments>().renderer,
         sharer: context.read<ScanSharer>(),
+        keep: context.read<Library>().keeper(
+          context.read<SessionCubit>().state.organization!.id,
+        ),
         long: long,
       ),
       child: const PdfPicturesView(),

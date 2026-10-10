@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:api_client/api_client.dart';
 import 'package:app_ui/app_ui.dart';
@@ -11,11 +12,13 @@ import 'package:jobs_repository/jobs_repository.dart';
 import 'package:local_store/local_store.dart';
 import 'package:notifications_repository/notifications_repository.dart';
 import 'package:organizations_repository/organizations_repository.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printer_discovery/printer_discovery.dart';
 import 'package:printer_protocols/printer_protocols.dart';
 import 'package:printerhub/app/config/app_config.dart';
 import 'package:printerhub/app/device/phone_details_reader.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/print/platform/channel_incoming_documents.dart';
 import 'package:printerhub/print/platform/file_picker_document_picker.dart';
@@ -64,6 +67,7 @@ typedef AppDependencies = ({
   PageCamera pageCamera,
   SignatureStore signatureStore,
   LinkOpener linkOpener,
+  Library library,
   IncomingDocuments incoming,
   List<Organization>? keptOrganizations,
 });
@@ -115,6 +119,11 @@ Future<void> bootstrap(
     store: secureStore,
   );
   await authRepository.restore();
+  final documentsRepository = DocumentsRepository(
+    client: client,
+    transfer: IoFileTransfer(),
+  );
+  final documentsFolder = await getApplicationDocumentsDirectory();
 
   runApp(
     await builder((
@@ -125,15 +134,18 @@ Future<void> bootstrap(
       jobsRepository: JobsRepository(client: client, store: secureStore),
       presetsRepository: PresetsRepository(client: client),
       notificationsRepository: NotificationsRepository(client: client),
-      documentsRepository: DocumentsRepository(
-        client: client,
-        transfer: IoFileTransfer(),
-      ),
+      documentsRepository: documentsRepository,
       scanSharer: const SharePlusScanSharer(),
       scanTextReader: const ChannelScanTextReader(),
       pageCamera: await ChannelPageCamera.find(),
       signatureStore: const SignatureStore(store: secureStore),
       linkOpener: const UrlLauncherLinkOpener(),
+      library: Library(
+        // The app's own folder: it outlasts the app being closed, and the
+        // phone does not clear it to make room.
+        directory: Directory('${documentsFolder.path}/library'),
+        documents: documentsRepository,
+      ),
       incoming: ChannelIncomingDocuments(),
       documents: const PrintDocuments(
         picker: FilePickerDocumentPicker(),

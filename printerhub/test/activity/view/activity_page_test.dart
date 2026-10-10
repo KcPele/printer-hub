@@ -55,6 +55,27 @@ void main() {
   }
 
   group('ActivityPage', () {
+    testWidgets('shows what was made on the phone above the jobs', (
+      tester,
+    ) async {
+      backend.documentList = [documentBody(name: 'Scan today.pdf')];
+      await pump(tester);
+
+      expect(find.text('Recent documents'), findsOneWidget);
+      expect(find.text('Scan today.pdf'), findsOneWidget);
+    });
+
+    testWidgets('shows what was made on the phone when nothing has been '
+        'printed or scanned on a printer', (tester) async {
+      backend
+        ..documentList = [documentBody(name: 'Scan today.pdf')]
+        ..jobList = [];
+      await pump(tester);
+
+      expect(find.text('Scan today.pdf'), findsOneWidget);
+      expect(find.text('Nothing here yet'), findsOneWidget);
+    });
+
     testWidgets('says what will appear, before anything has', (tester) async {
       backend.jobList = [];
 

@@ -7,9 +7,10 @@ import '../../helpers/helpers.dart';
 void main() {
   late TestBackend backend;
 
-  setUp(() {
+  setUp(() async {
     backend = TestBackend();
     backend.picker.next = pickedPdfFile(backend.scans);
+    await backend.signedInBefore();
   });
   tearDown(() => backend.close());
 

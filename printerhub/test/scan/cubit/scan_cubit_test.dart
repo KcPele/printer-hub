@@ -31,6 +31,7 @@ void main() {
       printersRepository: backend.printers,
       jobsRepository: backend.jobs,
       documentsRepository: backend.documentsKept,
+      library: backend.library,
       sharer: backend.sharer,
       textReader: backend.textReader,
       camera: backend.camera,
@@ -50,6 +51,7 @@ void main() {
       printersRepository: backend.printers,
       jobsRepository: backend.jobs,
       documentsRepository: backend.documentsKept,
+      library: backend.library,
       sharer: backend.sharer,
       textReader: backend.textReader,
       camera: backend.camera,
@@ -468,8 +470,6 @@ void main() {
       await cubit.useCamera();
       await cubit.save();
 
-      await cubit.keep();
-
       final sent = backend.lastBody(documents);
       expect(sent['source'], 'camera_scan');
       expect(sent['source_printer_id'], isNull);
@@ -482,8 +482,6 @@ void main() {
       await cubit.scan();
       await cubit.useCamera();
       await cubit.save();
-
-      await cubit.keep();
 
       final sent = backend.lastBody(documents);
       expect(sent['source'], 'camera_scan');
@@ -498,8 +496,6 @@ void main() {
       cubit.remove(cubit.state.pages.last);
       await cubit.save();
 
-      await cubit.keep();
-
       expect(backend.lastBody(documents)['source'], 'printer_scan');
     });
   });
@@ -512,7 +508,6 @@ void main() {
 
       await cubit.useCamera();
       await cubit.save();
-      await cubit.keep();
 
       expect(cubit.state.kept, ScanKept.yes);
       final sent = backend.lastBody('POST /organizations/$_org/documents');
@@ -558,8 +553,6 @@ void main() {
 
       await cubit.save();
       expect(cubit.state.files.single.path, endsWith('/Album.pdf'));
-
-      await cubit.keep();
       final sent = backend.lastBody(documents);
       expect(sent['source'], 'upload');
       expect(sent['source_printer_id'], isNull);
@@ -622,14 +615,12 @@ void main() {
       await withCamera.addPictures();
       await withCamera.useCamera();
       await withCamera.save();
-      await withCamera.keep();
       expect(backend.lastBody(documents)['source'], 'camera_scan');
 
       final withScanner = build();
       await withScanner.scan();
       await withScanner.addPictures();
       await withScanner.save();
-      await withScanner.keep();
       final sent = backend.lastBody(documents);
       expect(sent['source'], 'printer_scan');
       expect(sent['source_printer_id'], 'printer-1');
@@ -1010,8 +1001,6 @@ void main() {
             .allMatches(String.fromCharCodes(file.readAsBytesSync())),
         hasLength(1),
       );
-
-      await cubit.keep();
       expect(backend.documentList.single['page_count'], 1);
     });
 
@@ -1158,29 +1147,29 @@ void main() {
       expect(file.existsSync(), isFalse);
     });
 
-    group('in the workspace', () {
+    group('is kept without being asked', () {
       const documents = 'POST /organizations/$_org/documents';
 
       Future<ScanCubit> saved({
         int pages = 1,
         ScanChoices choices = const ScanChoices(),
+        bool readText = false,
       }) async {
         backend.scanPages = [for (var i = 0; i < pages; i++) tinyJpeg];
         final cubit = build()
           ..change(choices)
           ..rename('Receipts');
         await cubit.scan();
-        await cubit.save();
+        await cubit.save(readText: readText);
         return cubit;
       }
 
-      test('keeps the scan, with what is known of it', () async {
+      test('in the account, with what is known of it, and on the '
+          'phone', () async {
         final cubit = await saved(
           pages: 2,
           choices: const ScanChoices(source: 'adf'),
         );
-
-        await cubit.keep();
 
         expect(cubit.state.kept, ScanKept.yes);
         expect(cubit.state.step, ScanStep.saved);
@@ -1190,31 +1179,48 @@ void main() {
         expect(document['page_count'], 2);
         expect(document['source_printer_id'], 'printer-1');
         expect(document['upload_status'], 'uploaded');
+        // Its owner's alone until they share it.
+        expect(backend.lastBody(documents)['shared'], isFalse);
         expect(
           backend.storage.stored['/${document['id']}'],
           cubit.state.files.single.readAsBytesSync(),
         );
+        // And the phone has its own copy, under the same identifier.
+        final kept = backend.library.of(_org).single;
+        expect(kept.id, document['id']);
+        expect(kept.synced, isTrue);
+        expect(File(kept.path).existsSync(), isTrue);
+      });
+
+      test('says it is on its way while it is', () async {
+        backend.scanPages = [tinyJpeg];
+        final cubit = build();
+        await cubit.scan();
+        final states = <ScanKept>[];
+        final watching = cubit.stream.listen((state) => states.add(state.kept));
+
+        await cubit.save();
+        await pumpEventQueue();
+        await watching.cancel();
+
+        expect(states, [ScanKept.no, ScanKept.keeping, ScanKept.yes]);
       });
 
       group('with the words of a scan read', () {
         Future<ScanCubit> savedReading({
           int pages = 2,
           String format = 'application/pdf',
-        }) async {
-          backend.scanPages = [for (var i = 0; i < pages; i++) tinyJpeg];
-          final cubit = build()
-            ..change(ScanChoices(source: 'adf', format: format))
-            ..rename('Receipts');
-          await cubit.scan();
-          await cubit.save();
-          return cubit;
+        }) {
+          return saved(
+            pages: pages,
+            choices: ScanChoices(source: 'adf', format: format),
+            readText: true,
+          );
         }
 
         test('reads every page of a PDF, and keeps the words with '
             'it', () async {
           final cubit = await savedReading();
-
-          await cubit.keep(readText: true);
 
           expect(cubit.state.kept, ScanKept.yes);
           expect(cubit.state.textRead, isTrue);
@@ -1230,8 +1236,6 @@ void main() {
         test('reads each picture for its own document', () async {
           final cubit = await savedReading(format: 'image/jpeg');
 
-          await cubit.keep(readText: true);
-
           expect(backend.textReader.asked, [
             [cubit.state.pages.first.file.path],
             [cubit.state.pages.last.file.path],
@@ -1244,8 +1248,6 @@ void main() {
           backend.textReader.text = '  ';
           final cubit = await savedReading(pages: 1);
 
-          await cubit.keep(readText: true);
-
           expect(cubit.state.textRead, isTrue);
           expect(backend.lastBody(documents)['ocr_text'], isNull);
         });
@@ -1255,46 +1257,26 @@ void main() {
           backend.textReader.fails = true;
           final cubit = await savedReading();
 
-          await cubit.keep(readText: true);
-
           expect(cubit.state.kept, ScanKept.yes);
           expect(cubit.state.textRead, isFalse);
           expect(backend.documentList.single['file_name'], 'Receipts.pdf');
           expect(backend.lastBody(documents)['ocr_text'], isNull);
-        });
-
-        test('does not read again a scan whose record is already '
-            'made', () async {
-          final cubit = await savedReading();
-          backend.storage.broken = true;
-          await cubit.keep(readText: true);
-          expect(cubit.state.failure, 'scan.keep_interrupted');
-
-          backend.storage.broken = false;
-          await cubit.keep(readText: true);
-
-          expect(cubit.state.kept, ScanKept.yes);
-          expect(backend.textReader.asked, hasLength(1));
         });
       });
 
       test('reads nothing when the workspace has not switched it on', () async {
         final cubit = await saved();
 
-        await cubit.keep();
-
         expect(cubit.state.textRead, isNull);
         expect(backend.textReader.asked, isEmpty);
         expect(backend.lastBody(documents)['ocr_text'], isNull);
       });
 
-      test('keeps each picture as a document of one page', () async {
-        final cubit = await saved(
+      test('a picture a document of one page', () async {
+        await saved(
           pages: 2,
           choices: const ScanChoices(source: 'adf', format: 'image/jpeg'),
         );
-
-        await cubit.keep();
 
         expect(backend.documentList.map((d) => d['file_name']).toSet(), {
           'Receipts 1.jpg',
@@ -1306,89 +1288,175 @@ void main() {
         expect(backend.documentList.map((d) => d['page_count']).toSet(), {1});
       });
 
-      test('is asked for once', () async {
+      test('on the phone alone when the account cannot be reached, and '
+          'sent when it can', () async {
+        backend.offline = true;
         final cubit = await saved();
 
-        final first = cubit.keep();
-        await cubit.keep();
-        await first;
-        await cubit.keep();
+        expect(cubit.state.kept, ScanKept.phone);
+        expect(cubit.state.step, ScanStep.saved);
+        expect(backend.documentList, isEmpty);
+        expect(backend.library.waiting(_org), 1);
 
-        expect(backend.sent(documents), hasLength(1));
+        backend.offline = false;
+        expect(await backend.library.sync(_org), 0);
+        expect(backend.documentList.single['file_name'], 'Receipts.pdf');
       });
 
-      test('says why the workspace will not have it', () async {
+      test('on the phone alone in a workspace that keeps documents on '
+          'devices', () async {
         backend.fail(documents, 403, 'document.cloud_storage_disabled');
         final cubit = await saved();
 
-        await cubit.keep();
+        expect(cubit.state.kept, ScanKept.phone);
+        expect(backend.library.of(_org).single.refused, isTrue);
+      });
 
+      test('nowhere when the phone has no room for it', () async {
+        backend.scanPages = [tinyJpeg];
+        final cubit = build();
+        await cubit.scan();
+        // Where the library would put it is a file, not a folder.
+        File('${backend.scans.path}/library').writeAsStringSync('in the way');
+
+        await cubit.save();
+
+        expect(cubit.state.step, ScanStep.saved);
         expect(cubit.state.kept, ScanKept.no);
-        expect(cubit.state.error, isA<ApiProblem>());
         expect(cubit.state.files, hasLength(1));
       });
 
-      test('sends only what did not arrive when asked again', () async {
-        final cubit = await saved(
-          pages: 2,
-          choices: const ScanChoices(source: 'adf', format: 'image/jpeg'),
-        );
-        backend.storage.broken = true;
-
-        await cubit.keep();
-        expect(cubit.state.kept, ScanKept.no);
-        expect(cubit.state.failure, 'scan.keep_interrupted');
-        expect(backend.documentList, hasLength(1));
-
-        backend.storage.broken = false;
-        await cubit.keep();
-
-        expect(cubit.state.kept, ScanKept.yes);
-        expect(cubit.state.failure, isNull);
-        // The record made the first time was finished, not made again.
-        expect(backend.documentList, hasLength(2));
-        expect(backend.sent(documents), hasLength(2));
-        expect(backend.documentList.map((d) => d['upload_status']).toSet(), {
-          'uploaded',
-        });
-      });
-
-      test('cannot be asked for before the scan is saved', () async {
+      test('nothing else changes while it is on its way', () async {
+        backend.scanPages = [tinyJpeg];
         final cubit = build();
         await cubit.scan();
 
-        await cubit.keep();
-
-        expect(backend.documentList, isEmpty);
-      });
-
-      test('nothing else changes while it is on its way', () async {
-        final cubit = await saved();
-
-        final keeping = cubit.keep();
+        final saving = cubit.save();
+        await cubit.stream.firstWhere(
+          (state) => state.kept == ScanKept.keeping,
+        );
         cubit
           ..edit()
           ..startOver();
-        await keeping;
+        await saving;
 
         expect(cubit.state.step, ScanStep.saved);
         expect(cubit.state.kept, ScanKept.yes);
       });
 
       test('says nothing once the screen has gone', () async {
-        for (final setUp in <void Function()>[
-          () {},
-          () => backend.storage.broken = true,
-          () => backend.fail(documents, 403, 'permission.denied'),
-        ]) {
-          backend.storage.broken = false;
-          backend.routes.clear();
+        backend.scanPages = [tinyJpeg];
+        final cubit = build();
+        await cubit.scan();
+        final saving = cubit.save();
+        await cubit.stream.firstWhere(
+          (state) => state.kept == ScanKept.keeping,
+        );
+        await cubit.close();
+
+        await expectLater(saving, completes);
+      });
+
+      test('and the one kept is replaced when the pages are changed and '
+          'saved again', () async {
+        final cubit = await saved();
+        final first = backend.library.of(_org).single;
+
+        cubit.edit();
+        await pumpEventQueue();
+        expect(backend.library.of(_org), isEmpty);
+        expect(File(first.path).existsSync(), isFalse);
+        expect(backend.documentList, isEmpty);
+
+        await cubit.save();
+        expect(backend.library.of(_org).single.id, isNot(first.id));
+        expect(backend.documentList, hasLength(1));
+      });
+
+      test('going back to the pages leaves the account as it is when it '
+          'cannot be reached', () async {
+        final cubit = await saved();
+        backend.offline = true;
+
+        cubit.edit();
+        await pumpEventQueue();
+
+        expect(backend.library.of(_org), isEmpty);
+        expect(backend.documentList, hasLength(1));
+      });
+
+      test('a scan kept only on the phone is forgotten there when the '
+          'pages are changed', () async {
+        backend.offline = true;
+        final cubit = await saved();
+
+        cubit.edit();
+        await pumpEventQueue();
+
+        expect(backend.library.of(_org), isEmpty);
+      });
+
+      group('and shared with the workspace', () {
+        const document = 'PATCH /organizations/$_org/documents/';
+
+        test('when asked, once', () async {
+          final cubit = await saved(readText: true);
+          final id = backend.documentList.single['id']! as String;
+
+          final sharing = cubit.shareWithWorkspace();
+          expect(cubit.state.sharing, isTrue);
+          await cubit.shareWithWorkspace();
+          // Nothing else changes while it is being shared.
+          cubit.edit();
+          await sharing;
+
+          expect(cubit.state.shared, isTrue);
+          expect(cubit.state.sharing, isFalse);
+          expect(cubit.state.kept, ScanKept.yes);
+          expect(cubit.state.textRead, isTrue);
+          expect(cubit.state.step, ScanStep.saved);
+          expect(backend.sent('$document$id'), hasLength(1));
+          expect(backend.lastBody('$document$id'), {'shared': true});
+
+          await cubit.shareWithWorkspace();
+          expect(backend.sent('$document$id'), hasLength(1));
+        });
+
+        test('says why it could not be', () async {
           final cubit = await saved();
-          setUp();
-          final keeping = cubit.keep();
-          await cubit.close();
-          await expectLater(keeping, completes);
-        }
+          final id = backend.documentList.single['id']! as String;
+          backend.fail('$document$id', 403, 'permission.denied');
+
+          await cubit.shareWithWorkspace();
+
+          expect(cubit.state.shared, isFalse);
+          expect(cubit.state.error, isA<ApiProblem>());
+          expect(cubit.state.kept, ScanKept.yes);
+        });
+
+        test('only once the account has it', () async {
+          backend.offline = true;
+          final cubit = await saved();
+
+          await cubit.shareWithWorkspace();
+
+          expect(cubit.state.shared, isFalse);
+          expect(cubit.state.sharing, isFalse);
+        });
+
+        test('says nothing once the screen has gone', () async {
+          final shared = await saved();
+          final sharing = shared.shareWithWorkspace();
+          await shared.close();
+          await sharing;
+
+          final refused = await saved();
+          final id = backend.documentList.last['id']! as String;
+          backend.fail('$document$id', 403, 'permission.denied');
+          final failing = refused.shareWithWorkspace();
+          await refused.close();
+          await failing;
+        });
       });
     });
 

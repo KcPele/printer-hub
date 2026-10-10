@@ -20,7 +20,7 @@ class HomePage extends StatelessWidget {
   const new({super.key});
 
   /// How many printers Home shows before "See all".
-  static const int _shown = 3;
+  static const int _shown = 2;
 
   @override
   Widget build(BuildContext context) {

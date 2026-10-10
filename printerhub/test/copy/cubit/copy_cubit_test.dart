@@ -29,6 +29,7 @@ void main() {
       printersRepository: backend.printers,
       jobsRepository: backend.jobs,
       documentsRepository: backend.documentsKept,
+      library: backend.library,
       documents: backend.documents,
       sharer: backend.sharer,
       textReader: backend.textReader,

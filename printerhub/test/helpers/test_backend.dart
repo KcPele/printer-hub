@@ -15,6 +15,7 @@ import 'package:organizations_repository/organizations_repository.dart';
 import 'package:printer_discovery/testing.dart';
 import 'package:printer_protocols/printer_protocols.dart';
 import 'package:printer_protocols/testing.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/finders.dart';
 import 'package:printerhub/scan/signature.dart';
@@ -75,6 +76,10 @@ class TestBackend {
       transfer: storage,
       directory: scans,
     );
+    library = Library(
+      directory: Directory('${scans.path}/library'),
+      documents: documentsKept,
+    );
     documents = PrintDocuments(picker: picker, renderer: renderer);
     finders = PrinterFinders(
       network: nearby,
@@ -134,8 +139,14 @@ class TestBackend {
 
   /// The documents the workspace keeps, and the storage their files are in.
   late final DocumentsRepository documentsKept;
+
+  /// What was made on this phone, kept in a folder [close] deletes.
+  late final Library library;
   final FakeFileTransfer storage = FakeFileTransfer();
   List<Map<String, Object?>> documentList = [];
+
+  /// Whose a document made through the API is.
+  String documentOwnerId = '0198c0de-0000-7000-8000-000000000002';
 
   /// How many documents the list gives at a time.
   int documentPageSize = 20;
@@ -530,6 +541,7 @@ class TestBackend {
 
   Future<void> close() async {
     await auth.close();
+    await library.close();
     await client.close();
     if (scans.existsSync()) scans.deleteSync(recursive: true);
   }
@@ -893,6 +905,9 @@ class TestBackend {
 
     if (documentId == null) {
       if (method == 'POST') {
+        if (documentList.any((d) => d['id'] == body['id'])) {
+          return FakeResponse.problem(409, 'document.id_conflict');
+        }
         final created = documentBody(
           id: body['id'] as String,
           name: body['file_name'] as String,
@@ -900,6 +915,9 @@ class TestBackend {
           sizeBytes: body['size_bytes'] as int,
           pageCount: body['page_count'] as int?,
           printerId: body['source_printer_id'] as String?,
+          source: body['source'] as String,
+          shared: body['shared'] as bool,
+          ownerId: documentOwnerId,
           uploadStatus: 'pending',
         );
         documentList = [created, ...documentList];
@@ -927,6 +945,9 @@ class TestBackend {
     final document = documentList[index];
     switch (action) {
       case '/upload-url':
+        if (document['upload_status'] != 'pending') {
+          return FakeResponse.problem(409, 'document.upload_not_pending');
+        }
         return FakeResponse(200, link(documentId));
       case '/download-url':
         if (document['upload_status'] != 'uploaded') {
@@ -949,9 +970,14 @@ class TestBackend {
         documentList = [...documentList]..removeAt(index);
         return const FakeResponse(204);
       case 'PATCH':
-        final renamed = {...document, 'file_name': body['file_name']};
-        documentList = [...documentList]..[index] = renamed;
-        return FakeResponse(200, renamed);
+        // Fields left out are unchanged.
+        final changed = {
+          ...document,
+          for (final field in const ['file_name', 'shared'])
+            if (body[field] != null) field: body[field],
+        };
+        documentList = [...documentList]..[index] = changed;
+        return FakeResponse(200, changed);
       default:
         return FakeResponse(200, document);
     }

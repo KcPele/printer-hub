@@ -51,6 +51,7 @@ class PrintableChoices extends Equatable {
 class PrintableCubit extends MakeCubit<PrintableChoices> {
   new({
     required super.sharer,
+    required super.keep,
     required super.name,
     required DateTime today,
     required this._calendar,

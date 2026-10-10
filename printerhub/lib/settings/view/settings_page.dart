@@ -7,6 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/library/cubit/sync_cubit.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/theme/theme.dart';
 import 'package:printerhub/workspace/workspace_words.dart';
@@ -112,6 +113,10 @@ class SettingsPage extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
           ],
+          if (session.organization != null) ...[
+            const _Sync(),
+            const SizedBox(height: AppSpacing.xl),
+          ],
           _Section(
             title: l10n.settingsAppearance,
             children: [
@@ -197,6 +202,78 @@ class _Section extends StatelessWidget {
       ],
     );
   }
+}
+
+/// What was made on this phone and has not reached the account, and a
+/// button that sends it now.
+class _Sync extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final state = context.watch<SyncCubit>().state;
+    final last = state.lastSynced;
+    final material = MaterialLocalizations.of(context);
+
+    return _Section(
+      title: l10n.syncTitle,
+      children: [
+        ListTile(
+          leading: Icon(
+            state.waiting == 0
+                ? Icons.cloud_done_outlined
+                : Icons.cloud_upload_outlined,
+          ),
+          title: Text(l10n.syncWaiting(state.waiting)),
+          subtitle: Text(
+            last == null
+                ? l10n.syncNever
+                : l10n.syncLast(_when(material, last)),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.md,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.syncBody,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colors.textMuted,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              OutlinedButton.icon(
+                onPressed: state.syncing
+                    ? null
+                    : context.read<SyncCubit>().sync,
+                icon: state.syncing
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.sync),
+                label: Text(state.syncing ? l10n.syncing : l10n.syncNow),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A moment as people say it: the day, then the time.
+String _when(MaterialLocalizations material, DateTime at) {
+  final here = at.toLocal();
+  final time = material.formatTimeOfDay(TimeOfDay.fromDateTime(here));
+  return '${material.formatMediumDate(here)}, $time';
 }
 
 class _Entry extends StatelessWidget {

@@ -2140,14 +2140,6 @@
             }
         }
     },
-    "scanKeep": "Keep in your workspace",
-    "@scanKeep": {
-        "description": "Button that uploads a finished scan to the workspace"
-    },
-    "scanKeptInWorkspace": "Kept in your workspace",
-    "@scanKeptInWorkspace": {
-        "description": "Shown once a scan has been uploaded"
-    },
     "scanKeepInterrupted": "The scan did not reach your workspace. Check your connection and try again.",
     "@scanKeepInterrupted": {
         "description": "Shown when uploading a scan failed part way"
@@ -3458,5 +3450,91 @@
     "scanReadingFiles": "Reading your files",
     "@scanReadingFiles": {
         "description": "Shown while the pages of chosen files are being drawn"
+    },
+    "scanKeeping": "Saving it for you",
+    "@scanKeeping": {
+        "description": "Shown while a finished scan is being kept"
+    },
+    "scanKeptInAccount": "Saved to your account",
+    "@scanKeptInAccount": {
+        "description": "Says a finished scan is in the account"
+    },
+    "scanKeptInAccountBody": "Find it again under Activity, on this phone or any other you sign in on. Only you can see it.",
+    "@scanKeptInAccountBody": {
+        "description": "Where a scan kept in the account can be found"
+    },
+    "scanKeptOnPhone": "Saved on this phone",
+    "@scanKeptOnPhone": {
+        "description": "Says a finished scan is on the phone and not yet in the account"
+    },
+    "scanKeptOnPhoneBody": "Find it again under Activity. It goes to your account the next time you are online.",
+    "@scanKeptOnPhoneBody": {
+        "description": "Where a scan kept on the phone can be found"
+    },
+    "documentShare": "Share with your workspace",
+    "@documentShare": {
+        "description": "Action that lets the other members of the workspace see a document"
+    },
+    "documentUnshare": "Stop sharing",
+    "@documentUnshare": {
+        "description": "Action that keeps a document to its owner again"
+    },
+    "documentShared": "Shared with your workspace",
+    "@documentShared": {
+        "description": "Says the other members of the workspace can see a document"
+    },
+    "documentWaiting": "Waiting to sync",
+    "@documentWaiting": {
+        "description": "Says a document is on this phone and not yet in the account"
+    },
+    "documentsRecent": "Recent documents",
+    "@documentsRecent": {
+        "description": "Title above the last few documents made"
+    },
+    "documentsSeeAll": "See all",
+    "@documentsSeeAll": {
+        "description": "Link from the last few documents to all of them"
+    },
+    "documentsOffline": "You are offline. These are the documents on this phone.",
+    "@documentsOffline": {
+        "description": "Shown above the documents when the account cannot be reached"
+    },
+    "syncTitle": "Sync",
+    "@syncTitle": {
+        "description": "Title of the Settings section about sending documents to the account"
+    },
+    "syncBody": "What you scan and make is saved to your account by itself, so you find it on any phone you sign in on. Without a connection it waits on this phone.",
+    "@syncBody": {
+        "description": "Explains syncing in Settings"
+    },
+    "syncNow": "Sync now",
+    "@syncNow": {
+        "description": "Button that sends waiting documents to the account"
+    },
+    "syncing": "Syncing",
+    "@syncing": {
+        "description": "Shown while documents are being sent to the account"
+    },
+    "syncWaiting": "{count, plural, =0{Everything is in your account} =1{1 document is waiting on this phone} other{{count} documents are waiting on this phone}}",
+    "@syncWaiting": {
+        "description": "How many documents have not reached the account",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "syncLast": "Last synced {when}",
+    "@syncLast": {
+        "description": "When documents last reached the account",
+        "placeholders": {
+            "when": {
+                "type": "String"
+            }
+        }
+    },
+    "syncNever": "Not synced yet",
+    "@syncNever": {
+        "description": "Says documents have never been sent from this phone"
     }
 }

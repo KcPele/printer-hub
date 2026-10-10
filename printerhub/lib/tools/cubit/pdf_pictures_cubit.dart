@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/tools/cubit/tool_state.dart';
@@ -14,6 +15,7 @@ class PdfPicturesCubit extends Cubit<ToolState> {
     required this._picker,
     required this._renderer,
     required this._sharer,
+    required this._keep,
     required this.long,
     Directory? directory,
   }) : _directory = directory ?? Directory.systemTemp,
@@ -22,6 +24,7 @@ class PdfPicturesCubit extends Cubit<ToolState> {
   final DocumentPicker _picker;
   final PageRenderer _renderer;
   final ScanSharer _sharer;
+  final KeepFile _keep;
   final Directory _directory;
   bool _busy = false;
 
@@ -68,6 +71,9 @@ class PdfPicturesCubit extends Cubit<ToolState> {
             );
       if (!isClosed) {
         emit(ToolState(status: ToolStatus.done, name: name, files: files));
+      }
+      for (final file in files) {
+        await _keep(file, mimeType: 'image/jpeg', pageCount: 1);
       }
     } on Object {
       if (!isClosed) emit(ToolState(name: name, failure: 'tools.unreadable'));

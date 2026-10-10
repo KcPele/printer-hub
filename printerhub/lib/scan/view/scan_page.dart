@@ -8,8 +8,10 @@ import 'package:go_router/go_router.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/app/router/app_router.dart';
+import 'package:printerhub/documents/widgets/recent_documents.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/printers/cubit/printers_cubit.dart';
 import 'package:printerhub/printers/widgets/printer_choice_sheet.dart';
@@ -66,6 +68,7 @@ class ScanPage extends StatelessWidget {
         printersRepository: context.read<PrintersRepository>(),
         jobsRepository: context.read<JobsRepository>(),
         documentsRepository: context.read<DocumentsRepository>(),
+        library: context.read<Library>(),
         sharer: context.read<ScanSharer>(),
         textReader: context.read<ScanTextReader>(),
         camera: context.read<PageCamera>(),
@@ -286,6 +289,9 @@ class _CameraOnly extends StatelessWidget {
               Text(l10n.scanReadingFiles, textAlign: TextAlign.center),
             ],
           ],
+          // What was scanned before is here to be found again.
+          const SizedBox(height: AppSpacing.xl),
+          RecentDocuments(title: l10n.documentsRecent),
         ],
       ),
     );
@@ -532,7 +538,9 @@ class _Review extends StatelessWidget {
           AppSubmitButton(
             label: l10n.scanSave,
             loading: saving,
-            onPressed: cubit.save,
+            onPressed: () => cubit.save(
+              readText: context.read<FeaturesCubit>().enabled('local_ocr'),
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           TextButton(
@@ -749,10 +757,6 @@ class _Saved extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          if (state.failure != null) ...[
-            AppNotice(message: ScanWords.failure(l10n, state.failure)),
-            const SizedBox(height: AppSpacing.sm),
-          ],
           if (state.error != null) ...[
             AppNotice(message: errorMessage(l10n, state.error)),
             const SizedBox(height: AppSpacing.sm),
@@ -772,13 +776,42 @@ class _Saved extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
-          if (state.kept == ScanKept.yes) ...[
+          // It is kept without being asked: here is where.
+          if (keeping)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(l10n.scanKeeping, style: textTheme.bodySmall),
+              ],
+            )
+          else if (state.kept != ScanKept.no) ...[
             Center(
               child: StatusPill(
-                status: AppStatus.success,
-                label: l10n.scanKeptInWorkspace,
-                icon: Icons.cloud_done_outlined,
+                status: state.kept == ScanKept.yes
+                    ? AppStatus.success
+                    : AppStatus.neutral,
+                label: state.kept == ScanKept.yes
+                    ? l10n.scanKeptInAccount
+                    : l10n.scanKeptOnPhone,
+                icon: state.kept == ScanKept.yes
+                    ? Icons.cloud_done_outlined
+                    : Icons.phone_iphone_outlined,
               ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              state.kept == ScanKept.yes
+                  ? l10n.scanKeptInAccountBody
+                  : l10n.scanKeptOnPhoneBody,
+              style: textTheme.bodySmall?.copyWith(
+                color: context.colors.textMuted,
+              ),
+              textAlign: TextAlign.center,
             ),
             if (state.textRead != null) ...[
               const SizedBox(height: AppSpacing.xs),
@@ -790,26 +823,33 @@ class _Saved extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ],
-          ] else
-            OutlinedButton.icon(
-              onPressed: keeping
-                  ? null
-                  : () => cubit.keep(
-                      readText: context.read<FeaturesCubit>().enabled(
-                        'local_ocr',
-                      ),
-                    ),
-              icon: keeping
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.cloud_upload_outlined),
-              label: Text(l10n.scanKeep),
-            ),
+            // Its owner's alone until they say otherwise.
+            if (state.kept == ScanKept.yes) ...[
+              const SizedBox(height: AppSpacing.sm),
+              if (state.shared)
+                Center(
+                  child: StatusPill(
+                    status: AppStatus.info,
+                    label: l10n.documentShared,
+                    icon: Icons.groups_outlined,
+                  ),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed: state.sharing ? null : cubit.shareWithWorkspace,
+                  icon: state.sharing
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.groups_outlined),
+                  label: Text(l10n.documentShare),
+                ),
+            ],
+          ],
           const SizedBox(height: AppSpacing.sm),
           OutlinedButton(
-            onPressed: keeping ? null : cubit.edit,
+            onPressed: keeping || state.sharing ? null : cubit.edit,
             child: Text(l10n.scanEdit),
           ),
           const SizedBox(height: AppSpacing.sm),

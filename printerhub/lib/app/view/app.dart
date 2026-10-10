@@ -13,6 +13,8 @@ import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printerhub/activity/job_recovery.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/library/cubit/sync_cubit.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/notifications/notifications.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
@@ -41,6 +43,7 @@ class App extends StatelessWidget {
     required this.pageCamera,
     required this.signatureStore,
     required this.linkOpener,
+    required this.library,
     required this.incoming,
     this.keptOrganizations,
     super.key,
@@ -76,6 +79,9 @@ class App extends StatelessWidget {
   /// Opens a link read from a code in the phone's browser.
   final LinkOpener linkOpener;
 
+  /// What was made on this phone, kept and sent to the account.
+  final Library library;
+
   /// The files other apps hand to this one to print.
   final IncomingDocuments incoming;
 
@@ -107,6 +113,7 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: pageCamera),
         RepositoryProvider.value(value: signatureStore),
         RepositoryProvider.value(value: linkOpener),
+        RepositoryProvider.value(value: library),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -182,6 +189,23 @@ class App extends StatelessWidget {
               return cubit;
             },
           ),
+          BlocProvider(
+            // What waits on the phone is sent as soon as there is a
+            // workspace to send it to, not when Settings is first opened.
+            lazy: false,
+            create: (context) {
+              final session = context.read<SessionCubit>();
+              final cubit = SyncCubit(
+                library: library,
+                organizationId: session.state.organization?.id,
+                organizationChanges: session.stream
+                    .map((state) => state.organization?.id)
+                    .distinct(),
+              );
+              unawaited(cubit.sync());
+              return cubit;
+            },
+          ),
         ],
         child: const AppView(),
       ),
@@ -215,6 +239,7 @@ class _AppViewState extends State<AppView> {
     _lifecycle = AppLifecycleListener(
       onResume: () {
         unawaited(context.read<UnreadCubit>().refresh());
+        unawaited(context.read<SyncCubit>().sync());
         _recover(context.read<SessionCubit>().state.organization?.id);
       },
     );

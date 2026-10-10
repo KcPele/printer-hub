@@ -8,6 +8,7 @@ import 'package:printerhub/copy/copy_words.dart';
 import 'package:printerhub/copy/cubit/copy_cubit.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/printers/cubit/printers_cubit.dart';
 import 'package:printerhub/scan/scan_output.dart';
@@ -42,6 +43,7 @@ class CopyPage extends StatelessWidget {
         printersRepository: context.read<PrintersRepository>(),
         jobsRepository: context.read<JobsRepository>(),
         documentsRepository: context.read<DocumentsRepository>(),
+        library: context.read<Library>(),
         documents: context.read<PrintDocuments>(),
         sharer: context.read<ScanSharer>(),
         textReader: context.read<ScanTextReader>(),

@@ -496,6 +496,14 @@ void main() {
         await tester.pump();
       }
 
+      /// Lets the recent documents, read from the account, arrive and
+      /// be shown.
+      Future<void> recents(WidgetTester tester) async {
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+      }
+
       Future<void> takeAndSave(WidgetTester tester) async {
         await press(tester, find.text("Use your phone's camera"));
         await until(tester, () => find.text('Pages').evaluate().isNotEmpty);
@@ -691,6 +699,17 @@ void main() {
         expect(find.text('Page 1'), findsOneWidget);
       });
 
+      testWidgets('shows what was scanned before, below the buttons', (
+        tester,
+      ) async {
+        backend.documentList = [documentBody(name: 'Scan yesterday.pdf')];
+        await pumpPhoneOnly(tester);
+        await recents(tester);
+
+        expect(find.text('Recent documents'), findsOneWidget);
+        expect(find.text('Scan yesterday.pdf'), findsOneWidget);
+      });
+
       testWidgets('does not offer to print in a workspace with no printer', (
         tester,
       ) async {
@@ -700,7 +719,7 @@ void main() {
 
         expect(find.text('Your scan is ready'), findsOneWidget);
         expect(find.text('Print it'), findsNothing);
-        expect(find.text('Keep in your workspace'), findsOneWidget);
+        expect(find.text('Saved to your account'), findsOneWidget);
       });
     });
 
@@ -904,15 +923,54 @@ void main() {
       expect(find.text('Print it'), findsNothing);
     });
 
-    testWidgets('keeps a saved scan in the workspace', (tester) async {
+    testWidgets('keeps a saved scan without being asked, and says where to '
+        'find it', (tester) async {
       await pump(tester);
       await scan(tester);
       await press(tester, find.widgetWithText(FilledButton, 'Save'));
       await settle(tester);
 
-      await tester.tap(find.text('Keep in your workspace'));
+      expect(find.text('Saved to your account'), findsOneWidget);
+      expect(find.textContaining('under Activity'), findsOneWidget);
+      expect(find.text('Saving it for you'), findsNothing);
+      expect(backend.documentList.single['upload_status'], 'uploaded');
+      expect(backend.library.of(_org), hasLength(1));
+    });
+
+    testWidgets('says a scan is on its way while it is kept', (tester) async {
+      await pump(tester);
+      await scan(tester);
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await until(
+        tester,
+        () => find.text('Saving it for you').evaluate().isNotEmpty,
+      );
+
+      // On its way: the scan is not changed meanwhile.
+      expect(
+        tester
+            .widget<OutlinedButton>(
+              find.widgetWithText(OutlinedButton, 'Back to the pages'),
+            )
+            .onPressed,
+        isNull,
+      );
+      await settle(tester);
+      expect(find.text('Saved to your account'), findsOneWidget);
+    });
+
+    testWidgets('shares a kept scan with the workspace when asked', (
+      tester,
+    ) async {
+      await pump(tester);
+      await scan(tester);
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+      expect(find.text('Shared with your workspace'), findsNothing);
+
+      await press(tester, find.text('Share with your workspace'));
       await tester.pump();
-      // On its way: nothing else can be done to the scan.
+      // While it is being shared, nothing else is done to the scan.
       expect(
         tester
             .widget<OutlinedButton>(
@@ -923,9 +981,9 @@ void main() {
       );
       await settle(tester);
 
-      expect(find.text('Kept in your workspace'), findsOneWidget);
-      expect(find.text('Keep in your workspace'), findsNothing);
-      expect(backend.documentList.single['upload_status'], 'uploaded');
+      expect(find.text('Shared with your workspace'), findsOneWidget);
+      expect(find.text('Share with your workspace'), findsNothing);
+      expect(backend.documentList.single['shared'], isTrue);
     });
 
     testWidgets('reads the words of a kept scan in a workspace that has it '
@@ -940,10 +998,7 @@ void main() {
       await press(tester, find.widgetWithText(FilledButton, 'Save'));
       await settle(tester);
 
-      await tester.tap(find.text('Keep in your workspace'));
-      await settle(tester);
-
-      expect(find.text('Kept in your workspace'), findsOneWidget);
+      expect(find.text('Saved to your account'), findsOneWidget);
       expect(find.textContaining('Its words were read'), findsOneWidget);
       expect(
         backend.lastBody('POST /organizations/$_org/documents')['ocr_text'],
@@ -966,47 +1021,43 @@ void main() {
       await press(tester, find.widgetWithText(FilledButton, 'Save'));
       await settle(tester);
 
-      await tester.tap(find.text('Keep in your workspace'));
-      await settle(tester);
-
-      expect(find.text('Kept in your workspace'), findsOneWidget);
+      expect(find.text('Saved to your account'), findsOneWidget);
       expect(find.textContaining('could not be read'), findsOneWidget);
     });
 
-    testWidgets('says when a scan did not reach the workspace', (tester) async {
-      backend.storage.broken = true;
+    testWidgets('keeps a scan on the phone when the account cannot be '
+        'reached, and says it will follow', (tester) async {
       await pump(tester);
       await scan(tester);
+      backend.offline = true;
       await press(tester, find.widgetWithText(FilledButton, 'Save'));
       await settle(tester);
 
-      await tester.tap(find.text('Keep in your workspace'));
-      await settle(tester);
-
-      expect(
-        find.textContaining('did not reach your workspace'),
-        findsOneWidget,
-      );
-      expect(find.text('Keep in your workspace'), findsOneWidget);
+      expect(find.text('Saved on this phone'), findsOneWidget);
+      expect(find.textContaining('next time you are online'), findsOneWidget);
+      // Only what the account has can be shared.
+      expect(find.text('Share with your workspace'), findsNothing);
+      expect(backend.library.waiting(_org), 1);
     });
 
-    testWidgets('says why the workspace will not keep a scan', (tester) async {
-      backend.fail(
-        'POST /organizations/$_org/documents',
-        403,
-        'document.cloud_storage_disabled',
-        detail: 'This organization keeps documents on devices only.',
-      );
+    testWidgets('says why a kept scan could not be shared', (tester) async {
       await pump(tester);
       await scan(tester);
       await press(tester, find.widgetWithText(FilledButton, 'Save'));
       await settle(tester);
+      final id = backend.documentList.single['id']! as String;
+      backend.fail(
+        'PATCH /organizations/$_org/documents/$id',
+        403,
+        'permission.denied',
+        detail: 'Only the owner can share this document.',
+      );
 
-      await tester.tap(find.text('Keep in your workspace'));
+      await press(tester, find.text('Share with your workspace'));
       await settle(tester);
 
       expect(
-        find.text('This organization keeps documents on devices only.'),
+        find.text('Only the owner can share this document.'),
         findsOneWidget,
       );
     });
@@ -1017,7 +1068,7 @@ void main() {
       await press(tester, find.widgetWithText(FilledButton, 'Save'));
       await settle(tester);
 
-      await tester.tap(find.text('Back to the pages'));
+      await press(tester, find.text('Back to the pages'));
       await tester.runAsync(() => Future<void>.delayed(Duration.zero));
       await tester.pumpAndSettle();
 

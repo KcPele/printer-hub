@@ -9,6 +9,8 @@ import 'package:documents_repository/documents_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:image/image.dart' as img;
 import 'package:jobs_repository/jobs_repository.dart';
+import 'package:printerhub/library/library.dart';
+import 'package:printerhub/library/library_item.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printers_repository/printers_repository.dart';
@@ -30,16 +32,19 @@ enum ScanStep {
   saved,
 }
 
-/// Whether a finished scan has been put in the workspace.
+/// Where a finished scan is kept. It is kept without being asked.
 enum ScanKept {
-  /// It is on this phone only.
+  /// Nowhere yet, or the phone had no room for it.
   no,
 
   /// It is on its way.
   keeping,
 
-  /// The workspace has it.
+  /// The person's account has it, as well as this phone.
   yes,
+
+  /// This phone has it. It goes to the account at the next sync.
+  phone,
 }
 
 class ScanState extends Equatable {
@@ -60,10 +65,19 @@ class ScanState extends Equatable {
     this.finish = const ScanFinish(),
     this.reading = false,
     this.redrawn = false,
+    this.shared = false,
+    this.sharing = false,
   });
 
   final ScanStep step;
   final ScanChoices choices;
+
+  /// True once the finished scan has been shared with the workspace's
+  /// other members.
+  final bool shared;
+
+  /// True while it is being shared.
+  final bool sharing;
 
   /// True while the pages of files chosen from the phone are being drawn.
   final bool reading;
@@ -141,6 +155,8 @@ class ScanState extends Equatable {
     ScanFinish? finish,
     bool reading = false,
     bool? redrawn,
+    bool shared = false,
+    bool sharing = false,
   }) {
     return ScanState(
       step: step ?? this.step,
@@ -159,6 +175,8 @@ class ScanState extends Equatable {
       finish: finish ?? this.finish,
       reading: reading,
       redrawn: redrawn ?? this.redrawn,
+      shared: shared,
+      sharing: sharing,
     );
   }
 
@@ -180,6 +198,8 @@ class ScanState extends Equatable {
     finish,
     reading,
     redrawn,
+    shared,
+    sharing,
   ];
 }
 
@@ -191,6 +211,7 @@ class ScanCubit extends Cubit<ScanState> {
     required this._printersRepository,
     required this._jobsRepository,
     required this._documentsRepository,
+    required this._library,
     required this._sharer,
     required this._textReader,
     required this._camera,
@@ -208,6 +229,7 @@ class ScanCubit extends Cubit<ScanState> {
   final PrintersRepository _printersRepository;
   final JobsRepository _jobsRepository;
   final DocumentsRepository _documentsRepository;
+  final Library _library;
   final ScanSharer _sharer;
   final ScanTextReader _textReader;
   final PageCamera _camera;
@@ -225,10 +247,8 @@ class ScanCubit extends Cubit<ScanState> {
 
   PrinterScan? _scan;
 
-  /// The files of this scan the workspace has, and the records of those
-  /// whose file did not arrive, by the file's path.
-  final Map<String, StoredDocument> _kept = {};
-  final Map<String, StoredDocument> _waiting = {};
+  /// What the finished scan was kept as, a document a file.
+  final List<LibraryItem> _kept = [];
 
   /// [choices] with anything [printer] does not offer changed to something
   /// it does.
@@ -612,12 +632,19 @@ class ScanCubit extends Cubit<ScanState> {
     emit(state._with(pages: pages));
   }
 
-  /// Puts the pages together as a file, or as a file each.
-  Future<void> save() async {
+  /// Puts the pages together as a file, or as a file each, and keeps the
+  /// result: on this phone at once, and in the person's account when it
+  /// can be reached. Nobody has to ask.
+  ///
+  /// With [readText], the words in the pages are read on the phone first
+  /// and kept with the scan, so it can be found by what it says. That is
+  /// for a workspace with `local_ocr` switched on.
+  Future<void> save({bool readText = false}) async {
     if (state.step != ScanStep.review) return;
     emit(state._with(step: ScanStep.saving));
+    final List<File> files;
     try {
-      final files = await assembleScan(
+      files = await assembleScan(
         pages: state.pages,
         name: state.name,
         format: _asked.format,
@@ -626,12 +653,74 @@ class ScanCubit extends Cubit<ScanState> {
         card: state.card,
         finish: state.finish,
       );
-      if (!isClosed) emit(state._with(step: ScanStep.saved, files: files));
     } on Object {
       if (!isClosed) {
         emit(state._with(step: ScanStep.review, failure: 'scan.storage'));
       }
+      return;
     }
+    if (isClosed) return;
+    emit(
+      state._with(step: ScanStep.saved, files: files, kept: ScanKept.keeping),
+    );
+
+    final keep = _library.keeper(_organizationId);
+    bool? textRead;
+    for (final (index, file) in files.indexed) {
+      String? text;
+      if (readText) {
+        // One file holds every page; otherwise a file is its page.
+        final pages = files.length == 1 ? state.pages : [state.pages[index]];
+        try {
+          text = await _textReader.read([
+            for (final page in pages)
+              if (page.mimeType != 'application/pdf') page.file,
+          ]);
+          textRead ??= true;
+        } on Object {
+          // The scan is kept all the same, and found by its name.
+          textRead = false;
+        }
+      }
+      final name = file.uri.pathSegments.last;
+      final kept = await keep(
+        file,
+        mimeType: name.endsWith('.pdf')
+            ? 'application/pdf'
+            : name.endsWith('.png')
+            ? 'image/png'
+            : 'image/jpeg',
+        // One PDF holds every page, or every two sides of a card;
+        // otherwise a file is a page.
+        pageCount: files.length > 1
+            ? 1
+            : state.card
+            ? (state.pages.length + 1) ~/ 2
+            : state.pages.length,
+        // A scan with a page from the camera is a camera scan, and the
+        // printer's only when the printer made some of it.
+        source: _sourceOfPages,
+        printerId:
+            _sourceOfPages == 'upload' || state.pages.every(state.fromCamera)
+            ? null
+            : _printer?.id,
+        text: text,
+      );
+      if (kept != null) _kept.add(kept);
+    }
+    // Gone back to the pages, or away, while it was being kept.
+    if (isClosed || state.step != ScanStep.saved) return;
+    emit(
+      state._with(
+        files: files,
+        kept: _kept.length < files.length
+            ? ScanKept.no
+            : _kept.every((item) => item.synced)
+            ? ScanKept.yes
+            : ScanKept.phone,
+        textRead: textRead,
+      ),
+    );
   }
 
   /// Hands the finished scan to the phone's share sheet.
@@ -640,84 +729,66 @@ class ScanCubit extends Cubit<ScanState> {
     await _sharer.share(state.files, name: state.name);
   }
 
-  /// Puts the finished scan in the workspace, for the other members and
-  /// the person's other devices. Asked again after a failure, it sends
-  /// only what did not arrive.
-  ///
-  /// With [readText], the words in the pages are read on the phone first
-  /// and kept with the scan, so the workspace can find it by what it says.
-  /// That is for a workspace with `local_ocr` switched on.
-  Future<void> keep({bool readText = false}) async {
-    if (state.step != ScanStep.saved || state.kept != ScanKept.no) return;
+  /// Lets the other members of the workspace see the finished scan. Until
+  /// then it is the person's alone. Only what the account has can be
+  /// shared.
+  Future<void> shareWithWorkspace() async {
+    if (state.kept != ScanKept.yes || state.shared || state.sharing) return;
     final files = state.files;
-    emit(state._with(files: files, kept: ScanKept.keeping));
-    bool? textRead;
+    final textRead = state.textRead;
+    emit(
+      state._with(
+        files: files,
+        kept: ScanKept.yes,
+        textRead: textRead,
+        sharing: true,
+      ),
+    );
     try {
-      for (final (index, file) in files.indexed) {
-        if (_kept.containsKey(file.path)) continue;
-        final waiting = _waiting[file.path];
-        final name = file.uri.pathSegments.last;
-        final pdf = name.endsWith('.pdf');
-        String? text;
-        if (readText && waiting == null) {
-          // One file holds every page; otherwise a file is its page.
-          final pages = files.length == 1 ? state.pages : [state.pages[index]];
-          try {
-            text = await _textReader.read([
-              for (final page in pages)
-                if (page.mimeType != 'application/pdf') page.file,
-            ]);
-            textRead ??= true;
-          } on Object {
-            // The scan is kept all the same, and found by its name.
-            textRead = false;
-          }
-        }
-        try {
-          _kept[file.path] = waiting != null
-              ? await _documentsRepository.finish(
-                  organizationId: _organizationId,
-                  document: waiting,
-                  file: file,
-                )
-              : await _documentsRepository.keep(
-                  organizationId: _organizationId,
-                  file: file,
-                  name: Uri.decodeComponent(name),
-                  mimeType: pdf ? 'application/pdf' : 'image/jpeg',
-                  // One PDF holds every page, or every two sides of a
-                  // card; otherwise a file is a page.
-                  pageCount: files.length > 1
-                      ? 1
-                      : state.card
-                      ? (state.pages.length + 1) ~/ 2
-                      : state.pages.length,
-                  // A scan with a page from the camera is a camera scan,
-                  // and the printer's only when the printer made some of
-                  // it.
-                  source: _sourceOfPages,
-                  printerId:
-                      _sourceOfPages == 'upload' ||
-                          state.pages.every(state.fromCamera)
-                      ? null
-                      : _printer?.id,
-                  text: text,
-                );
-          _waiting.remove(file.path);
-        } on UploadInterrupted catch (interrupted) {
-          _waiting[file.path] = interrupted.document;
-          rethrow;
-        }
+      for (final item in _kept) {
+        await _documentsRepository.share(
+          organizationId: _organizationId,
+          documentId: item.id,
+          shared: true,
+        );
       }
       if (!isClosed) {
-        emit(state._with(files: files, kept: ScanKept.yes, textRead: textRead));
-      }
-    } on UploadInterrupted {
-      if (!isClosed) {
-        emit(state._with(files: files, failure: 'scan.keep_interrupted'));
+        emit(
+          state._with(
+            files: files,
+            kept: ScanKept.yes,
+            textRead: textRead,
+            shared: true,
+          ),
+        );
       }
     } on ApiException catch (error) {
-      if (!isClosed) emit(state._with(files: files, error: error));
+      if (!isClosed) {
+        emit(
+          state._with(
+            files: files,
+            kept: ScanKept.yes,
+            textRead: textRead,
+            error: error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _forget(List<LibraryItem> kept) async {
+    for (final item in kept) {
+      await _library.remove(item.id);
+      if (!item.synced) continue;
+      try {
+        await _documentsRepository.delete(
+          organizationId: _organizationId,
+          documentId: item.id,
+        );
+      } on ApiException {
+        // It stays in the account, where it can be deleted from
+        // Documents.
+      }
     }
   }
 
@@ -732,10 +803,16 @@ class ScanCubit extends Cubit<ScanState> {
 
   /// Goes back to the pages, to add to them or change their order.
   void edit() {
-    if (state.step != ScanStep.saved || state.kept == ScanKept.keeping) {
+    if (state.step != ScanStep.saved ||
+        state.kept == ScanKept.keeping ||
+        state.sharing) {
       return;
     }
     _delete(state.files);
+    // What was kept is the scan as it was. The one saved next takes its
+    // place.
+    unawaited(_forget([..._kept]));
+    _kept.clear();
     emit(state._with(step: ScanStep.review));
   }
 

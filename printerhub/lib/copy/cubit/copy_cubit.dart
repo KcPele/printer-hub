@@ -6,6 +6,7 @@ import 'package:bloc/bloc.dart';
 import 'package:documents_repository/documents_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:jobs_repository/jobs_repository.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/scan/scan.dart';
 import 'package:printers_repository/printers_repository.dart';
@@ -107,6 +108,7 @@ class CopyCubit extends Cubit<CopyState> {
     required PrintersRepository printersRepository,
     required JobsRepository jobsRepository,
     required DocumentsRepository documentsRepository,
+    required Library library,
     required PrintDocuments documents,
     required ScanSharer sharer,
     required ScanTextReader textReader,
@@ -119,6 +121,7 @@ class CopyCubit extends Cubit<CopyState> {
          printersRepository: printersRepository,
          jobsRepository: jobsRepository,
          documentsRepository: documentsRepository,
+         library: library,
          sharer: sharer,
          textReader: textReader,
          camera: camera,

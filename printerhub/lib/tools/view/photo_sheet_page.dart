@@ -7,10 +7,12 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/print/print_words.dart';
 import 'package:printerhub/printers/widgets/printer_choice_sheet.dart';
 import 'package:printerhub/scan/scan_output.dart';
+import 'package:printerhub/session/session.dart';
 import 'package:printerhub/tools/cubit/photo_sheet_cubit.dart';
 import 'package:printerhub/tools/photo_sheet.dart';
 import 'package:printerhub/tools/tool_words.dart';
@@ -30,6 +32,9 @@ class PhotoSheetPage extends StatelessWidget {
       create: (context) => PhotoSheetCubit(
         picker: context.read<PrintDocuments>().picker,
         sharer: context.read<ScanSharer>(),
+        keep: context.read<Library>().keeper(
+          context.read<SessionCubit>().state.organization!.id,
+        ),
         name: name,
       ),
       child: const PhotoSheetView(),

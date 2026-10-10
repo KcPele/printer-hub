@@ -59,6 +59,7 @@ class CodeSheetChoices extends Equatable {
 class CodeSheetCubit extends MakeCubit<CodeSheetChoices> {
   new({
     required super.sharer,
+    required super.keep,
     required super.name,
     this._font = pdfFont,
     super.directory,

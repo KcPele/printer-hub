@@ -10,6 +10,7 @@ import 'package:printerhub/documents/cubit/documents_cubit.dart';
 import 'package:printerhub/documents/document_words.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/printers/cubit/printers_cubit.dart';
 import 'package:printerhub/printers/widgets/printer_choice_sheet.dart';
@@ -27,6 +28,7 @@ class DocumentsPage extends StatelessWidget {
       create: (context) {
         final cubit = DocumentsCubit(
           documentsRepository: context.read<DocumentsRepository>(),
+          library: context.read<Library>(),
           sharer: context.read<ScanSharer>(),
           organizationId: context.read<SessionCubit>().state.organization!.id,
         );
@@ -49,23 +51,11 @@ class DocumentsView extends StatelessWidget {
     final nothingYet =
         state.status == DocumentsStatus.ready &&
         state.query.isEmpty &&
-        state.documents.isEmpty;
+        state.documents.isEmpty &&
+        // Offline, the list says so instead of saying there is nothing.
+        !state.offline;
 
-    return BlocListener<DocumentsCubit, DocumentsState>(
-      listenWhen: (previous, current) =>
-          (current.fetchFailed && !previous.fetchFailed) ||
-          (current.error != null &&
-              current.error != previous.error &&
-              current.status == DocumentsStatus.ready),
-      listener: (context, state) => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            state.fetchFailed
-                ? l10n.documentFetchFailed
-                : errorMessage(l10n, state.error),
-          ),
-        ),
-      ),
+    return DocumentsFeedback(
       child: Scaffold(
         appBar: AppBar(title: Text(l10n.documentsTitle)),
         body: SafeArea(
@@ -91,6 +81,36 @@ class DocumentsView extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+/// Says, at the foot of the screen, why a document could not be fetched
+/// or changed. Wraps anything that shows documents.
+class DocumentsFeedback extends StatelessWidget {
+  const new({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return BlocListener<DocumentsCubit, DocumentsState>(
+      listenWhen: (previous, current) =>
+          (current.fetchFailed && !previous.fetchFailed) ||
+          (current.error != null &&
+              current.error != previous.error &&
+              current.status == DocumentsStatus.ready),
+      listener: (context, state) => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            state.fetchFailed
+                ? l10n.documentFetchFailed
+                : errorMessage(l10n, state.error),
+          ),
+        ),
+      ),
+      child: child,
     );
   }
 }
@@ -124,6 +144,10 @@ class _Documents extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
+        if (state.offline) ...[
+          AppNotice(status: AppStatus.info, message: l10n.documentsOffline),
+          const SizedBox(height: AppSpacing.md),
+        ],
         if (state.status == DocumentsStatus.loading)
           const Padding(
             padding: EdgeInsets.all(AppSpacing.xxl),
@@ -139,11 +163,7 @@ class _Documents extends StatelessWidget {
           )
         else
           for (final document in state.documents) ...[
-            _DocumentCard(
-              document: document,
-              busy: state.busyId == document.id,
-              enabled: state.busyId == null,
-            ),
+            DocumentCard(document: document, state: state),
             const SizedBox(height: AppSpacing.md),
           ],
         if (state.next != null)
@@ -158,22 +178,17 @@ class _Documents extends StatelessWidget {
   }
 }
 
-enum _DocumentAction { open, print, rename, delete }
+enum _DocumentAction { open, print, rename, share, unshare, delete }
 
-class _DocumentCard extends StatelessWidget {
-  const new({
-    required this.document,
-    required this.busy,
-    required this.enabled,
-  });
+/// One document, with what can be done with it: open, print, rename,
+/// share with the workspace, delete.
+class DocumentCard extends StatelessWidget {
+  const new({required this.document, required this.state, super.key});
 
   final StoredDocument document;
 
-  /// True while this document is being fetched or changed.
-  final bool busy;
-
-  /// False while any document is.
-  final bool enabled;
+  /// The list it is in.
+  final DocumentsState state;
 
   Future<void> _do(BuildContext context, _DocumentAction action) async {
     final cubit = context.read<DocumentsCubit>();
@@ -197,6 +212,10 @@ class _DocumentCard extends StatelessWidget {
           builder: (_) => _RenameDialog(name: document.name),
         );
         if (name != null) await cubit.rename(document, name);
+      case _DocumentAction.share:
+        await cubit.share(document, shared: true);
+      case _DocumentAction.unshare:
+        await cubit.share(document, shared: false);
       case _DocumentAction.delete:
         final confirmed = await showDialog<bool>(
           context: context,
@@ -236,7 +255,24 @@ class _DocumentCard extends StatelessWidget {
             (printer) => printer.capabilities?.print.supported ?? true,
           ),
         );
-    final tag = !document.inCloud
+    // True while this document is being fetched or changed, and false
+    // while any is.
+    final busy = state.busyId == document.id;
+    final enabled = state.busyId == null;
+    final canOpen = state.canOpen(document);
+    final waiting = state.waiting.contains(document.id);
+    // Only the person whose document it is decides who else sees it.
+    final mine =
+        document.ownerId != null &&
+        document.ownerId ==
+            context.select<SessionCubit, String?>(
+              (cubit) => cubit.state.user?.id,
+            );
+    final tag = waiting
+        ? l10n.documentWaiting
+        : document.shared
+        ? l10n.documentShared
+        : !document.inCloud
         ? l10n.documentOnPhoneOnly
         : document.awaitsFile
         ? l10n.documentAwaitsFile
@@ -244,7 +280,7 @@ class _DocumentCard extends StatelessWidget {
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      onTap: enabled && document.canFetch
+      onTap: enabled && canOpen
           ? () => _do(context, _DocumentAction.open)
           : null,
       child: Row(
@@ -274,7 +310,12 @@ class _DocumentCard extends StatelessWidget {
                 ),
                 if (tag != null) ...[
                   const SizedBox(height: AppSpacing.sm),
-                  StatusPill(status: AppStatus.neutral, label: tag),
+                  StatusPill(
+                    status: document.shared && !waiting
+                        ? AppStatus.info
+                        : AppStatus.neutral,
+                    label: tag,
+                  ),
                 ],
               ],
             ),
@@ -283,12 +324,12 @@ class _DocumentCard extends StatelessWidget {
             enabled: enabled,
             onSelected: (action) => _do(context, action),
             itemBuilder: (_) => [
-              if (document.canFetch)
+              if (canOpen)
                 PopupMenuItem(
                   value: _DocumentAction.open,
                   child: Text(l10n.documentOpen),
                 ),
-              if (document.canFetch && canPrint)
+              if (canOpen && canPrint)
                 PopupMenuItem(
                   value: _DocumentAction.print,
                   child: Text(l10n.documentPrint),
@@ -297,6 +338,15 @@ class _DocumentCard extends StatelessWidget {
                 value: _DocumentAction.rename,
                 child: Text(l10n.documentRename),
               ),
+              if (mine && document.canFetch)
+                PopupMenuItem(
+                  value: document.shared
+                      ? _DocumentAction.unshare
+                      : _DocumentAction.share,
+                  child: Text(
+                    document.shared ? l10n.documentUnshare : l10n.documentShare,
+                  ),
+                ),
               PopupMenuItem(
                 value: _DocumentAction.delete,
                 child: Text(l10n.documentDelete),

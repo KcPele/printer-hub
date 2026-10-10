@@ -8,9 +8,11 @@ import '../../helpers/helpers.dart';
 
 void main() {
   late TestBackend backend;
+  late KeptFiles kept;
 
   setUp(() {
     backend = TestBackend();
+    kept = KeptFiles();
     backend.picker.pictures = [
       pickedPicture(backend.scans, name: 'One.jpg'),
       pickedPicture(backend.scans, name: 'Two.jpg'),
@@ -22,6 +24,7 @@ void main() {
     final cubit = PhotoSheetCubit(
       picker: backend.picker,
       sharer: backend.sharer,
+      keep: kept.keep,
       name: 'Photos today',
       directory: backend.scans,
     );
@@ -87,6 +90,9 @@ void main() {
 
     await cubit.share();
     expect(backend.sharer.shared.single.files.single.path, file.path);
+    // And it was kept without being asked.
+    expect(kept.kept.single.file.path, file.path);
+    expect(kept.kept.single.mimeType, 'application/pdf');
   });
 
   test('drops a sheet that is no longer what was asked for', () async {

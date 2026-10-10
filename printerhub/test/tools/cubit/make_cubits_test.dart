@@ -9,11 +9,13 @@ import '../../helpers/helpers.dart';
 void main() {
   late Directory directory;
   late FakeScanSharer sharer;
+  late KeptFiles kept;
 
   setUp(() {
     directory = Directory.systemTemp.createTempSync('make_cubits_test');
     addTearDown(() => directory.deleteSync(recursive: true));
     sharer = FakeScanSharer();
+    kept = KeptFiles();
   });
 
   Future<ByteData?> noFont() async => null;
@@ -22,6 +24,7 @@ void main() {
     CodeSheetCubit build({PdfFontLoader? font}) {
       final cubit = CodeSheetCubit(
         sharer: sharer,
+        keep: kept.keep,
         name: 'QR code today',
         font: font ?? noFont,
         directory: directory,
@@ -57,6 +60,9 @@ void main() {
       expect(cubit.state.working, isFalse);
       expect(cubit.state.choices.text, ' https://example.com ');
       expect(cubit.state.file!.path, endsWith('/QR code today.pdf'));
+      // Kept without being asked, once.
+      expect(kept.kept.single.file.path, cubit.state.file!.path);
+      expect(kept.kept.single.mimeType, 'application/pdf');
 
       await cubit.share();
       expect(sharer.shared.single.name, 'QR code today');
@@ -131,6 +137,7 @@ void main() {
     NoteCubit build() {
       final cubit = NoteCubit(
         sharer: sharer,
+        keep: kept.keep,
         name: 'Note today',
         font: noFont,
         directory: directory,
@@ -176,6 +183,7 @@ void main() {
       fonts = 0;
       final cubit = PrintableCubit(
         sharer: sharer,
+        keep: kept.keep,
         name: 'Page today',
         today: DateTime(2026, 10, 10),
         calendar: (year, month) {
@@ -241,6 +249,7 @@ void main() {
       renderer = FakePageRenderer()..pageCount = 5;
       final cubit = PagesPerSheetCubit(
         sharer: sharer,
+        keep: kept.keep,
         name: 'Pages today',
         picker: picker,
         renderer: renderer,

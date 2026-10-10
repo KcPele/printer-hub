@@ -39,6 +39,7 @@ class PagesPerSheetChoices extends Equatable {
 class PagesPerSheetCubit extends MakeCubit<PagesPerSheetChoices> {
   new({
     required super.sharer,
+    required super.keep,
     required super.name,
     required this._picker,
     required this._renderer,

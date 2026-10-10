@@ -9,6 +9,7 @@ import 'package:printerhub/activity/cubit/activity_cubit.dart';
 import 'package:printerhub/activity/job_recovery.dart';
 import 'package:printerhub/activity/job_words.dart';
 import 'package:printerhub/app/router/app_router.dart';
+import 'package:printerhub/documents/widgets/recent_documents.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/printers/cubit/printers_cubit.dart';
@@ -80,10 +81,27 @@ class ActivityView extends StatelessWidget {
               child: Text(l10n.loadingRetry),
             ),
           ),
-          _ when nothingYet => EmptyState(
-            illustration: AppIllustrations.phonePrint,
-            title: l10n.activityEmptyTitle,
-            message: l10n.activityEmptyBody,
+          // Nothing printed or scanned on a printer yet, but what was
+          // made on the phone is here to be found.
+          _ when nothingYet => Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.page,
+                  AppSpacing.sm,
+                  AppSpacing.page,
+                  0,
+                ),
+                child: RecentDocuments(title: l10n.documentsRecent),
+              ),
+              Expanded(
+                child: EmptyState(
+                  illustration: AppIllustrations.phonePrint,
+                  title: l10n.activityEmptyTitle,
+                  message: l10n.activityEmptyBody,
+                ),
+              ),
+            ],
           ),
           _ => RefreshIndicator(
             onRefresh: cubit.refresh,
@@ -116,6 +134,7 @@ class _Jobs extends StatelessWidget {
         AppSpacing.xxl,
       ),
       children: [
+        RecentDocuments(title: l10n.documentsRecent),
         Wrap(
           spacing: AppSpacing.sm,
           children: [
