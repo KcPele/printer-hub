@@ -16,7 +16,17 @@ class PluginBluetoothScanner implements BluetoothScanner {
   Future<bool> get isAvailable async {
     try {
       if (!await FlutterBluePlus.isSupported) return false;
-      return FlutterBluePlus.adapterStateNow == BluetoothAdapterState.on;
+      // The state is unknown until the phone has said what it is: asking
+      // for it at once, as the app starts, made a phone with Bluetooth on
+      // look as though it had none. Wait for the first real answer.
+      final state = await FlutterBluePlus.adapterState
+          .firstWhere(
+            (state) =>
+                state != BluetoothAdapterState.unknown &&
+                state != BluetoothAdapterState.turningOn,
+          )
+          .timeout(const Duration(seconds: 3));
+      return state == BluetoothAdapterState.on;
     } on Object {
       return false;
     }

@@ -134,3 +134,7 @@ Run these in order, and note the model and firmware beside each result.
 - Flutter and cleartext HTTP to local devices: <https://docs.flutter.dev/release/breaking-changes/network-policy-ios-android>
 
 The Mopria eSCL specification is public but sits behind a licence agreement to accept: <https://mopria.org/spec-download>. It was not used.
+
+## Learned on a phone
+
+- **Bluetooth looked switched off on an Android phone that had it on** (2026-10-10, the owner's phone). The plugin reports the adapter's state as unknown until the phone has answered, and the app read it the moment the screen opened. `PluginBluetoothScanner.isAvailable` now waits for the first real answer. Android asks for the "Nearby devices" permission when the first search begins, not before.
