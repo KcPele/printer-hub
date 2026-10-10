@@ -3536,5 +3536,25 @@
     "syncNever": "Not synced yet",
     "@syncNever": {
         "description": "Says documents have never been sent from this phone"
+    },
+    "themeBrightness": "Light or dark",
+    "@themeBrightness": {
+        "description": "Title above the choice of a light or dark look"
+    },
+    "themeBrightnessSystem": "As my phone",
+    "@themeBrightnessSystem": {
+        "description": "Choice that follows the phone's own light or dark setting"
+    },
+    "themeBrightnessLight": "Light",
+    "@themeBrightnessLight": {
+        "description": "Choice of the light look"
+    },
+    "themeBrightnessDark": "Dark",
+    "@themeBrightnessDark": {
+        "description": "Choice of the dark look"
+    },
+    "themeBrightnessBody": "Every theme has a dark look. This is kept on this phone.",
+    "@themeBrightnessBody": {
+        "description": "Explains the light or dark choice"
     }
 }

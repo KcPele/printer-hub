@@ -11,12 +11,25 @@ void main() {
       expect(AppTheme.all.map((theme) => theme.id), AppThemeId.values);
     });
 
-    test('answers with light tokens until a dark variant exists', () {
+    test('has a light and a dark variant of every theme', () {
       for (final theme in AppTheme.all) {
-        expect(theme.hasDark, isFalse);
+        expect(theme.hasDark, isTrue);
         expect(theme.tokens(Brightness.light), theme.light);
-        expect(theme.tokens(Brightness.dark), theme.light);
+        expect(theme.tokens(Brightness.dark), theme.dark);
+        expect(theme.light.brightness, Brightness.light);
+        expect(theme.dark!.brightness, Brightness.dark);
+        // A skin changes colour, never shape or type.
+        expect(theme.dark!.shapes, theme.light.shapes);
+        expect(theme.dark!.fontFamily, theme.light.fontFamily);
+        expect(theme.dark!.semantic, AppSemanticColors.dark);
       }
+    });
+
+    test('answers with light tokens for a theme with no dark variant', () {
+      final theme = AppTheme(id: AppThemeId.mint, light: AppTheme.mint.light);
+
+      expect(theme.hasDark, isFalse);
+      expect(theme.tokens(Brightness.dark), theme.light);
     });
 
     test('uses the dark tokens of a theme that defines them', () {
@@ -57,14 +70,22 @@ void main() {
   });
 
   group('the Material theme', () {
-    for (final theme in AppTheme.all) {
-      final tokens = theme.light;
+    for (final (theme, brightness) in [
+      for (final theme in AppTheme.all)
+        for (final brightness in Brightness.values) (theme, brightness),
+    ]) {
+      final tokens = theme.tokens(brightness);
       final colors = tokens.colors;
 
-      group(theme.id.name, () {
+      group('${theme.id.name}, ${brightness.name}', () {
         late ThemeData data;
 
-        setUp(() => data = theme.data());
+        setUp(() => data = theme.data(brightness));
+
+        test('is as light or dark as asked', () {
+          expect(data.brightness, brightness);
+          expect(data.colorScheme.brightness, brightness);
+        });
 
         test('carries every token set', () {
           expect(data.extension<AppColors>(), colors);

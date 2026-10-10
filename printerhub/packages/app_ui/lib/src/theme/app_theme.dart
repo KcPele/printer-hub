@@ -8,20 +8,29 @@ import 'package:material_ui/material_ui.dart';
 
 /// One of the app's themes: a set of tokens per brightness.
 ///
-/// Every theme ships [light]. A theme gains a dark variant by defining
-/// [dark]; nothing that reads the theme has to change.
+/// Every theme ships [light] and [dark]. A screen reads the tokens of
+/// whichever is in use and never asks which.
 @immutable
 class AppTheme {
   const new({required this.id, required this.light, this.dark});
 
-  static const AppTheme volt = AppTheme(id: AppThemeId.volt, light: voltLight);
+  static const AppTheme volt = AppTheme(
+    id: AppThemeId.volt,
+    light: voltLight,
+    dark: voltDark,
+  );
 
   static const AppTheme indigo = AppTheme(
     id: AppThemeId.indigo,
     light: indigoLight,
+    dark: indigoDark,
   );
 
-  static const AppTheme mint = AppTheme(id: AppThemeId.mint, light: mintLight);
+  static const AppTheme mint = AppTheme(
+    id: AppThemeId.mint,
+    light: mintLight,
+    dark: mintDark,
+  );
 
   /// Every theme, in the order Settings lists them: the default first.
   static const List<AppTheme> all = [mint, indigo, volt];

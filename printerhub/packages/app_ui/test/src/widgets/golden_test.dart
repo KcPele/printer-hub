@@ -2,32 +2,42 @@ import 'package:app_ui/app_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// One picture of the shared widgets per theme. Text is drawn as blocks by
-/// the test font, so these check colour, shape, depth, and layout.
+/// One picture of the shared widgets per theme, light and dark. Text is
+/// drawn as blocks by the test font, so these check colour, shape, depth,
+/// and layout.
 ///
 /// Update with: flutter test --update-goldens --tags golden
 void main() {
-  for (final theme in AppTheme.all) {
-    testWidgets('shared widgets in ${theme.id.name}', tags: 'golden', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(400, 1180));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+  for (final (theme, brightness) in [
+    for (final theme in AppTheme.all)
+      for (final brightness in Brightness.values) (theme, brightness),
+  ]) {
+    // The light pictures keep the names they always had.
+    final name = brightness == Brightness.light
+        ? theme.id.name
+        : '${theme.id.name}_dark';
+    testWidgets(
+      'shared widgets in ${theme.id.name}, ${brightness.name}',
+      tags: 'golden',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(400, 1180));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(
-        MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: theme.data(),
-          home: const _Showcase(),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: theme.data(brightness),
+            home: const _Showcase(),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await expectLater(
-        find.byType(_Showcase),
-        matchesGoldenFile('goldens/shared_widgets_${theme.id.name}.png'),
-      );
-    });
+        await expectLater(
+          find.byType(_Showcase),
+          matchesGoldenFile('goldens/shared_widgets_$name.png'),
+        );
+      },
+    );
   }
 }
 

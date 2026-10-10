@@ -29,7 +29,7 @@ Backend-first, mobile-first printer and scanner platform. This repo is a monorep
 
 The user picks a theme in Settings and it applies at once. **Mint is the default.** **One layout, three skins:** every screen is built once and must look right in all three. A theme changes colour, type, shape, and elevation; layout, navigation, and wording stay the same. The files in `design/` are references for each skin's look, not screens to copy.
 
-All three ship light only. Each theme is a set of tokens per brightness, so a dark variant is added in `app_ui` without touching a screen.
+Each theme has a light and a dark variant: a set of tokens per brightness in `app_ui`, so a screen never asks which is in use. The person chooses light, dark, or as the phone is, on the Theme screen (`BrightnessCubit`); the choice stays on the phone. The table below gives the light values.
 
 | | Volt | Indigo | Mint |
 |---|---|---|---|
@@ -47,6 +47,7 @@ When building or changing any app UI:
 - Check the result in all three themes (the gallery screen shows every shared widget), and add a shared widget to the golden test in `packages/app_ui`. After an intended visual change, run `make app-goldens`.
 - `context.colors.primary` is a fill. For brand-coloured text or an icon on a light surface use `context.colors.emphasis`: Volt's primary is yellow and Mint's is a light mint, and neither can be read as text.
 - A new colour pair that carries text is added to `packages/app_ui/test/src/theme/contrast_test.dart`, which holds every theme to WCAG AA.
+- Check a screen dark as well as light. A colour written into a screen does not follow the theme; the only fixed colours are things that are white in life: the paper under a signature, the ground of a QR code.
 - Status colours (online, warning, error) and toner colours keep their meaning in every theme; they are separate tokens from the primary.
 - Illustrations, icons, and printer artwork are SVGs we draw ourselves, kept in `printerhub/packages/app_ui/assets/`. They are drawn in a fixed set of placeholder colours that map to theme tokens, so one file serves all three themes. No third-party artwork, and no bitmap where a vector will do.
 - The look to aim for: clean, professional, and inviting, with the printer as the hero of the screen. Function comes first: a screen that looks good and cannot reach the printer is not done.

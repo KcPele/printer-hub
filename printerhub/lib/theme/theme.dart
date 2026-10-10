@@ -1,3 +1,4 @@
+export 'cubit/brightness_cubit.dart';
 export 'cubit/theme_cubit.dart';
 export 'theme_names.dart';
 export 'view/theme_page.dart';

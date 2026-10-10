@@ -8,6 +8,7 @@ class PreferencesRepository {
   new({required this._store});
 
   static const String _themeKey = 'app_theme';
+  static const String _brightnessKey = 'app_brightness';
   static const String _onboardingKey = 'onboarding_completed';
   static const String _organizationKey = 'active_organization_id';
 
@@ -15,7 +16,12 @@ class PreferencesRepository {
   static Future<PreferencesRepository> open() async {
     final store = await SharedPreferencesWithCache.create(
       cacheOptions: const SharedPreferencesWithCacheOptions(
-        allowList: {_themeKey, _onboardingKey, _organizationKey},
+        allowList: {
+          _themeKey,
+          _brightnessKey,
+          _onboardingKey,
+          _organizationKey,
+        },
       ),
     );
     return PreferencesRepository(store: store);
@@ -28,6 +34,15 @@ class PreferencesRepository {
 
   /// Remembers the chosen theme.
   Future<void> saveThemeName(String name) => _store.setString(_themeKey, name);
+
+  /// Whether the app is shown light, dark, or as the phone is: `light`,
+  /// `dark`, or `system`. Null when nothing has been chosen.
+  String? get brightnessName => _store.getString(_brightnessKey);
+
+  /// Remembers whether the app is shown light, dark, or as the phone is.
+  Future<void> saveBrightnessName(String name) {
+    return _store.setString(_brightnessKey, name);
+  }
 
   /// Whether the welcome screens have been seen on this device.
   bool get onboardingCompleted => _store.getBool(_onboardingKey) ?? false;

@@ -70,6 +70,10 @@ void main() {
               ),
               BlocProvider.value(value: session),
               BlocProvider(
+                create: (_) =>
+                    BrightnessCubit(preferencesRepository: preferences),
+              ),
+              BlocProvider(
                 create: (_) => PrintersCubit(
                   printersRepository: backend.printers,
                   organizationId: session.state.organization?.id,

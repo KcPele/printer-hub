@@ -41,3 +41,35 @@ const AppThemeTokens voltLight = AppThemeTokens(
   ),
   depth: AppDepth.flat,
 );
+
+/// Volt, dark: yellow on charcoal, pills and circles, flat. Here the
+/// yellow can be read as text, so it is the emphasis too.
+const AppThemeTokens voltDark = AppThemeTokens(
+  brightness: Brightness.dark,
+  fontFamily: AppFonts.lufga,
+  colors: AppColors(
+    primary: _yellow,
+    onPrimary: _charcoal,
+    emphasis: _yellow,
+    onEmphasis: _charcoal,
+    accent: _yellow,
+    onAccent: _charcoal,
+    background: Color(0xFF121212),
+    surface: Color(0xFF1E1E1E),
+    surfaceMuted: Color(0xFF2A2A2A),
+    inverseSurface: Color(0xFFF4F4F4),
+    onInverseSurface: _charcoal,
+    text: Color(0xFFF4F4F4),
+    textMuted: Color(0xFFB3B3B3),
+    outline: Color(0xFF3D3D3D),
+  ),
+  semantic: AppSemanticColors.dark,
+  shapes: AppShapes(
+    button: AppShapes.pill,
+    card: 32,
+    field: AppShapes.pill,
+    chip: AppShapes.pill,
+    sheet: 36,
+  ),
+  depth: AppDepth.flat,
+);

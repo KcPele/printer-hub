@@ -417,6 +417,8 @@ Steps 1 to 4 and 7 are done. Step 6 is written and waits for a phone: no part of
 
 **Kept without being asked, added 2026-10-10.** After the first scan on an Android phone could not be found again, everything the app makes is now kept by `Library` (`lib/library/`): on the phone at once, in the person's account when the API can be reached, private until shared. `docs/feature-candidates.md` has the details. The backend gained `shared` on documents and a migration for it.
 
+**Dark mode, added 2026-10-11.** Mint, Indigo, and Volt each have a dark variant, held to the same contrast test as the light ones, with golden pictures of both. The Theme screen offers light, dark, or as the phone is.
+
 Not in this list, by the owner's decision:
 
 - **Push on iOS.** Later. It needs an APNs key uploaded to Firebase and the Push Notifications capability.

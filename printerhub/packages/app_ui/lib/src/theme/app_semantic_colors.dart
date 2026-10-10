@@ -87,6 +87,37 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     tonerBlack: Color(0xFF231F20),
   );
 
+  /// The values every dark theme uses: the same hues, light enough to
+  /// read on a dark surface, over deep tints of themselves.
+  static const AppSemanticColors dark = AppSemanticColors(
+    success: StatusTone(
+      foreground: Color(0xFF6FD69A),
+      container: Color(0xFF12301F),
+    ),
+    warning: StatusTone(
+      foreground: Color(0xFFFFC266),
+      container: Color(0xFF3A2A08),
+    ),
+    error: StatusTone(
+      foreground: Color(0xFFFF9A92),
+      container: Color(0xFF3F1512),
+    ),
+    info: StatusTone(
+      foreground: Color(0xFF8DB8FF),
+      container: Color(0xFF14284A),
+    ),
+    neutral: StatusTone(
+      foreground: Color(0xFFB6BABF),
+      container: Color(0xFF2A2D31),
+    ),
+    tonerCyan: Color(0xFF00AEEF),
+    tonerMagenta: Color(0xFFEC008C),
+    tonerYellow: Color(0xFFFFD400),
+    // Black toner cannot be seen on a dark surface: it is drawn as the
+    // grey of a nearly empty page.
+    tonerBlack: Color(0xFF9AA0A6),
+  );
+
   final StatusTone success;
   final StatusTone warning;
   final StatusTone error;

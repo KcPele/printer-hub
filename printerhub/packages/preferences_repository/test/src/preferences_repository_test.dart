@@ -35,6 +35,17 @@ void main() {
       expect(second.themeName, 'indigo');
     });
 
+    test('remembers whether the app is light, dark, or as the phone '
+        'is', () async {
+      final first = await PreferencesRepository.open();
+      expect(first.brightnessName, isNull);
+
+      await first.saveBrightnessName('dark');
+
+      expect(first.brightnessName, 'dark');
+      expect((await PreferencesRepository.open()).brightnessName, 'dark');
+    });
+
     test('shows the welcome screens on a new install', () async {
       final repository = await PreferencesRepository.open();
 

@@ -36,6 +36,7 @@ class MockGoRouter extends Mock implements GoRouter;
 /// A new install by default: no theme chosen, welcome screens not seen.
 MockPreferencesRepository emptyPreferences({
   String? themeName,
+  String? brightnessName,
   bool onboardingCompleted = false,
   String? activeOrganizationId,
 }) {
@@ -47,6 +48,12 @@ MockPreferencesRepository emptyPreferences({
   when(() => repository.saveThemeName(any())).thenAnswer((invocation) async {
     theme = invocation.positionalArguments.single as String;
   });
+  var brightness = brightnessName;
+  when(() => repository.brightnessName).thenAnswer((_) => brightness);
+  when(() => repository.saveBrightnessName(any()))
+      .thenAnswer((invocation) async {
+        brightness = invocation.positionalArguments.single as String;
+      });
   when(() => repository.onboardingCompleted).thenAnswer((_) => welcomed);
   when(repository.completeOnboarding).thenAnswer((_) async => welcomed = true);
   when(() => repository.activeOrganizationId).thenAnswer((_) => organization);
@@ -161,6 +168,10 @@ extension PumpApp on WidgetTester {
         child: MultiBlocProvider(
           providers: [
             BlocProvider.value(value: theme),
+            BlocProvider(
+              create: (_) =>
+                  BrightnessCubit(preferencesRepository: preferences),
+            ),
             BlocProvider.value(value: session),
             BlocProvider.value(value: printers),
             BlocProvider.value(value: unread),
@@ -170,6 +181,8 @@ extension PumpApp on WidgetTester {
           child: BlocBuilder<ThemeCubit, AppThemeId>(
             builder: (context, theme) => MaterialApp(
               theme: AppTheme.of(theme).data(),
+              darkTheme: AppTheme.of(theme).data(Brightness.dark),
+              themeMode: context.watch<BrightnessCubit>().state,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: router == null

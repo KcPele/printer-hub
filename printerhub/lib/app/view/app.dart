@@ -118,6 +118,10 @@ class App extends StatelessWidget {
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
+            create: (_) =>
+                BrightnessCubit(preferencesRepository: preferencesRepository),
+          ),
+          BlocProvider(
             create: (_) => ThemeCubit(
               preferencesRepository: preferencesRepository,
               authRepository: authRepository,
@@ -317,6 +321,8 @@ class _AppViewState extends State<AppView> {
         onGenerateTitle: (context) => context.l10n.appName,
         routerConfig: _router,
         theme: AppTheme.of(theme).data(),
+        darkTheme: AppTheme.of(theme).data(Brightness.dark),
+        themeMode: context.watch<BrightnessCubit>().state,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
       ),

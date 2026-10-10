@@ -8,11 +8,14 @@ import '../../helpers/helpers.dart';
 const double _aa = 4.5;
 
 void main() {
-  for (final theme in AppTheme.all) {
-    final colors = theme.light.colors;
-    final semantic = theme.light.semantic;
+  for (final (theme, brightness) in [
+    for (final theme in AppTheme.all)
+      for (final brightness in Brightness.values) (theme, brightness),
+  ]) {
+    final colors = theme.tokens(brightness).colors;
+    final semantic = theme.tokens(brightness).semantic;
 
-    group('${theme.id.name} meets AA contrast for', () {
+    group('${theme.id.name}, ${brightness.name}, meets AA contrast for', () {
       void check(String name, Color foreground, Color background) {
         test(name, () {
           expect(

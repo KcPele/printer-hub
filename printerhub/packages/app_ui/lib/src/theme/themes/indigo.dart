@@ -38,3 +38,35 @@ const AppThemeTokens indigoLight = AppThemeTokens(
     cardBorder: BorderSide.none,
   ),
 );
+
+/// Indigo, dark: indigo on a deep blue-black, large corners, deep shadows.
+const AppThemeTokens indigoDark = AppThemeTokens(
+  brightness: Brightness.dark,
+  fontFamily: AppFonts.plusJakartaSans,
+  colors: AppColors(
+    primary: _indigo,
+    onPrimary: Color(0xFFFFFFFF),
+    // The indigo is too deep to read on a dark surface: its lighter
+    // shade is.
+    emphasis: Color(0xFF9AA4FF),
+    onEmphasis: Color(0xFF10121C),
+    accent: Color(0xFF3AC67C),
+    onAccent: _ink,
+    background: Color(0xFF10121C),
+    surface: Color(0xFF1A1D2B),
+    surfaceMuted: Color(0xFF242838),
+    inverseSurface: Color(0xFFEDEFF7),
+    onInverseSurface: _ink,
+    text: Color(0xFFEDEFF7),
+    textMuted: Color(0xFFA9AEC4),
+    outline: Color(0xFF34394D),
+  ),
+  semantic: AppSemanticColors.dark,
+  shapes: AppShapes(button: 20, card: 24, field: 20, chip: 14, sheet: 28),
+  depth: AppDepth(
+    cardShadow: [
+      BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, 8)),
+    ],
+    cardBorder: BorderSide.none,
+  ),
+);

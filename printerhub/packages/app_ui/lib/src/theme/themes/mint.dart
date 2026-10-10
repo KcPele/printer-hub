@@ -37,3 +37,33 @@ const AppThemeTokens mintLight = AppThemeTokens(
     cardBorder: BorderSide(color: Color(0xFFE2E2E2)),
   ),
 );
+
+/// Mint, dark: the same mint on near-black, medium corners, hairline
+/// borders.
+const AppThemeTokens mintDark = AppThemeTokens(
+  brightness: Brightness.dark,
+  fontFamily: AppFonts.manrope,
+  colors: AppColors(
+    primary: _mint,
+    onPrimary: Color(0xFF0B3B32),
+    // On a dark surface the mint itself reads as text.
+    emphasis: Color(0xFF5FE3C5),
+    onEmphasis: Color(0xFF06231D),
+    accent: Color(0xFFFB7746),
+    onAccent: _ink,
+    background: Color(0xFF121413),
+    surface: Color(0xFF1C1F1E),
+    surfaceMuted: Color(0xFF262A29),
+    inverseSurface: Color(0xFFF2F2F2),
+    onInverseSurface: _ink,
+    text: Color(0xFFF2F2F2),
+    textMuted: Color(0xFFB0B5B3),
+    outline: Color(0xFF3A3F3D),
+  ),
+  semantic: AppSemanticColors.dark,
+  shapes: AppShapes(button: 12, card: 16, field: 12, chip: 8, sheet: 16),
+  depth: AppDepth(
+    cardShadow: [],
+    cardBorder: BorderSide(color: Color(0xFF3A3F3D)),
+  ),
+);
