@@ -6,6 +6,7 @@ import 'package:equatable/equatable.dart';
 import 'package:image/image.dart' as img;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printerhub/scan/signature.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 /// Hands finished scans to the phone's share sheet, where they can be
@@ -54,7 +55,12 @@ enum ScanLook {
 /// put on them. None of it touches the pages as they were scanned, so
 /// each can be undone by saving again.
 class ScanFinish extends Equatable {
-  const new({this.look = ScanLook.original, this.stamp, this.watermark = ''});
+  const new({
+    this.look = ScanLook.original,
+    this.stamp,
+    this.watermark = '',
+    this.signature,
+  });
 
   final ScanLook look;
 
@@ -66,20 +72,25 @@ class ScanFinish extends Equatable {
   /// none.
   final String watermark;
 
+  /// The person's signature, set on one sheet. Null for none.
+  final PlacedSignature? signature;
+
   ScanFinish copyWith({
     ScanLook? look,
     String? Function()? stamp,
     String? watermark,
+    PlacedSignature? Function()? signature,
   }) {
     return ScanFinish(
       look: look ?? this.look,
       stamp: stamp == null ? this.stamp : stamp(),
       watermark: watermark ?? this.watermark,
+      signature: signature == null ? this.signature : signature(),
     );
   }
 
   @override
-  List<Object?> get props => [look, stamp, watermark];
+  List<Object?> get props => [look, stamp, watermark, signature];
 }
 
 /// [picture] made to look as [look] asks, as a JPEG. Null when it cannot
@@ -212,9 +223,13 @@ Future<List<File>> assembleScan({
       ];
       final watermark = finish.watermark.trim();
       final stamp = finish.stamp;
+      final signed = finish.signature;
+      final signature = signed == null ? null : pw.MemoryImage(signed.png);
+      var sheetNumber = 0;
       for (var first = 0; first < pictures.length; first += card ? 2 : 1) {
         final picture = pictures[first];
         final back = card ? pictures.elementAtOrNull(first + 1) : null;
+        final signHere = signed != null && signed.page == sheetNumber++;
         document.addPage(
           pw.Page(
             pageFormat: sheet,
@@ -249,6 +264,15 @@ Future<List<File>> assembleScan({
                           ),
                         ),
                       ),
+                    ),
+                  ),
+                if (signHere)
+                  pw.Positioned(
+                    left: signed.x * sheet.width,
+                    top: signed.y * sheet.height,
+                    child: pw.SizedBox(
+                      width: signed.width * sheet.width,
+                      child: pw.Image(signature!),
                     ),
                   ),
                 if (stamp != null)

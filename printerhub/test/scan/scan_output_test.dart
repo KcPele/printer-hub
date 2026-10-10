@@ -189,6 +189,30 @@ void main() {
         }
       });
 
+      test('sets a signature on the sheet it was put on, and no '
+          'other', () async {
+        final files = await assembleScan(
+          pages: [page('1.jpg'), page('2.jpg')],
+          name: 'Signed',
+          format: 'application/pdf',
+          directory: directory,
+          finish: ScanFinish(
+            signature: PlacedSignature(
+              png: img.encodePng(img.Image(width: 30, height: 10)),
+              page: 1,
+              x: 0.5,
+              y: 0.8,
+              width: 0.3,
+            ),
+          ),
+        );
+
+        final [first, second] = drawn(files.single);
+        expect(' Do'.allMatches(first), hasLength(1));
+        // The page, and the signature over it.
+        expect(' Do'.allMatches(second), hasLength(2));
+      });
+
       test('sets nothing on a page when nothing is asked for', () async {
         final files = await assembleScan(
           pages: [page('1.jpg')],

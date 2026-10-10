@@ -3129,6 +3129,54 @@
             }
         }
     },
+    "scanSignAdd": "Add your signature",
+    "@scanSignAdd": {
+        "description": "Button that opens signing for a scan"
+    },
+    "scanSignChange": "Move your signature",
+    "@scanSignChange": {
+        "description": "Button that opens signing again for a scan that is signed"
+    },
+    "scanSignRemove": "Take the signature off",
+    "@scanSignRemove": {
+        "description": "Button that removes the signature from a scan"
+    },
+    "signTitle": "Sign",
+    "@signTitle": {
+        "description": "Title of the signing screen"
+    },
+    "signDrawLead": "Sign with your finger. Your signature is kept on this phone only, for next time.",
+    "@signDrawLead": {
+        "description": "Explains the signature pad"
+    },
+    "signUse": "Use this signature",
+    "@signUse": {
+        "description": "Button that takes what was drawn as the signature"
+    },
+    "signClear": "Clear",
+    "@signClear": {
+        "description": "Button that wipes the signature pad"
+    },
+    "signPlaceLead": "Drag your signature to where it belongs.",
+    "@signPlaceLead": {
+        "description": "Explains placing a signature on a page"
+    },
+    "signSize": "Size",
+    "@signSize": {
+        "description": "Label of the slider that sizes the signature"
+    },
+    "signPage": "On",
+    "@signPage": {
+        "description": "Label of the choice of which page is signed"
+    },
+    "signPlace": "Place it here",
+    "@signPlace": {
+        "description": "Button that confirms where the signature goes"
+    },
+    "signRedraw": "Draw a new signature",
+    "@signRedraw": {
+        "description": "Button that forgets the kept signature and opens the pad"
+    },
     "scanPrint": "Print it",
     "@scanPrint": {
         "description": "Button that prints a finished scan"

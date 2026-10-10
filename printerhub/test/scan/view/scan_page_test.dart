@@ -675,6 +675,55 @@ void main() {
       expect(find.text('Your scan is ready'), findsOneWidget);
     });
 
+    testWidgets('signs a scan: draws a signature, places it, moves it, and '
+        'takes it off', (tester) async {
+      await pump(tester);
+      await scan(tester);
+
+      await press(tester, find.text('Add your signature'));
+      await settle(tester);
+      expect(find.text('Sign'), findsOneWidget);
+      await tester.drag(
+        find.byKey(const ValueKey('signature-pad')),
+        const Offset(80, 20),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Use this signature'));
+      await settle(tester);
+      await press(tester, find.text('Place it here'));
+      await tester.pumpAndSettle();
+
+      final placed = cubitOf(tester).state.finish.signature;
+      expect(placed, isNotNull);
+      expect(placed!.page, 0);
+      // Kept on the phone for the next scan.
+      expect(backend.signatureValues.values, isNotEmpty);
+      expect(find.text('Add your signature'), findsNothing);
+
+      // Going back in and out without placing it leaves it where it was.
+      await press(tester, find.text('Move your signature'));
+      await settle(tester);
+      expect(find.text('Place it here'), findsOneWidget);
+      await tester.tap(find.byType(CloseButton));
+      await tester.pumpAndSettle();
+      expect(cubitOf(tester).state.finish.signature, placed);
+
+      await press(tester, find.text('Take the signature off'));
+      await tester.pump();
+      expect(cubitOf(tester).state.finish.signature, isNull);
+      expect(find.text('Add your signature'), findsOneWidget);
+    });
+
+    testWidgets('offers no signature for an ID card', (tester) async {
+      await pump(tester);
+      await press(tester, find.text('ID card'));
+      await tester.pumpAndSettle();
+      await scan(tester, button: 'Scan the front');
+
+      expect(find.text('Finishing touches'), findsOneWidget);
+      expect(find.text('Add your signature'), findsNothing);
+    });
+
     testWidgets('offers a look, but no stamp or watermark, for a scan kept '
         'as pictures', (tester) async {
       await pump(tester);

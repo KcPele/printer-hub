@@ -26,6 +26,7 @@ import 'package:printerhub/scan/platform/channel_page_camera.dart';
 import 'package:printerhub/scan/platform/channel_scan_text_reader.dart';
 import 'package:printerhub/scan/platform/share_plus_scan_sharer.dart';
 import 'package:printerhub/scan/scan_output.dart';
+import 'package:printerhub/scan/signature.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 class AppBlocObserver extends BlocObserver {
@@ -59,6 +60,7 @@ typedef AppDependencies = ({
   ScanSharer scanSharer,
   ScanTextReader scanTextReader,
   PageCamera pageCamera,
+  SignatureStore signatureStore,
   IncomingDocuments incoming,
   List<Organization>? keptOrganizations,
 });
@@ -127,6 +129,7 @@ Future<void> bootstrap(
       scanSharer: const SharePlusScanSharer(),
       scanTextReader: const ChannelScanTextReader(),
       pageCamera: await ChannelPageCamera.find(),
+      signatureStore: const SignatureStore(store: secureStore),
       incoming: ChannelIncomingDocuments(),
       documents: const PrintDocuments(
         picker: FilePickerDocumentPicker(),

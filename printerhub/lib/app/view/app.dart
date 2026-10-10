@@ -38,6 +38,7 @@ class App extends StatelessWidget {
     required this.scanSharer,
     required this.scanTextReader,
     required this.pageCamera,
+    required this.signatureStore,
     required this.incoming,
     this.keptOrganizations,
     super.key,
@@ -66,6 +67,9 @@ class App extends StatelessWidget {
 
   /// The phone's document camera.
   final PageCamera pageCamera;
+
+  /// Where the person's signature is kept on this phone.
+  final SignatureStore signatureStore;
 
   /// The files other apps hand to this one to print.
   final IncomingDocuments incoming;
@@ -96,6 +100,7 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: scanSharer),
         RepositoryProvider.value(value: scanTextReader),
         RepositoryProvider.value(value: pageCamera),
+        RepositoryProvider.value(value: signatureStore),
       ],
       child: MultiBlocProvider(
         providers: [

@@ -18,6 +18,7 @@ Future<void> main() async {
       scanSharer: dependencies.scanSharer,
       scanTextReader: dependencies.scanTextReader,
       pageCamera: dependencies.pageCamera,
+      signatureStore: dependencies.signatureStore,
       incoming: dependencies.incoming,
       keptOrganizations: dependencies.keptOrganizations,
     ),

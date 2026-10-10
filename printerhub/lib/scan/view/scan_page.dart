@@ -16,6 +16,8 @@ import 'package:printerhub/printers/widgets/printer_choice_sheet.dart';
 import 'package:printerhub/scan/cubit/scan_cubit.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/scan/scan_words.dart';
+import 'package:printerhub/scan/signature.dart';
+import 'package:printerhub/scan/view/sign_page.dart';
 import 'package:printerhub/scan/widgets/scan_options.dart';
 import 'package:printerhub/session/session.dart';
 import 'package:printerhub/workspace/cubit/features_cubit.dart';
@@ -502,6 +504,30 @@ class _Finishing extends StatelessWidget {
 
   final bool enabled;
 
+  /// Opens the signing screen over this one, and sets the signature
+  /// where it was put.
+  Future<void> _sign(BuildContext context) async {
+    final cubit = context.read<ScanCubit>();
+    final state = cubit.state;
+    final store = context.read<SignatureStore>();
+    final placed = await Navigator.of(context).push<PlacedSignature>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => RepositoryProvider.value(
+          value: store,
+          child: SignPage(
+            pages: [for (final page in state.pages) page.file],
+            paper: ScanPaper.named(state.choices.mediaSize),
+            placed: state.finish.signature,
+          ),
+        ),
+      ),
+    );
+    if (placed != null) {
+      cubit.finishWith(cubit.state.finish.copyWith(signature: () => placed));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -561,6 +587,30 @@ class _Finishing extends StatelessWidget {
                     }
                   : null,
             ),
+            // A card's sheet is two small pictures: there is no page to
+            // sign on.
+            if (!state.card) ...[
+              const SizedBox(height: AppSpacing.sm),
+              OutlinedButton.icon(
+                onPressed: enabled ? () => _sign(context) : null,
+                icon: const Icon(Icons.draw_outlined),
+                label: Text(
+                  finish.signature == null
+                      ? l10n.scanSignAdd
+                      : l10n.scanSignChange,
+                ),
+              ),
+              if (finish.signature != null)
+                TextButton(
+                  onPressed: enabled
+                      ? () => cubit.finishWith(
+                          finish.copyWith(signature: () => null),
+                        )
+                      : null,
+                  child: Text(l10n.scanSignRemove),
+                ),
+              const SizedBox(height: AppSpacing.md),
+            ],
             TextFormField(
               initialValue: finish.watermark,
               enabled: enabled,

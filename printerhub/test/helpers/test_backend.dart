@@ -17,6 +17,7 @@ import 'package:printer_protocols/printer_protocols.dart';
 import 'package:printer_protocols/testing.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/finders.dart';
+import 'package:printerhub/scan/signature.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 import 'fake_documents.dart';
@@ -191,6 +192,10 @@ class TestBackend {
 
   /// The phone's document camera.
   late final FakePageCamera camera = FakePageCamera(scans);
+
+  /// Where a signature is kept on the phone.
+  final InMemorySecureStore signatureValues = InMemorySecureStore();
+  late final SignatureStore signatures = SignatureStore(store: signatureValues);
 
   /// The other apps on the phone, which can hand a file to this one.
   final FakeIncomingDocuments otherApps = FakeIncomingDocuments();
