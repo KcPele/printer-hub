@@ -26,6 +26,13 @@ void main() {
     expect(ScanWords.page(l10n, 2, card: true), 'Front');
   });
 
+  test('every look has its own words', () {
+    expect({
+      for (final look in ScanLook.values) ScanWords.look(l10n, look),
+    }, hasLength(ScanLook.values.length));
+    expect(ScanWords.look(l10n, ScanLook.original), 'As scanned');
+  });
+
   test('a resolution says what it is good for', () {
     expect(ScanWords.resolution(l10n, 75), 'Quick (75 dpi)');
     expect(ScanWords.resolution(l10n, 150), 'Quick (150 dpi)');

@@ -617,11 +617,62 @@ void main() {
       expect(find.text("Use your phone's camera"), findsNothing);
     });
 
+    testWidgets('gives a scan its finishing touches', (tester) async {
+      await pump(tester);
+      await scan(tester);
+
+      expect(find.text('Finishing touches'), findsOneWidget);
+      await press(tester, find.text('As scanned'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Black and white').last);
+      await tester.pumpAndSettle();
+      await press(tester, find.text('Date and time'));
+      await tester.pump();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Watermark'),
+        'COPY',
+      );
+      await tester.pump();
+
+      final finish = cubitOf(tester).state.finish;
+      expect(finish.look, ScanLook.blackAndWhite);
+      expect(finish.stamp, isNotNull);
+      expect(finish.watermark, 'COPY');
+
+      // And the date comes off again.
+      await press(tester, find.text('Date and time'));
+      await tester.pump();
+      expect(cubitOf(tester).state.finish.stamp, isNull);
+
+      await press(tester, find.widgetWithText(FilledButton, 'Save'));
+      await settle(tester);
+      expect(find.text('Your scan is ready'), findsOneWidget);
+    });
+
+    testWidgets('offers a look, but no stamp or watermark, for a scan kept '
+        'as pictures', (tester) async {
+      await pump(tester);
+      await press(tester, find.text('One PDF'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pictures, one a page').last);
+      await tester.pumpAndSettle();
+      await scan(tester);
+
+      expect(find.text('Look'), findsOneWidget);
+      expect(find.text('Date and time'), findsNothing);
+      expect(find.text('Watermark'), findsNothing);
+    });
+
     testWidgets('names the scan, saves it, and shares it', (tester) async {
       await pump(tester);
       await scan(tester);
 
-      await tester.enterText(find.byType(TextFormField), 'Receipts');
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Name'),
+        'Receipts',
+      );
+      // The field is brought into view as it takes the keyboard.
+      await tester.pumpAndSettle();
       await press(tester, find.widgetWithText(FilledButton, 'Save'));
       await settle(tester);
 

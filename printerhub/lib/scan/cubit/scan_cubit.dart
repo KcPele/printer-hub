@@ -54,6 +54,7 @@ class ScanState extends Equatable {
     this.textRead,
     this.cameraPages = const {},
     this.pickedPages = const {},
+    this.finish = const ScanFinish(),
   });
 
   final ScanStep step;
@@ -92,6 +93,10 @@ class ScanState extends Equatable {
   /// scanner, by their file's path.
   final Set<String> cameraPages;
 
+  /// How the pages are made to look, and what is set on them, when the
+  /// scan is saved.
+  final ScanFinish finish;
+
   /// The pages that are pictures chosen from the phone, by their file's
   /// path.
   final Set<String> pickedPages;
@@ -121,6 +126,7 @@ class ScanState extends Equatable {
     bool? textRead,
     Set<String>? cameraPages,
     Set<String>? pickedPages,
+    ScanFinish? finish,
   }) {
     return ScanState(
       step: step ?? this.step,
@@ -136,6 +142,7 @@ class ScanState extends Equatable {
       textRead: textRead,
       cameraPages: cameraPages ?? this.cameraPages,
       pickedPages: pickedPages ?? this.pickedPages,
+      finish: finish ?? this.finish,
     );
   }
 
@@ -154,6 +161,7 @@ class ScanState extends Equatable {
     textRead,
     cameraPages,
     pickedPages,
+    finish,
   ];
 }
 
@@ -280,6 +288,12 @@ class ScanCubit extends Cubit<ScanState> {
   /// Changes how to scan.
   void change(ScanChoices choices) {
     if (_settled) emit(state._with(choices: fitted(choices, _printer)));
+  }
+
+  /// Changes how the pages will look and what is set on them. Decided
+  /// while looking the pages over.
+  void finishWith(ScanFinish finish) {
+    if (state.step == ScanStep.review) emit(state._with(finish: finish));
   }
 
   /// Changes what the scan is called.
@@ -468,6 +482,7 @@ class ScanCubit extends Cubit<ScanState> {
         directory: _directory,
         paper: ScanPaper.named(state.choices.mediaSize),
         card: state.card,
+        finish: state.finish,
       );
       if (!isClosed) emit(state._with(step: ScanStep.saved, files: files));
     } on Object {

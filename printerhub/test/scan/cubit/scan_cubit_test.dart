@@ -643,6 +643,34 @@ void main() {
     });
   });
 
+  group('finishing touches', () {
+    test('are chosen while looking the pages over, and used when the '
+        'scan is saved', () async {
+      final cubit = build()
+        ..rename('Board')
+        ..finishWith(const ScanFinish(watermark: 'TOO EARLY'));
+      expect(cubit.state.finish, const ScanFinish());
+
+      await cubit.scan();
+      cubit.finishWith(
+        const ScanFinish(look: ScanLook.blackAndWhite, watermark: 'COPY'),
+      );
+      await cubit.save();
+
+      expect(cubit.state.finish.watermark, 'COPY');
+      final pdf = String.fromCharCodes(
+        cubit.state.files.single.readAsBytesSync(),
+      );
+      expect(pdf, startsWith('%PDF-'));
+
+      // Going back keeps them; beginning again does not.
+      cubit.edit();
+      expect(cubit.state.finish.look, ScanLook.blackAndWhite);
+      cubit.startOver();
+      expect(cubit.state.finish, const ScanFinish());
+    });
+  });
+
   group('an ID card', () {
     test('is scanned from the corner of the glass, a side at a time, '
         'whatever else was chosen', () async {

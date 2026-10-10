@@ -454,7 +454,9 @@ class _Review extends StatelessWidget {
               label: Text(l10n.scanAddPictures),
             ),
           ],
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.lg),
+          _Finishing(enabled: !saving),
+          const SizedBox(height: AppSpacing.lg),
           AppSubmitButton(
             label: l10n.scanSave,
             loading: saving,
@@ -465,6 +467,92 @@ class _Review extends StatelessWidget {
             onPressed: saving ? null : cubit.startOver,
             child: Text(l10n.scanStartOver),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What is done to the pages as they are saved: a look, a date in the
+/// corner, a word across the page. The pages themselves are not changed,
+/// so going back and saving again undoes any of it.
+class _Finishing extends StatelessWidget {
+  const new({required this.enabled});
+
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final cubit = context.read<ScanCubit>();
+    final state = context.watch<ScanCubit>().state;
+    final finish = state.finish;
+    // A page the scanner made as a PDF cannot be redrawn; a stamp and a
+    // watermark are set on the pages of the PDF the app makes.
+    final pictures = state.pages.every(
+      (page) => page.mimeType != 'application/pdf',
+    );
+    final asPdf =
+        pictures && (state.card || state.choices.format == 'application/pdf');
+    if (!pictures) return const SizedBox.shrink();
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.scanFinishTitle, style: context.textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.md),
+          DropdownButtonFormField<ScanLook>(
+            key: ValueKey(finish.look),
+            initialValue: finish.look,
+            isExpanded: true,
+            decoration: InputDecoration(labelText: l10n.scanLook),
+            items: [
+              for (final look in ScanLook.values)
+                DropdownMenuItem(
+                  value: look,
+                  child: Text(ScanWords.look(l10n, look)),
+                ),
+            ],
+            onChanged: enabled
+                ? (look) => cubit.finishWith(finish.copyWith(look: look))
+                : null,
+          ),
+          if (asPdf) ...[
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.scanStamp),
+              subtitle: Text(l10n.scanStampBody),
+              value: finish.stamp != null,
+              onChanged: enabled
+                  ? (on) {
+                      final now = DateTime.now();
+                      final words = MaterialLocalizations.of(context);
+                      final date = words.formatMediumDate(now);
+                      final time = words.formatTimeOfDay(
+                        TimeOfDay.fromDateTime(now),
+                      );
+                      cubit.finishWith(
+                        finish.copyWith(
+                          stamp: () => on ? '$date, $time' : null,
+                        ),
+                      );
+                    }
+                  : null,
+            ),
+            TextFormField(
+              initialValue: finish.watermark,
+              enabled: enabled,
+              maxLength: 24,
+              textCapitalization: TextCapitalization.characters,
+              decoration: InputDecoration(
+                labelText: l10n.scanWatermark,
+                helperText: l10n.scanWatermarkHint,
+              ),
+              onChanged: (words) =>
+                  cubit.finishWith(finish.copyWith(watermark: words)),
+            ),
+          ],
         ],
       ),
     );

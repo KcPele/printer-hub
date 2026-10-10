@@ -1,4 +1,5 @@
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/scan/scan_output.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 /// The words the app uses for scanning: where the page is, how fine the
@@ -13,6 +14,16 @@ abstract final class ScanWords {
   static String page(AppLocalizations l10n, int index, {bool card = false}) {
     if (!card) return l10n.scanPageNumber(index + 1);
     return index.isEven ? l10n.scanCardFront : l10n.scanCardBack;
+  }
+
+  /// What a look does to the pages.
+  static String look(AppLocalizations l10n, ScanLook look) {
+    return switch (look) {
+      ScanLook.original => l10n.scanLookOriginal,
+      ScanLook.document => l10n.scanLookDocument,
+      ScanLook.whiteboard => l10n.scanLookWhiteboard,
+      ScanLook.blackAndWhite => l10n.scanLookBlackAndWhite,
+    };
   }
 
   /// A resolution by what it is good for, with its number.

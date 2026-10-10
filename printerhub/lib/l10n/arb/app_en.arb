@@ -2811,6 +2811,14 @@
     "@toolsTitle": {
         "description": "Heading on Home over the tools that work on a file"
     },
+    "toolsSeeAll": "See all",
+    "@toolsSeeAll": {
+        "description": "Link on Home that opens every tool"
+    },
+    "toolsLead": "Things your phone can do with a file, with or without a printer.",
+    "@toolsLead": {
+        "description": "Line at the top of the Tools screen"
+    },
     "toolsText": "Extract text",
     "@toolsText": {
         "description": "Name of the tool that reads the words in a file"
@@ -2912,6 +2920,46 @@
     "scanAddPictures": "Add pictures",
     "@scanAddPictures": {
         "description": "Button beside the pages that adds pictures from the phone"
+    },
+    "scanFinishTitle": "Finishing touches",
+    "@scanFinishTitle": {
+        "description": "Heading over the options applied to a scan as it is saved"
+    },
+    "scanLook": "Look",
+    "@scanLook": {
+        "description": "Label of the choice of how scanned pages are made to look"
+    },
+    "scanLookOriginal": "As scanned",
+    "@scanLookOriginal": {
+        "description": "Look that leaves the pages as they arrived"
+    },
+    "scanLookDocument": "Document: grey and sharper",
+    "@scanLookDocument": {
+        "description": "Look for pages of text"
+    },
+    "scanLookWhiteboard": "Whiteboard: brighter and stronger",
+    "@scanLookWhiteboard": {
+        "description": "Look for a whiteboard or a projected slide"
+    },
+    "scanLookBlackAndWhite": "Black and white",
+    "@scanLookBlackAndWhite": {
+        "description": "Look that leaves only black and white"
+    },
+    "scanStamp": "Date and time",
+    "@scanStamp": {
+        "description": "Switch that prints the date and time on each page of a scan"
+    },
+    "scanStampBody": "Set small in the corner of every page",
+    "@scanStampBody": {
+        "description": "Explains the date and time switch"
+    },
+    "scanWatermark": "Watermark",
+    "@scanWatermark": {
+        "description": "Label of the field for a word printed across each page"
+    },
+    "scanWatermarkHint": "A word across every page, such as COPY or DRAFT",
+    "@scanWatermarkHint": {
+        "description": "Hint under the watermark field"
     },
     "scanPrint": "Print it",
     "@scanPrint": {
