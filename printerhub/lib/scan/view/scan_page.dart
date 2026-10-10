@@ -198,6 +198,9 @@ class _Choose extends StatelessWidget {
               label: Text(l10n.scanCamera),
             ),
           ],
+          // What was scanned before is here to be found again.
+          const SizedBox(height: AppSpacing.xl),
+          RecentDocuments(title: l10n.documentsRecent),
         ],
       ),
     );

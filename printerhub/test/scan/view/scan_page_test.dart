@@ -195,6 +195,19 @@ void main() {
       expect(choices.format, 'image/jpeg');
     });
 
+    testWidgets('shows what was scanned before, below the buttons', (
+      tester,
+    ) async {
+      backend.documentList = [documentBody(name: 'Scan yesterday.pdf')];
+      await pump(tester);
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(find.text('Recent documents'), findsOneWidget);
+      expect(find.text('Scan yesterday.pdf'), findsOneWidget);
+    });
+
     testWidgets('scans, and shows the page that arrived', (tester) async {
       await pump(tester);
 
