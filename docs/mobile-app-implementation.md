@@ -415,6 +415,8 @@ Steps 1 to 4 and 7 are done. Step 6 is written and waits for a phone: no part of
 
 **Tools, added 2026-10-10.** Eleven tools that work with what the app already had were built outside this list: extract text, pictures to PDF, PDF to pictures, PDF to one long picture, ID card with the camera, timestamp, watermark, sign, page clean-up, copy, and print photos. `docs/feature-candidates.md` says where each is and what is still to prove. Eight more followed the same day: scan a code, make a QR code, turn a page, merge files, take pages from a PDF, pages per sheet, print a note, and printable pages. All pass `make app-check`; none has run on a phone, so they join step 8.
 
+**Kept without being asked, added 2026-10-10.** After the first scan on an Android phone could not be found again, everything the app makes is now kept by `Library` (`lib/library/`): on the phone at once, in the person's account when the API can be reached, private until shared. `docs/feature-candidates.md` has the details. The backend gained `shared` on documents and a migration for it.
+
 Not in this list, by the owner's decision:
 
 - **Push on iOS.** Later. It needs an APNs key uploaded to Firebase and the Push Notifications capability.

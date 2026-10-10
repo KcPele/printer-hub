@@ -20,6 +20,18 @@ Sizes are estimates: **S** is a day or two, **M** is several days, **L** is a we
 | Print what was scanned | "Print it" on a finished scan |
 | Keep, find, rename, delete documents | Documents, under Activity and on Home |
 
+## Kept without being asked
+
+Added 2026-10-10, after the first run on an Android phone: a scan came out clean, and then could not be found again.
+
+- **Everything made is kept.** A scan when it is saved, and what a tool makes when it is made, is copied into the app's own folder and sent to the person's account. Nobody presses anything.
+- **Online, it goes to the account at once. Offline, it stays on the phone** and is sent at the next sync: when the app is opened or comes back to the front, every few minutes, or from "Sync now" in Settings, which says how many are waiting.
+- **It is the person's alone** until they choose "Share with your workspace", on the saved scan or from a document's menu. This needed a backend change: a `shared` flag on documents. Before it, an administrator could read every member's documents; now nobody sees a document that is not shared.
+- **Where to find it again:** under the buttons on the scan screen, at the top of Activity, and in Documents. Each one can be opened, printed, renamed, shared, or deleted where it is listed, and opens with no network when this phone made it.
+- **Home shows two printers**, with "See all" for the rest.
+
+What it does not do: a document belongs to the workspace it was made in, so it is found again in that workspace on another phone, not in every workspace the person is in. Extracted text is shown and shared but not kept as a document. A copy (scan then print) keeps nothing: nothing was saved.
+
 ## Built: the tools
 
 All eleven were built on 2026-10-10. Each passes `make app-check` (unit and screen tests, full coverage). **None has been run on a phone yet**, and the ones that print were not run against the printer simulator after being written: that is the next thing to do.
