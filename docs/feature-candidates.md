@@ -32,7 +32,7 @@ Added 2026-10-10, after the first run on an Android phone: a scan came out clean
 
 What it does not do: a document belongs to the workspace it was made in, so it is found again in that workspace on another phone, not in every workspace the person is in. Extracted text is shown and shared but not kept as a document. A copy (scan then print) keeps what it scanned, named "Copy" and the day.
 
-Found while testing offline on the simulator, and fixed: Activity hid the phone's documents when the job history could not be read; kept files were written down by their full path, which changes when the app is updated; and scanning with the phone vanished from Home because the workspace's switches could not be asked for. With no network the app does not yet show the workspace's printers on Home after a restart: the list of printers is not kept on the phone.
+Found while testing offline on the simulator, and fixed: Activity hid the phone's documents when the job history could not be read; kept files were written down by their full path, which changes when the app is updated; and scanning with the phone vanished from Home because the workspace's switches could not be asked for.
 
 ## Built: the tools
 
