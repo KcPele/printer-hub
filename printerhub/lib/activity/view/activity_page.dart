@@ -72,36 +72,27 @@ class ActivityView extends StatelessWidget {
       ),
       body: SafeArea(
         child: switch (state.status) {
-          ActivityStatus.failed => EmptyState(
-            illustration: AppIllustrations.phonePrint,
-            title: l10n.activityFailedTitle,
-            message: errorMessage(l10n, state.error),
-            action: FilledButton(
-              onPressed: cubit.load,
-              child: Text(l10n.loadingRetry),
+          // The history could not be read, with no network for one. What
+          // was made on this phone is still here to open.
+          ActivityStatus.failed => _WithDocuments(
+            child: EmptyState(
+              illustration: AppIllustrations.phonePrint,
+              title: l10n.activityFailedTitle,
+              message: errorMessage(l10n, state.error),
+              action: FilledButton(
+                onPressed: cubit.load,
+                child: Text(l10n.loadingRetry),
+              ),
             ),
           ),
           // Nothing printed or scanned on a printer yet, but what was
           // made on the phone is here to be found.
-          _ when nothingYet => Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.page,
-                  AppSpacing.sm,
-                  AppSpacing.page,
-                  0,
-                ),
-                child: RecentDocuments(title: l10n.documentsRecent),
-              ),
-              Expanded(
-                child: EmptyState(
-                  illustration: AppIllustrations.phonePrint,
-                  title: l10n.activityEmptyTitle,
-                  message: l10n.activityEmptyBody,
-                ),
-              ),
-            ],
+          _ when nothingYet => _WithDocuments(
+            child: EmptyState(
+              illustration: AppIllustrations.phonePrint,
+              title: l10n.activityEmptyTitle,
+              message: l10n.activityEmptyBody,
+            ),
           ),
           _ => RefreshIndicator(
             onRefresh: cubit.refresh,
@@ -109,6 +100,32 @@ class ActivityView extends StatelessWidget {
           ),
         },
       ),
+    );
+  }
+}
+
+/// The recent documents above something that fills the rest of the
+/// screen: the documents are there whatever became of the job history.
+class _WithDocuments extends StatelessWidget {
+  const new({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.page,
+            AppSpacing.sm,
+            AppSpacing.page,
+            0,
+          ),
+          child: RecentDocuments(title: context.l10n.documentsRecent),
+        ),
+        Expanded(child: child),
+      ],
     );
   }
 }

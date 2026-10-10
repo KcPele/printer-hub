@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:api_client/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jobs_repository/jobs_repository.dart';
@@ -74,6 +76,28 @@ void main() {
 
       expect(find.text('Scan today.pdf'), findsOneWidget);
       expect(find.text('Nothing here yet'), findsOneWidget);
+    });
+
+    testWidgets('shows what is on this phone when the history cannot be '
+        'read for want of a network', (tester) async {
+      await tester.runAsync(
+        () => backend.library.add(
+          organizationId: _org,
+          file: File('${backend.scans.path}/Note.pdf')
+            ..writeAsStringSync('%PDF made here'),
+          mimeType: 'application/pdf',
+        ),
+      );
+      backend.offline = true;
+      await pump(tester);
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(find.text('Your activity could not be read'), findsOneWidget);
+      expect(find.text('Recent documents'), findsOneWidget);
+      expect(find.text('Note.pdf'), findsOneWidget);
+      expect(find.text('Waiting to sync'), findsOneWidget);
     });
 
     testWidgets('says what will appear, before anything has', (tester) async {
