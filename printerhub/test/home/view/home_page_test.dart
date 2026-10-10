@@ -217,6 +217,23 @@ void main() {
         }
       });
 
+      testWidgets('are all a tap away', (tester) async {
+        await pump(tester);
+        await reveal(tester, find.text('Tools'));
+
+        await tester.tap(
+          find.descendant(
+            of: find.ancestor(
+              of: find.text('Tools'),
+              matching: find.byType(Row),
+            ),
+            matching: find.text('See all'),
+          ),
+        );
+
+        verify(() => router.push<Object?>(AppRoutes.tools)).called(1);
+      });
+
       testWidgets('leave out reading words where the workspace has it '
           'switched off', (tester) async {
         await pump(tester);

@@ -9,6 +9,7 @@ import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/printers/widgets/printer_choice_sheet.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/session/session.dart';
+import 'package:printerhub/tools/tools.dart';
 import 'package:printerhub/workspace/cubit/features_cubit.dart';
 import 'package:printers_repository/printers_repository.dart';
 
@@ -183,27 +184,27 @@ class _Actions extends StatelessWidget {
 
     final tiles = [
       if (prints)
-        _Tile(
+        ToolTile(
           icon: Icons.print_outlined,
           title: l10n.homeActionPrint,
           body: l10n.homeActionPrintBody,
           onTap: () => _print(context),
         ),
       if (camera)
-        _Tile(
+        ToolTile(
           icon: Icons.photo_camera_outlined,
           title: l10n.homeActionScan,
           body: l10n.homeActionScanBody,
           onTap: () => context.push(AppRoutes.scan),
         ),
-      _Tile(
+      ToolTile(
         icon: Icons.folder_outlined,
         title: l10n.homeActionDocuments,
         body: l10n.homeActionDocumentsBody,
         onTap: () => context.go(AppRoutes.documents),
       ),
       if (hasPrinters)
-        _Tile(
+        ToolTile(
           icon: Icons.add,
           title: l10n.homeAddPrinter,
           body: l10n.homeActionAddBody,
@@ -211,137 +212,39 @@ class _Actions extends StatelessWidget {
         ),
     ];
 
-    return _TileGrid(tiles: tiles);
+    return ToolGrid(tiles: tiles);
   }
 }
 
-/// The tools that work on a file, with or without a printer. Reading
-/// words is shown where the workspace has it switched on.
+/// The first few tools, and the way to all of them.
 class _Tools extends StatelessWidget {
   const new();
+
+  /// How many tools Home shows before "See all".
+  static const int _shown = 4;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final reads = context.select<FeaturesCubit, bool>(
-      (features) => features.enabled('local_ocr'),
-    );
+    final tiles = toolTiles(context, withScan: false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(l10n.toolsTitle, style: context.textTheme.titleLarge),
-        const SizedBox(height: AppSpacing.md),
-        _TileGrid(
-          tiles: [
-            if (reads)
-              _Tile(
-                icon: Icons.text_snippet_outlined,
-                title: l10n.toolsText,
-                body: l10n.toolsTextBody,
-                onTap: () => context.push(AppRoutes.extractText),
-              ),
-            _Tile(
-              icon: Icons.photo_library_outlined,
-              title: l10n.toolsPicturesToPdf,
-              body: l10n.toolsPicturesToPdfBody,
-              onTap: () => context.push(AppRoutes.picturesToPdf),
+        Row(
+          children: [
+            Expanded(
+              child: Text(l10n.toolsTitle, style: context.textTheme.titleLarge),
             ),
-            _Tile(
-              icon: Icons.image_outlined,
-              title: l10n.toolsPictures,
-              body: l10n.toolsPicturesBody,
-              onTap: () => context.push(AppRoutes.pdfToPictures),
-            ),
-            _Tile(
-              icon: Icons.view_day_outlined,
-              title: l10n.toolsLongPicture,
-              body: l10n.toolsLongPictureBody,
-              onTap: () => context.push(AppRoutes.pdfToLongPicture),
+            TextButton(
+              onPressed: () => context.push(AppRoutes.tools),
+              child: Text(l10n.toolsSeeAll),
             ),
           ],
         ),
+        const SizedBox(height: AppSpacing.sm),
+        ToolGrid(tiles: tiles.take(_shown).toList()),
       ],
-    );
-  }
-}
-
-/// Tiles, two to a row, each row as tall as its taller tile.
-class _TileGrid extends StatelessWidget {
-  const new({required this.tiles});
-
-  final List<Widget> tiles;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (var first = 0; first < tiles.length; first += 2) ...[
-          if (first > 0) const SizedBox(height: AppSpacing.md),
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: tiles[first]),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: first + 1 < tiles.length
-                      ? tiles[first + 1]
-                      : const SizedBox(),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// One thing to do: its sign, what it is, and a line about it.
-class _Tile extends StatelessWidget {
-  const new({
-    required this.icon,
-    required this.title,
-    required this.body,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-    final textTheme = context.textTheme;
-
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.primary,
-              shape: BoxShape.circle,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: Icon(icon, color: colors.onPrimary),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Text(title, style: textTheme.titleMedium),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            body,
-            style: textTheme.bodySmall?.copyWith(color: colors.textMuted),
-          ),
-        ],
-      ),
     );
   }
 }

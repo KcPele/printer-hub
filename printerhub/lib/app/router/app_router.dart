@@ -41,6 +41,9 @@ abstract final class AppRoutes {
   /// PDF.
   static const String picturesToPdf = '/home/scan/pictures';
 
+  /// Every tool the app has.
+  static const String tools = '/home/tools';
+
   /// Reading the words in a file.
   static const String extractText = '/home/tools/text';
 
@@ -199,18 +202,24 @@ GoRouter createAppRouter({
                     ],
                   ),
                   GoRoute(
-                    path: 'tools/text',
-                    builder: (context, state) => const ExtractTextPage(),
-                  ),
-                  GoRoute(
-                    path: 'tools/pictures',
-                    builder: (context, state) =>
-                        const PdfPicturesPage(long: false),
-                  ),
-                  GoRoute(
-                    path: 'tools/long-picture',
-                    builder: (context, state) =>
-                        const PdfPicturesPage(long: true),
+                    path: 'tools',
+                    builder: (context, state) => const ToolsPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'text',
+                        builder: (context, state) => const ExtractTextPage(),
+                      ),
+                      GoRoute(
+                        path: 'pictures',
+                        builder: (context, state) =>
+                            const PdfPicturesPage(long: false),
+                      ),
+                      GoRoute(
+                        path: 'long-picture',
+                        builder: (context, state) =>
+                            const PdfPicturesPage(long: true),
+                      ),
+                    ],
                   ),
                 ],
               ),

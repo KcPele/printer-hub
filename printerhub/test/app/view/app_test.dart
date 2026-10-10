@@ -418,6 +418,26 @@ void main() {
         expect(find.text("Use your phone's camera"), findsOneWidget);
       });
 
+      testWidgets('opens the Tools screen from Home', (tester) async {
+        await pump(tester);
+        await tester.pumpAndSettle();
+        final all = find.descendant(
+          of: find.ancestor(of: find.text('Tools'), matching: find.byType(Row)),
+          matching: find.text('See all'),
+        );
+        await tester.scrollUntilVisible(
+          all,
+          120,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(all);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ToolsPage), findsOneWidget);
+      });
+
       testWidgets('opens each tool from Home', (tester) async {
         backend.features = {'local_ocr': true};
         backend.picker.pictures = [];
