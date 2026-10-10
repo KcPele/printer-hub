@@ -142,62 +142,93 @@ class _Jobs extends StatelessWidget {
     final visible = state.visible;
     final error = state.error;
 
-    return ListView(
+    const side = EdgeInsets.symmetric(horizontal: AppSpacing.page);
+
+    return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.page,
-        AppSpacing.sm,
-        AppSpacing.page,
-        AppSpacing.xxl,
-      ),
-      children: [
-        RecentDocuments(title: l10n.documentsRecent),
-        Wrap(
-          spacing: AppSpacing.sm,
-          children: [
-            for (final (filter, label) in [
-              (ActivityFilter.all, l10n.activityFilterAll),
-              (ActivityFilter.active, l10n.activityFilterActive),
-              (ActivityFilter.done, l10n.activityFilterDone),
-              (ActivityFilter.problems, l10n.activityFilterProblems),
-            ])
-              ChoiceChip(
-                label: Text(label),
-                selected: state.filter == filter,
-                onSelected: (_) => cubit.show(filter),
-              ),
-          ],
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.page,
+            AppSpacing.sm,
+            AppSpacing.page,
+            0,
+          ),
+          sliver: SliverToBoxAdapter(
+            child: RecentDocuments(title: l10n.documentsRecent),
+          ),
         ),
-        const SizedBox(height: AppSpacing.lg),
-        if (error != null) ...[
-          AppNotice(message: errorMessage(l10n, error)),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-        if (state.status == ActivityStatus.loading)
-          const Padding(
-            padding: EdgeInsets.all(AppSpacing.xxl),
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else if (visible.isEmpty && error == null)
-          AppCard(
-            tone: AppCardTone.muted,
-            child: Text(
-              l10n.activityNoMatch,
-              style: context.textTheme.bodyLarge,
-            ),
-          )
-        else
-          for (final job in visible) ...[
-            _JobCard(job: job),
-            const SizedBox(height: AppSpacing.md),
-          ],
-        if (state.next != null)
-          Align(
-            child: TextButton(
-              onPressed: state.loadingMore ? null : cubit.more,
-              child: Text(l10n.activityMore),
+        // The filters stay at the top once they reach it, so the list can
+        // be narrowed from anywhere in it. Scrolling back up lets them go,
+        // and the recent documents come back into view.
+        PinnedHeaderSliver(
+          child: ColoredBox(
+            color: context.colors.background,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.page,
+                AppSpacing.sm,
+                AppSpacing.page,
+                AppSpacing.sm,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  spacing: AppSpacing.sm,
+                  children: [
+                    for (final (filter, label) in [
+                      (ActivityFilter.all, l10n.activityFilterAll),
+                      (ActivityFilter.active, l10n.activityFilterActive),
+                      (ActivityFilter.done, l10n.activityFilterDone),
+                      (ActivityFilter.problems, l10n.activityFilterProblems),
+                    ])
+                      ChoiceChip(
+                        label: Text(label),
+                        selected: state.filter == filter,
+                        onSelected: (_) => cubit.show(filter),
+                      ),
+                  ],
+                ),
+              ),
             ),
           ),
+        ),
+        SliverPadding(
+          padding: side.copyWith(top: AppSpacing.sm, bottom: AppSpacing.xxl),
+          sliver: SliverList.list(
+            children: [
+              if (error != null) ...[
+                AppNotice(message: errorMessage(l10n, error)),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+              if (state.status == ActivityStatus.loading)
+                const Padding(
+                  padding: EdgeInsets.all(AppSpacing.xxl),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (visible.isEmpty && error == null)
+                AppCard(
+                  tone: AppCardTone.muted,
+                  child: Text(
+                    l10n.activityNoMatch,
+                    style: context.textTheme.bodyLarge,
+                  ),
+                )
+              else
+                for (final job in visible) ...[
+                  _JobCard(job: job),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+              if (state.next != null)
+                Align(
+                  child: TextButton(
+                    onPressed: state.loadingMore ? null : cubit.more,
+                    child: Text(l10n.activityMore),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ],
     );
   }

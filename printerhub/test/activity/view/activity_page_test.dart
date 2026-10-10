@@ -100,6 +100,44 @@ void main() {
       expect(find.text('Waiting to sync'), findsOneWidget);
     });
 
+    testWidgets('keeps the filters at the top once the list is scrolled '
+        'past them, and lets them go on the way back', (tester) async {
+      backend
+        ..documentList = [documentBody(name: 'Scan today.pdf')]
+        ..jobList = [
+          for (var i = 0; i < 12; i++)
+            jobBody(id: 'job-$i', status: 'completed', title: 'Job $i.pdf'),
+        ];
+      await pump(tester);
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      final filters = find.widgetWithText(ChoiceChip, 'Done');
+      final list = find.byType(CustomScrollView);
+      final resting = tester.getTopLeft(filters).dy;
+      expect(find.text('Recent documents'), findsOneWidget);
+
+      await tester.drag(list, const Offset(0, -900));
+      await tester.pumpAndSettle();
+      // The recent documents have gone up and off; the filters have not.
+      final pinned = tester.getTopLeft(filters).dy;
+      expect(pinned, lessThan(resting));
+      expect(find.text('Recent documents'), findsNothing);
+      await tester.drag(list, const Offset(0, -300));
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(filters).dy, pinned);
+
+      // And they still narrow the list from down here.
+      await tester.tap(filters);
+      await tester.pumpAndSettle();
+      expect(tester.widget<ChoiceChip>(filters).selected, isTrue);
+
+      await tester.drag(list, const Offset(0, 2000));
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(filters).dy, resting);
+      expect(find.text('Recent documents'), findsOneWidget);
+    });
+
     testWidgets('says what will appear, before anything has', (tester) async {
       backend.jobList = [];
 
