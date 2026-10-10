@@ -1426,7 +1426,7 @@
     "@homeActionDocuments": {
         "description": "Tile on Home that opens the workspace's documents"
     },
-    "homeActionDocumentsBody": "Scans and files kept in your workspace",
+    "homeActionDocumentsBody": "Everything you scanned and made",
     "@homeActionDocumentsBody": {
         "description": "Line under the documents tile on Home"
     },
@@ -2156,7 +2156,7 @@
     "@documentsEmptyTitle": {
         "description": "Heading when the workspace keeps no documents"
     },
-    "documentsEmptyBody": "A scan you keep in your workspace is listed here.",
+    "documentsEmptyBody": "What you scan and make is saved here by itself.",
     "@documentsEmptyBody": {
         "description": "Under the no-documents heading"
     },
