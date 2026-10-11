@@ -325,6 +325,7 @@ class DocumentCard extends StatelessWidget {
               file: file,
               name: document.name,
               mimeType: document.mimeType,
+              source: document.source,
             ),
           ),
         );

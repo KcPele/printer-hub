@@ -147,6 +147,14 @@ class DocumentViewCubit extends Cubit<DocumentViewState> {
         keeping: true,
       ),
     );
+    // A picture changed from a scan is still a scan, and one from a tool
+    // is still that tool's: it is found where the one it came from is.
+    // Only one nobody knows the making of is an edited picture and no
+    // more.
+    final known = _document.source;
+    final source = known == null || known == DocumentSources.upload
+        ? DocumentSources.editedPicture
+        : known;
     try {
       // Under its new name, so that is what it is kept as.
       final named = await picture.copy(
@@ -156,7 +164,7 @@ class DocumentViewCubit extends Cubit<DocumentViewState> {
         named,
         mimeType: 'image/jpeg',
         pageCount: 1,
-        source: DocumentSources.editedPicture,
+        source: source,
       );
       if (isClosed) return false;
       if (kept == null) {
@@ -170,6 +178,7 @@ class DocumentViewCubit extends Cubit<DocumentViewState> {
             file: file,
             name: kept.name,
             mimeType: 'image/jpeg',
+            source: source,
           ),
           status: DocumentViewStatus.ready,
           pages: [file],

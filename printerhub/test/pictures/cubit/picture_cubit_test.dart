@@ -119,9 +119,9 @@ void main() {
       ..begin(const Point(0.2, 0.5))
       ..drawTo(const Point(0.8, 0.5))
       ..begin(const Point(-1, 2));
-    expect(cubit.state.strokes, [
-      [const Point<double>(0.2, 0.5), const Point<double>(0.8, 0.5)],
-      [const Point<double>(0, 1)],
+    expect(cubit.state.strokes, const [
+      PictureStroke(points: [Point(0.2, 0.5), Point(0.8, 0.5)]),
+      PictureStroke(points: [Point(0, 1)]),
     ]);
 
     await cubit.apply();
@@ -131,6 +131,33 @@ void main() {
     expect(cubit.state.changed, isTrue);
     final marked = img.decodeJpg(cubit.state.file.readAsBytesSync())!;
     expect(marked.getPixel(20, 10).b, lessThan(110));
+  });
+
+  test('draws each line with the highlighter in hand', () async {
+    final cubit = await loaded()
+      // With no highlighter taken up, there is none to choose.
+      ..pick(color: HighlightColor.pink);
+    expect(cubit.state.color, HighlightColor.yellow);
+    expect(cubit.state.pen, HighlightPen.thick);
+
+    cubit
+      ..choose(PictureTool.highlight)
+      ..begin(const Point(0.1, 0.1))
+      ..pick(color: HighlightColor.blue)
+      ..pick(pen: HighlightPen.thin)
+      ..begin(const Point(0.5, 0.5));
+
+    expect(cubit.state.color, HighlightColor.blue);
+    expect(cubit.state.pen, HighlightPen.thin);
+    // The line already drawn keeps its own.
+    expect(cubit.state.strokes, const [
+      PictureStroke(points: [Point(0.1, 0.1)]),
+      PictureStroke(
+        points: [Point(0.5, 0.5)],
+        color: HighlightColor.blue,
+        pen: HighlightPen.thin,
+      ),
+    ]);
   });
 
   test('changes nothing when no line was drawn', () async {
@@ -185,6 +212,7 @@ void main() {
       ..cropTo(CropBox.start.moved(left: 0.2))
       ..begin(const Point(0.5, 0.5))
       ..drawTo(const Point(0.6, 0.5))
+      ..pick(pen: HighlightPen.thin)
       ..undo();
     await cubit.turn();
     await turning;

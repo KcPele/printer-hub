@@ -3895,5 +3895,33 @@
     "documentsNoneFiltered": "Nothing matches this filter.",
     "@documentsNoneFiltered": {
         "description": "Shown when the filter on the list of documents leaves nothing"
+    },
+    "pictureInkYellow": "Yellow",
+    "@pictureInkYellow": {
+        "description": "A highlighter colour"
+    },
+    "pictureInkGreen": "Green",
+    "@pictureInkGreen": {
+        "description": "A highlighter colour"
+    },
+    "pictureInkPink": "Pink",
+    "@pictureInkPink": {
+        "description": "A highlighter colour"
+    },
+    "pictureInkBlue": "Blue",
+    "@pictureInkBlue": {
+        "description": "A highlighter colour"
+    },
+    "pictureInkOrange": "Orange",
+    "@pictureInkOrange": {
+        "description": "A highlighter colour"
+    },
+    "picturePenThin": "Thin",
+    "@picturePenThin": {
+        "description": "The narrow highlighter"
+    },
+    "picturePenThick": "Thick",
+    "@picturePenThick": {
+        "description": "The wide highlighter"
     }
 }

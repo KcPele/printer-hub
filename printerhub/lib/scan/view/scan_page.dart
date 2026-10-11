@@ -773,7 +773,7 @@ class _Saved extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           // Each file shown as it looks, and opened by a touch.
-          MadeFiles(files: state.files),
+          MadeFiles(files: state.files, source: state.source),
           const SizedBox(height: AppSpacing.xl),
           if (state.error != null) ...[
             AppNotice(message: errorMessage(l10n, state.error)),

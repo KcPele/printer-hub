@@ -21,9 +21,12 @@ import 'package:printerhub/print/documents.dart';
 /// Every screen that ends with files shows them with this, never as
 /// names alone.
 class MadeFiles extends StatelessWidget {
-  const new({required this.files, super.key});
+  const new({required this.files, required this.source, super.key});
 
   final List<File> files;
+
+  /// What made them, as `DocumentSources` names it.
+  final String source;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +48,11 @@ class MadeFiles extends StatelessWidget {
             for (final file in files)
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: _MadeFile(file: file, picture: pictures[file.path]),
+                child: _MadeFile(
+                  file: file,
+                  picture: pictures[file.path],
+                  source: source,
+                ),
               ),
           ],
         ),
@@ -55,10 +62,11 @@ class MadeFiles extends StatelessWidget {
 }
 
 class _MadeFile extends StatelessWidget {
-  const new({required this.file, required this.picture});
+  const new({required this.file, required this.picture, required this.source});
 
   final File file;
   final String? picture;
+  final String source;
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +81,12 @@ class _MadeFile extends StatelessWidget {
         // Pushed, so going back returns to the screen that made it.
         onTap: () => context.push(
           AppRoutes.documentView,
-          extra: OpenDocument(file: file, name: name, mimeType: mimeType),
+          extra: OpenDocument(
+            file: file,
+            name: name,
+            mimeType: mimeType,
+            source: source,
+          ),
         ),
         child: Row(
           children: [

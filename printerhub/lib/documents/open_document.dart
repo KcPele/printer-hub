@@ -9,13 +9,23 @@ import 'package:printerhub/print/documents.dart';
 /// `AppRoutes.documentView`: a kept document, a scan just saved, a page a
 /// tool made. What can be done with it is decided there, in one place.
 class OpenDocument extends Equatable {
-  const new({required this.file, required this.name, required this.mimeType});
+  const new({
+    required this.file,
+    required this.name,
+    required this.mimeType,
+    this.source,
+  });
 
   final File file;
 
   /// Its file name, such as `Receipts.pdf`.
   final String name;
   final String mimeType;
+
+  /// What made it, as `DocumentSources` names it, when that is known. A
+  /// picture changed from it is kept as that tool's too, so it is found
+  /// where the one it came from is.
+  final String? source;
 
   bool get isPdf => mimeType == 'application/pdf';
   bool get isPicture => mimeType.startsWith('image/');
@@ -29,7 +39,7 @@ class OpenDocument extends Equatable {
   );
 
   @override
-  List<Object?> get props => [file.path, name, mimeType];
+  List<Object?> get props => [file.path, name, mimeType, source];
 }
 
 /// What kind of file [name] is, from its ending.

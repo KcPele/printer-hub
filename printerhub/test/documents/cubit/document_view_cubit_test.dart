@@ -74,6 +74,54 @@ void main() {
       expect(backend.library.of(org).first.source, 'edited_picture');
     });
 
+    test(
+      'is still what made the one it came from: a scan, or a tool’s',
+      () async {
+        await backend.signedInBefore();
+        for (final source in ['pdf_pictures', 'camera_scan']) {
+          final picture = photo();
+          final cubit = build(
+            OpenDocument(
+              file: picture.file,
+              name: picture.name,
+              mimeType: picture.mimeType,
+              source: source,
+            ),
+            keep: backend.library.keeper(org),
+          );
+          await cubit.load();
+
+          expect(
+            await cubit.keepChanged(changed(), name: 'From $source'),
+            isTrue,
+          );
+
+          expect(cubit.state.document.source, source);
+          expect(
+            backend.library
+                .of(org)
+                .firstWhere((item) => item.name == 'From $source.jpg')
+                .source,
+            source,
+          );
+        }
+
+        // One that was only uploaded says nothing of its making.
+        final picture = photo();
+        final uploaded = build(
+          OpenDocument(
+            file: picture.file,
+            name: picture.name,
+            mimeType: picture.mimeType,
+            source: 'upload',
+          ),
+          keep: backend.library.keeper(org),
+        );
+        await uploaded.keepChanged(changed(), name: 'From upload');
+        expect(uploaded.state.document.source, 'edited_picture');
+      },
+    );
+
     test('cannot be kept where there is nowhere to keep it, and only a '
         'picture is changed', () async {
       final cubit = build(photo());

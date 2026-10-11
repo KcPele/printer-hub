@@ -106,7 +106,7 @@ class PhotoSheetView extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.xl),
                 // Shown as it looks, and opened by a touch.
-                MadeFiles(files: [file]),
+                MadeFiles(files: [file], source: DocumentSources.photoSheet),
                 const SizedBox(height: AppSpacing.md),
                 if (printersThatPrint(context).isNotEmpty) ...[
                   AppSubmitButton(

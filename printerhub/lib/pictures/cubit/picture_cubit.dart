@@ -27,6 +27,8 @@ class PictureState extends Equatable {
     this.tool = PictureTool.none,
     this.crop = CropBox.start,
     this.strokes = const [],
+    this.color = HighlightColor.yellow,
+    this.pen = HighlightPen.thick,
     this.working = false,
     this.failed = false,
     this.changed = false,
@@ -47,6 +49,10 @@ class PictureState extends Equatable {
   /// The lines drawn, while [PictureTool.highlight].
   final List<PictureStroke> strokes;
 
+  /// The highlighter in hand: its ink, and how wide it draws.
+  final HighlightColor color;
+  final HighlightPen pen;
+
   /// True while a change is being made to the picture.
   final bool working;
 
@@ -66,7 +72,9 @@ class PictureState extends Equatable {
     height,
     tool,
     crop,
-    [for (final stroke in strokes) stroke.length],
+    strokes,
+    color,
+    pen,
     working,
     failed,
     changed,
@@ -94,6 +102,8 @@ class PictureCubit extends Cubit<PictureState> {
     PictureTool? tool,
     CropBox? crop,
     List<PictureStroke>? strokes,
+    HighlightColor? color,
+    HighlightPen? pen,
     bool working = false,
     bool failed = false,
   }) {
@@ -104,6 +114,8 @@ class PictureCubit extends Cubit<PictureState> {
       tool: tool ?? state.tool,
       crop: crop ?? state.crop,
       strokes: strokes ?? state.strokes,
+      color: color ?? state.color,
+      pen: pen ?? state.pen,
       working: working,
       failed: failed,
       changed: _before.isNotEmpty,
@@ -140,6 +152,14 @@ class PictureCubit extends Cubit<PictureState> {
     }
   }
 
+  /// Takes up a highlighter of another ink, or another width. Lines
+  /// already drawn keep theirs.
+  void pick({HighlightColor? color, HighlightPen? pen}) {
+    if (state.tool == PictureTool.highlight && !state.working) {
+      emit(_with(color: color, pen: pen));
+    }
+  }
+
   /// Begins a line of highlighter at [point], in parts of the picture.
   void begin(Point<double> point) {
     if (state.tool != PictureTool.highlight || state.working) return;
@@ -147,7 +167,11 @@ class PictureCubit extends Cubit<PictureState> {
       _with(
         strokes: [
           ...state.strokes,
-          [_inside(point)],
+          PictureStroke(
+            points: [_inside(point)],
+            color: state.color,
+            pen: state.pen,
+          ),
         ],
       ),
     );
@@ -164,7 +188,7 @@ class PictureCubit extends Cubit<PictureState> {
       _with(
         strokes: [
           ...state.strokes.take(state.strokes.length - 1),
-          [...state.strokes.last, _inside(point)],
+          state.strokes.last.to(_inside(point)),
         ],
       ),
     );

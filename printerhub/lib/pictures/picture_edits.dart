@@ -65,12 +65,56 @@ class CropBox extends Equatable {
   List<Object?> get props => [left, top, right, bottom];
 }
 
-/// A line drawn over a picture with a finger: the points it passed, in
-/// parts of the picture's width and height.
-typedef PictureStroke = List<Point<double>>;
+/// The inks a highlighter comes in. They are the colours of real pens,
+/// the same in every theme.
+enum HighlightColor {
+  yellow(255, 235, 59),
+  green(105, 240, 174),
+  pink(255, 128, 171),
+  blue(64, 196, 255),
+  orange(255, 171, 64);
 
-/// How wide the highlighter is, as a part of the picture's shorter side.
-const double highlighterWidth = 0.035;
+  new(this.r, this.g, this.b);
+
+  /// How much red, green, and blue is in it, each 0 to 255.
+  final int r;
+  final int g;
+  final int b;
+}
+
+/// The two highlighters: one for a line of small print, one for a
+/// heading or a whole paragraph.
+enum HighlightPen {
+  thin(0.018),
+  thick(0.045);
+
+  new(this.width);
+
+  /// How wide it draws, as a part of the picture's shorter side.
+  final double width;
+}
+
+/// A line drawn over a picture with a finger: the points it passed, in
+/// parts of the picture's width and height, and the pen it was drawn
+/// with.
+class PictureStroke extends Equatable {
+  const new({
+    required this.points,
+    this.color = HighlightColor.yellow,
+    this.pen = HighlightPen.thick,
+  });
+
+  final List<Point<double>> points;
+  final HighlightColor color;
+  final HighlightPen pen;
+
+  /// This line carried on to [point].
+  PictureStroke to(Point<double> point) =>
+      PictureStroke(points: [...points, point], color: color, pen: pen);
+
+  @override
+  List<Object?> get props => [points, color, pen];
+}
 
 /// How wide and tall a picture is, or null when [bytes] is not a picture.
 ({int width, int height})? pictureSize(Uint8List bytes) {
@@ -111,61 +155,69 @@ Uint8List turnedPicture(Uint8List bytes) {
   return _encoded(img.copyRotate(_decoded(bytes), angle: 90));
 }
 
-/// [bytes] with [strokes] drawn over it as a highlighter draws: yellow
-/// that the picture shows through, the same strength where lines cross.
+/// [bytes] with [strokes] drawn over it as a highlighter draws: ink that
+/// the picture shows through, the same strength where lines of one
+/// colour cross.
 Uint8List highlightedPicture(Uint8List bytes, List<PictureStroke> strokes) {
   final picture = _decoded(bytes);
-  final pen = max(
-    3,
-    (min(picture.width, picture.height) * highlighterWidth).round(),
-  );
-  // Where the ink goes is drawn solid on a sheet of its own first, so a
-  // place two lines pass over is inked once.
-  final ink = img.Image(
-    width: picture.width,
-    height: picture.height,
-    numChannels: 1,
-  );
+  final shorter = min(picture.width, picture.height);
   final mark = img.ColorUint8(1)..r = 255;
-  var left = picture.width;
-  var top = picture.height;
-  var right = 0;
-  var bottom = 0;
-  for (final stroke in strokes) {
-    for (var i = 0; i < stroke.length; i++) {
-      final x = (stroke[i].x * picture.width).round();
-      final y = (stroke[i].y * picture.height).round();
-      img.fillCircle(ink, x: x, y: y, radius: pen ~/ 2, color: mark);
-      if (i > 0) {
-        img.drawLine(
-          ink,
-          x1: (stroke[i - 1].x * picture.width).round(),
-          y1: (stroke[i - 1].y * picture.height).round(),
-          x2: x,
-          y2: y,
-          color: mark,
-          thickness: pen,
+  const strength = 0.45;
+
+  for (final color in HighlightColor.values) {
+    final inked = [
+      for (final stroke in strokes)
+        if (stroke.color == color) stroke,
+    ];
+    if (inked.isEmpty) continue;
+    // Where this ink goes is drawn solid on a sheet of its own first, so
+    // a place two lines pass over is inked once.
+    final ink = img.Image(
+      width: picture.width,
+      height: picture.height,
+      numChannels: 1,
+    );
+    var left = picture.width;
+    var top = picture.height;
+    var right = 0;
+    var bottom = 0;
+    for (final stroke in inked) {
+      final pen = max(3, (shorter * stroke.pen.width).round());
+      final points = stroke.points;
+      for (var i = 0; i < points.length; i++) {
+        final x = (points[i].x * picture.width).round();
+        final y = (points[i].y * picture.height).round();
+        img.fillCircle(ink, x: x, y: y, radius: pen ~/ 2, color: mark);
+        if (i > 0) {
+          img.drawLine(
+            ink,
+            x1: (points[i - 1].x * picture.width).round(),
+            y1: (points[i - 1].y * picture.height).round(),
+            x2: x,
+            y2: y,
+            color: mark,
+            thickness: pen,
+          );
+        }
+        left = min(left, x - pen);
+        top = min(top, y - pen);
+        right = max(right, x + pen);
+        bottom = max(bottom, y + pen);
+      }
+    }
+
+    for (var y = max(0, top); y < min(picture.height, bottom); y++) {
+      for (var x = max(0, left); x < min(picture.width, right); x++) {
+        if (ink.getPixel(x, y).r == 0) continue;
+        final pixel = picture.getPixel(x, y);
+        picture.setPixelRgb(
+          x,
+          y,
+          pixel.r + (color.r - pixel.r) * strength,
+          pixel.g + (color.g - pixel.g) * strength,
+          pixel.b + (color.b - pixel.b) * strength,
         );
       }
-      left = min(left, x - pen);
-      top = min(top, y - pen);
-      right = max(right, x + pen);
-      bottom = max(bottom, y + pen);
-    }
-  }
-
-  const strength = 0.45;
-  for (var y = max(0, top); y < min(picture.height, bottom); y++) {
-    for (var x = max(0, left); x < min(picture.width, right); x++) {
-      if (ink.getPixel(x, y).r == 0) continue;
-      final pixel = picture.getPixel(x, y);
-      picture.setPixelRgb(
-        x,
-        y,
-        pixel.r + (255 - pixel.r) * strength,
-        pixel.g + (235 - pixel.g) * strength,
-        pixel.b + (59 - pixel.b) * strength,
-      );
     }
   }
   return _encoded(picture);

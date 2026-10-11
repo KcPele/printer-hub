@@ -144,13 +144,25 @@ void main() {
     await tester.pump();
 
     final stroke = cubit.state.strokes.single;
-    expect(stroke.length, greaterThan(1));
-    expect(stroke.last.x, greaterThan(stroke.first.x));
+    expect(stroke.points.length, greaterThan(1));
+    expect(stroke.points.last.x, greaterThan(stroke.points.first.x));
 
-    // Another line is painted beside the first.
+    // Another highlighter is taken up: its ink, then the thin one.
+    await tester.tap(find.byKey(const ValueKey('ink-pink')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('pen-thin')));
+    await tester.pump();
+    expect(cubit.state.color, HighlightColor.pink);
+    expect(cubit.state.pen, HighlightPen.thin);
+    expect(find.bySemanticsLabel('Pink'), findsOneWidget);
+    expect(find.bySemanticsLabel('Thick'), findsOneWidget);
+
+    // Another line is painted beside the first, in that pen.
     cubit.begin(const Point(0.1, 0.1));
     await tester.pump();
     expect(cubit.state.strokes, hasLength(2));
+    expect(cubit.state.strokes.last.color, HighlightColor.pink);
+    expect(cubit.state.strokes.first.color, HighlightColor.yellow);
 
     await tester.tap(find.text('Apply'));
     await tester.pump();

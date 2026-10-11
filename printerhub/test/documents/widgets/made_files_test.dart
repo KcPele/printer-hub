@@ -21,7 +21,9 @@ void main() {
   Future<void> pump(WidgetTester tester, List<File> files) async {
     await tester.pumpApp(
       Scaffold(
-        body: SingleChildScrollView(child: MadeFiles(files: files)),
+        body: SingleChildScrollView(
+          child: MadeFiles(files: files, source: DocumentSources.pdfPictures),
+        ),
       ),
       backend: backend,
       router: router,
@@ -59,6 +61,8 @@ void main() {
     expect(document.file.path, sign.path);
     expect(document.name, 'Sign.pdf');
     expect(document.mimeType, 'application/pdf');
+    // It says what made it, so a change to it is kept as that tool's.
+    expect(document.source, DocumentSources.pdfPictures);
   });
 
   testWidgets('shows a file it cannot draw by the sign for its kind, and '

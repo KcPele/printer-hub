@@ -69,6 +69,52 @@ void main() {
     });
   });
 
+  test('highlights in the ink and the width of each pen', () {
+    final marked = img.decodeJpg(
+      highlightedPicture(grey(width: 400, height: 400), [
+        const PictureStroke(
+          points: [Point(0.1, 0.25), Point(0.9, 0.25)],
+          color: HighlightColor.blue,
+          pen: HighlightPen.thin,
+        ),
+        const PictureStroke(points: [Point(0.1, 0.75), Point(0.9, 0.75)]),
+      ]),
+    )!;
+
+    // Blue above: more blue than red. Yellow below: the other way.
+    final blue = marked.getPixel(200, 100);
+    expect(blue.b, greaterThan(blue.r + 30));
+    final yellow = marked.getPixel(200, 300);
+    expect(yellow.r, greaterThan(yellow.b + 30));
+    // Seven pixels from its middle, the thick line is still there and the
+    // thin one is not.
+    expect(marked.getPixel(200, 307).b, lessThan(110));
+    expect(marked.getPixel(200, 107).b, closeTo(128, 12));
+    expect(HighlightPen.thin.width, lessThan(HighlightPen.thick.width));
+  });
+
+  test('a line is carried on in the same pen, and compares by value', () {
+    const line = PictureStroke(
+      points: [Point(0.1, 0.1)],
+      color: HighlightColor.pink,
+      pen: HighlightPen.thin,
+    );
+    final longer = line.to(const Point(0.2, 0.2));
+
+    expect(longer.points, hasLength(2));
+    expect(longer.color, HighlightColor.pink);
+    expect(longer.pen, HighlightPen.thin);
+    expect(longer, isNot(line));
+    expect(
+      line,
+      const PictureStroke(
+        points: [Point(0.1, 0.1)],
+        color: HighlightColor.pink,
+        pen: HighlightPen.thin,
+      ),
+    );
+  });
+
   test('crops a picture to the box', () {
     final cropped = img.decodeJpg(
       croppedPicture(
@@ -90,8 +136,8 @@ void main() {
       'nowhere else', () {
     final marked = img.decodeJpg(
       highlightedPicture(grey(width: 200, height: 200), [
-        [const Point(0.2, 0.5), const Point(0.8, 0.5)],
-        [const Point(0.5, 0.2), const Point(0.5, 0.8)],
+        const PictureStroke(points: [Point(0.2, 0.5), Point(0.8, 0.5)]),
+        const PictureStroke(points: [Point(0.5, 0.2), Point(0.5, 0.8)]),
       ]),
     )!;
 

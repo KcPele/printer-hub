@@ -305,6 +305,10 @@ class _Dim extends CustomPainter {
   bool shouldRepaint(_Dim old) => old.box != box;
 }
 
+/// A highlighter's ink as a colour: that of a real pen, in every theme.
+Color _ink(HighlightColor color) =>
+    Color.fromARGB(255, color.r, color.g, color.b);
+
 /// Paints the highlighter's lines as they are drawn.
 class _Ink extends CustomPainter {
   const new({required this.strokes});
@@ -313,20 +317,22 @@ class _Ink extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final pen = Paint()
-      // The yellow of a highlighter, in every theme.
-      ..color = Colors.yellow.withValues(alpha: 0.45)
-      ..strokeWidth = min(size.width, size.height) * highlighterWidth
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
     for (final stroke in strokes) {
+      final points = stroke.points;
       final path = Path()
-        ..moveTo(stroke.first.x * size.width, stroke.first.y * size.height);
-      for (final point in stroke) {
+        ..moveTo(points.first.x * size.width, points.first.y * size.height);
+      for (final point in points) {
         path.lineTo(point.x * size.width, point.y * size.height);
       }
-      canvas.drawPath(path, pen);
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = _ink(stroke.color).withValues(alpha: 0.45)
+          ..strokeWidth = min(size.width, size.height) * stroke.pen.width
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round
+          ..style = PaintingStyle.stroke,
+      );
     }
   }
 
@@ -402,30 +408,134 @@ class _Tools extends StatelessWidget {
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm,
       ),
-      child: Row(
-        children: state.tool == PictureTool.none
-            ? [
-                tool(
-                  Icons.crop,
-                  l10n.pictureCrop,
-                  () => cubit.choose(PictureTool.crop),
-                ),
-                tool(
-                  Icons.border_color_outlined,
-                  l10n.pictureHighlight,
-                  () => cubit.choose(PictureTool.highlight),
-                ),
-                tool(Icons.rotate_right, l10n.pictureTurn, cubit.turn),
-              ]
-            : [
-                tool(
-                  Icons.close,
-                  l10n.pictureCancel,
-                  () => cubit.choose(PictureTool.none),
-                ),
-                tool(Icons.check, l10n.pictureApply, cubit.apply),
-              ],
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (state.tool == PictureTool.highlight) ...[
+            _Highlighters(state: state),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          Row(
+            children: state.tool == PictureTool.none
+                ? [
+                    tool(
+                      Icons.crop,
+                      l10n.pictureCrop,
+                      () => cubit.choose(PictureTool.crop),
+                    ),
+                    tool(
+                      Icons.border_color_outlined,
+                      l10n.pictureHighlight,
+                      () => cubit.choose(PictureTool.highlight),
+                    ),
+                    tool(Icons.rotate_right, l10n.pictureTurn, cubit.turn),
+                  ]
+                : [
+                    tool(
+                      Icons.close,
+                      l10n.pictureCancel,
+                      () => cubit.choose(PictureTool.none),
+                    ),
+                    tool(Icons.check, l10n.pictureApply, cubit.apply),
+                  ],
+          ),
+        ],
       ),
+    );
+  }
+}
+
+/// The choice of highlighter: its ink, and whether it is the thin one or
+/// the thick.
+class _Highlighters extends StatelessWidget {
+  const new({required this.state});
+
+  final PictureState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final cubit = context.read<PictureCubit>();
+    String named(HighlightColor color) => switch (color) {
+      HighlightColor.yellow => l10n.pictureInkYellow,
+      HighlightColor.green => l10n.pictureInkGreen,
+      HighlightColor.pink => l10n.pictureInkPink,
+      HighlightColor.blue => l10n.pictureInkBlue,
+      HighlightColor.orange => l10n.pictureInkOrange,
+    };
+
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: [
+        for (final color in HighlightColor.values)
+          Semantics(
+            button: true,
+            selected: state.color == color,
+            label: named(color),
+            child: GestureDetector(
+              key: ValueKey('ink-${color.name}'),
+              behavior: HitTestBehavior.opaque,
+              onTap: () => cubit.pick(color: color),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: _ink(color),
+                    shape: BoxShape.circle,
+                    // The one in hand is ringed.
+                    border: Border.all(
+                      color: state.color == color ? _sign : _ground,
+                      width: 3,
+                    ),
+                  ),
+                  child: const SizedBox.square(dimension: 30),
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(width: AppSpacing.sm),
+        for (final pen in HighlightPen.values)
+          Semantics(
+            button: true,
+            selected: state.pen == pen,
+            label: pen == HighlightPen.thin
+                ? l10n.picturePenThin
+                : l10n.picturePenThick,
+            child: GestureDetector(
+              key: ValueKey('pen-${pen.name}'),
+              behavior: HitTestBehavior.opaque,
+              onTap: () => cubit.pick(pen: pen),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: state.pen == pen ? _sign : Colors.white24,
+                    width: 2,
+                  ),
+                ),
+                child: SizedBox.square(
+                  dimension: 38,
+                  // A line as wide as the pen draws.
+                  child: Center(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: _ink(state.color),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: SizedBox(
+                        width: 22,
+                        height: pen == HighlightPen.thin ? 4 : 12,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

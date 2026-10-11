@@ -134,6 +134,15 @@ class ScanState extends Equatable {
   /// True when [page] was taken with the phone's camera.
   bool fromCamera(ScannedPage page) => cameraPages.contains(page.file.path);
 
+  /// What a kept scan is recorded as. Any page from the camera makes it a
+  /// camera scan; files from the phone alone are files put together; the
+  /// rest is the printer's.
+  String get source {
+    if (pages.any(fromCamera)) return DocumentSources.cameraScan;
+    if (pages.every(fromPhone)) return DocumentSources.joinedFiles;
+    return DocumentSources.printerScan;
+  }
+
   /// Whether the words of a kept scan were read and kept with it. Null
   /// when they were not asked for, false when the phone could not read
   /// them.
@@ -723,9 +732,9 @@ class ScanCubit extends Cubit<ScanState> {
             : state.pages.length,
         // A scan with a page from the camera is a camera scan, and the
         // printer's only when the printer made some of it.
-        source: _sourceOfPages,
+        source: state.source,
         printerId:
-            _sourceOfPages == DocumentSources.joinedFiles ||
+            state.source == DocumentSources.joinedFiles ||
                 state.pages.every(state.fromCamera)
             ? null
             : _printer?.id,
@@ -815,15 +824,6 @@ class ScanCubit extends Cubit<ScanState> {
         // Documents.
       }
     }
-  }
-
-  /// What a kept scan is recorded as. Any page from the camera makes it a
-  /// camera scan; files from the phone alone are files put together; the
-  /// rest is the printer's.
-  String get _sourceOfPages {
-    if (state.pages.any(state.fromCamera)) return DocumentSources.cameraScan;
-    if (state.pages.every(state.fromPhone)) return DocumentSources.joinedFiles;
-    return DocumentSources.printerScan;
   }
 
   /// Goes back to the pages, to add to them or change their order.

@@ -81,7 +81,12 @@ class PdfPicturesView extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.lg),
         // Each shown as it looks, and opened by a touch.
-        MadeFiles(files: state.files),
+        MadeFiles(
+          files: state.files,
+          source: cubit.long
+              ? DocumentSources.longPicture
+              : DocumentSources.pdfPictures,
+        ),
         const SizedBox(height: AppSpacing.xl),
         AppSubmitButton(label: l10n.scanShare, onPressed: cubit.share),
       ],
