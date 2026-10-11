@@ -2170,7 +2170,7 @@ export interface components {
          * DocumentSource
          * @enum {string}
          */
-        DocumentSource: "upload" | "printer_scan" | "camera_scan";
+        DocumentSource: "upload" | "printer_scan" | "camera_scan" | "joined_files" | "pdf_pictures" | "long_picture" | "photo_sheet" | "pages_per_sheet" | "code_sheet" | "note" | "printable" | "edited_picture";
         /**
          * DocumentUpdate
          * @description Fields left out are unchanged.
@@ -6484,7 +6484,8 @@ export interface operations {
                 q?: string | null;
                 tag?: string | null;
                 mime_type?: string | null;
-                source?: components["schemas"]["DocumentSource"] | null;
+                /** @description Where it came from. Repeat it to match any of several. */
+                source?: components["schemas"]["DocumentSource"][] | null;
                 source_printer_id?: string | null;
                 created_from?: string | null;
                 created_to?: string | null;

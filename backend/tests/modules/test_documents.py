@@ -271,7 +271,14 @@ async def test_search(client: httpx.AsyncClient, session: AsyncSession) -> None:
         source_printer_id=str(scene.printer.id),
         ocr_text="Lease agreement between the parties",
     )
-    await _create(client, scene, file_name="Photo_100%.jpg", mime_type="image/jpeg", tags=["trip"])
+    await _create(
+        client,
+        scene,
+        file_name="Photo_100%.jpg",
+        mime_type="image/jpeg",
+        tags=["trip"],
+        source="pdf_pictures",  # made by one of the app's tools
+    )
 
     async def names(**params: Any) -> list[str]:
         response = await client.get(_url(scene), headers=scene.headers, params=params)
@@ -286,6 +293,12 @@ async def test_search(client: httpx.AsyncClient, session: AsyncSession) -> None:
     assert await names(tag="Trip") == ["Photo_100%.jpg"]
     assert await names(mime_type="image/jpeg") == ["Photo_100%.jpg"]
     assert await names(source="printer_scan") == ["Scan 0042.pdf"]
+    assert await names(source="pdf_pictures") == ["Photo_100%.jpg"]
+    # Any of several.
+    assert await names(source=["printer_scan", "pdf_pictures"]) == [
+        "Photo_100%.jpg",
+        "Scan 0042.pdf",
+    ]
     assert await names(source_printer_id=str(scene.printer.id)) == ["Scan 0042.pdf"]
     assert len(await names()) == 3
 

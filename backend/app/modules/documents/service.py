@@ -40,7 +40,7 @@ class DocumentFilters:
     query: str | None = None
     tag: str | None = None
     mime_type: str | None = None
-    source: DocumentSource | None = None
+    sources: tuple[DocumentSource, ...] = ()
     source_printer_id: uuid.UUID | None = None
     created_from: datetime | None = None
     created_to: datetime | None = None
@@ -114,8 +114,8 @@ async def list_documents(
         stmt = stmt.where(Document.tags.contains([filters.tag.strip().lower()]))
     if filters.mime_type:
         stmt = stmt.where(Document.mime_type == filters.mime_type)
-    if filters.source is not None:
-        stmt = stmt.where(Document.source == filters.source)
+    if filters.sources:
+        stmt = stmt.where(Document.source.in_(filters.sources))
     if filters.source_printer_id is not None:
         stmt = stmt.where(Document.source_printer_id == filters.source_printer_id)
     if filters.created_from is not None:

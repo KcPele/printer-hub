@@ -2647,7 +2647,16 @@
         "enum": [
           "upload",
           "printer_scan",
-          "camera_scan"
+          "camera_scan",
+          "joined_files",
+          "pdf_pictures",
+          "long_picture",
+          "photo_sheet",
+          "pages_per_sheet",
+          "code_sheet",
+          "note",
+          "printable",
+          "edited_picture"
         ],
         "title": "DocumentSource",
         "type": "string"
@@ -10887,18 +10896,23 @@
             }
           },
           {
+            "description": "Where it came from. Repeat it to match any of several.",
             "in": "query",
             "name": "source",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "$ref": "#/components/schemas/DocumentSource"
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentSource"
+                  },
+                  "type": "array"
                 },
                 {
                   "type": "null"
                 }
               ],
+              "description": "Where it came from. Repeat it to match any of several.",
               "title": "Source"
             }
           },

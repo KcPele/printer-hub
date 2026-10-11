@@ -26,6 +26,8 @@ abstract class DocumentsClient {
   ///
   /// [q] - Matches file name, recognized text, or a tag.
   ///
+  /// [source] - Where it came from. Repeat it to match any of several.
+  ///
   /// [cursor] - `next_cursor` from the previous page.
   @GET('/api/v1/organizations/{org_id}/documents')
   Future<PageDocumentRead> listDocuments({
@@ -34,7 +36,7 @@ abstract class DocumentsClient {
     @Query('q') String? q,
     @Query('tag') String? tag,
     @Query('mime_type') String? mimeType,
-    @Query('source') DocumentSource? source,
+    @Query('source') List<DocumentSource>? source,
     @Query('source_printer_id') String? sourcePrinterId,
     @Query('created_from') DateTime? createdFrom,
     @Query('created_to') DateTime? createdTo,

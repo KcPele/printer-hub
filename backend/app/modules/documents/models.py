@@ -13,6 +13,17 @@ class DocumentSource(enum.StrEnum):
     PRINTER_SCAN = "printer_scan"
     # Captured with the phone camera; never presented as a printer scan (FR-SCN-028).
     CAMERA_SCAN = "camera_scan"
+    # Made on the phone by one of the app's tools, so a list can be narrowed
+    # to what one tool made. The name says which.
+    JOINED_FILES = "joined_files"
+    PDF_PICTURES = "pdf_pictures"
+    LONG_PICTURE = "long_picture"
+    PHOTO_SHEET = "photo_sheet"
+    PAGES_PER_SHEET = "pages_per_sheet"
+    CODE_SHEET = "code_sheet"
+    NOTE = "note"
+    PRINTABLE = "printable"
+    EDITED_PICTURE = "edited_picture"
 
 
 class StorageMode(enum.StrEnum):

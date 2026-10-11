@@ -12,6 +12,24 @@ enum DocumentSource {
   printerScan('printer_scan'),
   @JsonValue('camera_scan')
   cameraScan('camera_scan'),
+  @JsonValue('joined_files')
+  joinedFiles('joined_files'),
+  @JsonValue('pdf_pictures')
+  pdfPictures('pdf_pictures'),
+  @JsonValue('long_picture')
+  longPicture('long_picture'),
+  @JsonValue('photo_sheet')
+  photoSheet('photo_sheet'),
+  @JsonValue('pages_per_sheet')
+  pagesPerSheet('pages_per_sheet'),
+  @JsonValue('code_sheet')
+  codeSheet('code_sheet'),
+  @JsonValue('note')
+  note('note'),
+  @JsonValue('printable')
+  printable('printable'),
+  @JsonValue('edited_picture')
+  editedPicture('edited_picture'),
 
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);
