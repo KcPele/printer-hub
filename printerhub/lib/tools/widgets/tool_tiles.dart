@@ -8,17 +8,15 @@ class ToolTile extends StatelessWidget {
     required this.title,
     required this.body,
     required this.onTap,
-    this.soon,
     super.key,
   });
 
-  /// A tool that is planned and not built yet: shown greyed, marked with
-  /// [soon], and not to be tapped.
+  /// A tool that is planned and not built yet: shown greyed, and not to
+  /// be tapped. The heading it sits under says it is on the way.
   const new planned({
     required this.icon,
     required this.title,
     required this.body,
-    required String this.soon,
     super.key,
   }) : onTap = null;
 
@@ -29,17 +27,12 @@ class ToolTile extends StatelessWidget {
   /// Null for a tool that is not built yet.
   final VoidCallback? onTap;
 
-  /// The words that mark a tool as not built yet, such as "Coming soon".
-  /// Null for one that works.
-  final String? soon;
-
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final textTheme = context.textTheme;
 
-    final soon = this.soon;
-    final ready = soon == null;
+    final ready = onTap != null;
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -48,26 +41,18 @@ class ToolTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: ready ? colors.primary : colors.outline,
-                  shape: BoxShape.circle,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  child: Icon(
-                    icon,
-                    color: ready ? colors.onPrimary : colors.textMuted,
-                  ),
-                ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: ready ? colors.primary : colors.outline,
+              shape: BoxShape.circle,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              child: Icon(
+                icon,
+                color: ready ? colors.onPrimary : colors.textMuted,
               ),
-              if (soon != null) ...[
-                const Spacer(),
-                StatusPill(status: AppStatus.neutral, label: soon),
-              ],
-            ],
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(

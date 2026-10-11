@@ -3557,10 +3557,6 @@
     "@themeBrightnessBody": {
         "description": "Explains the light or dark choice"
     },
-    "toolsSoon": "Coming soon",
-    "@toolsSoon": {
-        "description": "Marks a tool that is planned and not built yet"
-    },
     "toolsSoonTitle": "Coming soon",
     "@toolsSoonTitle": {
         "description": "Title above the tools that are planned and not built yet"

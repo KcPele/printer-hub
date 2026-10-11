@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printerhub/app/app.dart';
 import 'package:printerhub/tools/tools.dart';
@@ -66,11 +67,14 @@ void main() {
   testWidgets('shows what is planned, greyed and not to be opened', (
     tester,
   ) async {
+    // As wide as a phone, where a card has little room.
+    await tester.binding.setSurfaceSize(const Size(390, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await pump(tester);
 
     // Those that will work on the phone, then those that need AI.
     await tester.scrollUntilVisible(find.text('Lock a PDF'), 120);
-    expect(find.text('Coming soon'), findsWidgets);
+    expect(find.text('Coming soon', skipOffstage: false), findsOneWidget);
     await tester.scrollUntilVisible(find.text('To Word'), 120);
     expect(
       find.text('Coming soon: AI tools', skipOffstage: false),
@@ -82,7 +86,6 @@ void main() {
     final tile = tester.widget<ToolTile>(
       find.ancestor(of: find.text('To Word'), matching: find.byType(ToolTile)),
     );
-    expect(tile.soon, 'Coming soon');
     expect(tile.onTap, isNull);
     await tester.tap(find.text('To Word'));
     verifyNever(() => router.push<Object?>(any()));

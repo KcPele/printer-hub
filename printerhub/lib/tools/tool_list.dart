@@ -125,67 +125,56 @@ List<Widget> comingTools(BuildContext context, {required bool ai}) {
             icon: Icons.translate_outlined,
             title: l10n.toolsSoonTranslate,
             body: l10n.toolsSoonTranslateBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.auto_awesome_outlined,
             title: l10n.toolsSoonChat,
             body: l10n.toolsSoonChatBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.lightbulb_outline,
             title: l10n.toolsSoonSolver,
             body: l10n.toolsSoonSolverBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.article_outlined,
             title: l10n.toolsSoonWord,
             body: l10n.toolsSoonWordBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.table_chart_outlined,
             title: l10n.toolsSoonExcel,
             body: l10n.toolsSoonExcelBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.slideshow_outlined,
             title: l10n.toolsSoonSlides,
             body: l10n.toolsSoonSlidesBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.functions_outlined,
             title: l10n.toolsSoonFormula,
             body: l10n.toolsSoonFormulaBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.auto_fix_high_outlined,
             title: l10n.toolsSoonErase,
             body: l10n.toolsSoonEraseBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.cleaning_services_outlined,
             title: l10n.toolsSoonMarks,
             body: l10n.toolsSoonMarksBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.photo_filter_outlined,
             title: l10n.toolsSoonRestore,
             body: l10n.toolsSoonRestoreBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.pin_outlined,
             title: l10n.toolsSoonCount,
             body: l10n.toolsSoonCountBody,
-            soon: l10n.toolsSoon,
           ),
         ]
       : [
@@ -193,31 +182,26 @@ List<Widget> comingTools(BuildContext context, {required bool ai}) {
             icon: Icons.badge_outlined,
             title: l10n.toolsSoonIdPhoto,
             body: l10n.toolsSoonIdPhotoBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.menu_book_outlined,
             title: l10n.toolsSoonBook,
             body: l10n.toolsSoonBookBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.draw_outlined,
             title: l10n.toolsSoonEditPdf,
             body: l10n.toolsSoonEditPdfBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.manage_search_outlined,
             title: l10n.toolsSoonSearchable,
             body: l10n.toolsSoonSearchableBody,
-            soon: l10n.toolsSoon,
           ),
           ToolTile.planned(
             icon: Icons.lock_outline,
             title: l10n.toolsSoonLock,
             body: l10n.toolsSoonLockBody,
-            soon: l10n.toolsSoon,
           ),
         ];
 }
