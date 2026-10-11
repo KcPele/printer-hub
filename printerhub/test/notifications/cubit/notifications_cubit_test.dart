@@ -2,6 +2,7 @@ import 'package:api_client/api_client.dart';
 import 'package:api_client/testing.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:printerhub/app/app.dart';
 import 'package:printerhub/notifications/notifications.dart';
 
 import '../../helpers/helpers.dart';
@@ -33,6 +34,68 @@ void main() {
   List<bool> read(NotificationsState state) => [
     for (final one in state.notifications) one.isRead,
   ];
+
+  group('opened again', () {
+    late Remembered remembered;
+
+    NotificationsCubit build() {
+      final cubit = NotificationsCubit(
+        notificationsRepository: backend.notifications,
+        remembered: remembered,
+      );
+      addTearDown(cubit.close);
+      return cubit;
+    }
+
+    setUp(() => remembered = Remembered());
+
+    test('shows what it showed last at once, and reads the news behind '
+        'it', () async {
+      final first = build();
+      await first.load();
+      await first.read(first.state.notifications.first);
+      backend.notificationList = [
+        notificationBody(id: 'notification-4', title: 'Copy made'),
+        ...backend.notificationList,
+      ];
+
+      final again = build();
+      // No wait: the list is there as the screen opens, as it was left.
+      expect(again.state.status, NotificationsStatus.ready);
+      expect(again.state.notifications, hasLength(3));
+      expect(again.state.notifications.first.isRead, isTrue);
+      final seen = <NotificationsStatus>[];
+      final watching = again.stream.listen((state) => seen.add(state.status));
+
+      await again.load();
+      await pumpEventQueue();
+      await watching.cancel();
+
+      expect(seen, [NotificationsStatus.ready]);
+      expect(again.state.notifications.first.title, 'Copy made');
+    });
+
+    test('keeps what it showed when the news cannot be read', () async {
+      await build().load();
+      backend.offline = true;
+
+      final again = build();
+      await again.load();
+
+      expect(again.state.status, NotificationsStatus.ready);
+      expect(again.state.notifications, hasLength(3));
+      expect(again.state.error, isA<ApiUnreachable>());
+      // The list with the error in it is not what is kept.
+      expect(build().state.error, isNull);
+    });
+
+    test('starts from nothing once it has been forgotten', () async {
+      await build().load();
+      remembered.clear();
+
+      expect(build().state, const NotificationsState());
+    });
+  });
 
   blocTest<NotificationsCubit, NotificationsState>(
     'lists what the account was told, newest first',

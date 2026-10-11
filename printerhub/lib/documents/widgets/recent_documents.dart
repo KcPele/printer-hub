@@ -5,6 +5,7 @@ import 'package:documents_repository/documents_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:printerhub/app/remembered.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/documents/cubit/documents_cubit.dart';
 import 'package:printerhub/documents/view/documents_page.dart';
@@ -44,6 +45,7 @@ class RecentDocuments extends StatelessWidget {
           sharer: context.read<ScanSharer>(),
           organizationId: organizationId,
           bringsRecent: true,
+          remembered: context.read<Remembered>(),
         );
         unawaited(cubit.load());
         return cubit;

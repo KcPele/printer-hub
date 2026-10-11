@@ -2,6 +2,7 @@ import 'package:api_client/api_client.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:notifications_repository/notifications_repository.dart';
+import 'package:printerhub/app/remembered.dart';
 
 enum NotificationsStatus { loading, ready, failed }
 
@@ -34,13 +35,32 @@ class NotificationsState extends Equatable {
 
 /// What the account has been told, and marking it read.
 class NotificationsCubit extends Cubit<NotificationsState> {
-  new({required this._notificationsRepository})
-    : super(const NotificationsState());
+  new({required this._notificationsRepository, this._remembered})
+    : super(
+        _remembered?.of<NotificationsState>(_key) ?? const NotificationsState(),
+      );
+
+  static const String _key = 'notifications';
 
   final NotificationsRepository _notificationsRepository;
 
+  /// Where the list is kept between visits, so the screen opens on what
+  /// it showed last and not on a wait.
+  final Remembered? _remembered;
+
+  @override
+  void onChange(Change<NotificationsState> change) {
+    super.onChange(change);
+    final next = change.nextState;
+    if (next.status == NotificationsStatus.ready && next.error == null) {
+      _remembered?.keep(_key, next);
+    }
+  }
+
+  /// Reads the list. What is already shown stays until the news is in.
   Future<void> load() async {
-    emit(const NotificationsState());
+    final shown = state.status == NotificationsStatus.ready;
+    if (!shown) emit(const NotificationsState());
     try {
       final page = await _notificationsRepository.list();
       if (isClosed) return;
@@ -54,7 +74,13 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     } on ApiException catch (error) {
       if (isClosed) return;
       emit(
-        NotificationsState(status: NotificationsStatus.failed, error: error),
+        shown
+            // What was read before is still worth showing.
+            ? _with(error: error)
+            : NotificationsState(
+                status: NotificationsStatus.failed,
+                error: error,
+              ),
       );
     }
   }

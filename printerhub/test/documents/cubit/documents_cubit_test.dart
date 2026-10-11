@@ -5,6 +5,7 @@ import 'package:api_client/testing.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:documents_repository/documents_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:printerhub/app/app.dart';
 import 'package:printerhub/documents/documents.dart';
 import 'package:printerhub/library/library_item.dart';
 
@@ -504,7 +505,10 @@ void main() {
       expect(cubit.state.thumbnails, isEmpty);
 
       final file = await cubit.fetch(contract);
+      // The library says it has a new document, and the list reads again.
+      await pumpEventQueue();
       await cubit.load();
+      await pumpEventQueue();
 
       // Kept on the phone from then on.
       expect(file!.path, backend.library.fileOf('document-3')!.path);
@@ -620,6 +624,91 @@ void main() {
       final bringing = cubit.bringRecent();
       await cubit.close();
       await bringing;
+    });
+  });
+
+  group('opened again', () {
+    late Remembered remembered;
+
+    DocumentsCubit build() {
+      final cubit = DocumentsCubit(
+        documentsRepository: backend.documentsKept,
+        library: backend.library,
+        renderer: backend.renderer,
+        sharer: backend.sharer,
+        organizationId: _org,
+        remembered: remembered,
+      );
+      addTearDown(cubit.close);
+      return cubit;
+    }
+
+    setUp(() => remembered = Remembered());
+
+    test('shows what it showed last at once, and reads the news behind '
+        'it', () async {
+      await build().load();
+      backend.documentList = [
+        documentBody(id: 'document-4', name: 'New.pdf'),
+        ...backend.documentList,
+      ];
+
+      final again = build();
+      // No wait: the list is there as the screen opens.
+      expect(again.state.status, DocumentsStatus.ready);
+      expect(names(again.state), hasLength(3));
+      final seen = <DocumentsStatus>[];
+      final watching = again.stream.listen((state) => seen.add(state.status));
+
+      await again.load();
+      await pumpEventQueue();
+      await watching.cancel();
+
+      expect(seen, everyElement(DocumentsStatus.ready));
+      expect(names(again.state).first, 'New.pdf');
+    });
+
+    test('keeps what it showed when the news cannot be read', () async {
+      await build().load();
+      backend.fail('GET $_documents', 500, 'server.error');
+
+      final again = build();
+      await again.load();
+
+      expect(again.state.status, DocumentsStatus.ready);
+      expect(names(again.state), hasLength(3));
+      expect(again.state.error, isA<ApiProblem>());
+      // And the list with the error in it is not what is kept.
+      expect(build().state.error, isNull);
+    });
+
+    test('does not keep a search, or a list in the middle of a '
+        'change', () async {
+      final cubit = build();
+      await cubit.search('contract');
+      expect(build().state.status, DocumentsStatus.loading);
+
+      await cubit.search('');
+      final renaming = cubit.rename(cubit.state.documents.first, 'Deed.pdf');
+      expect(build().state.busyId, isNull);
+      await renaming;
+      expect(names(build().state).first, 'Deed.pdf');
+    });
+
+    test('is another list in another workspace', () async {
+      await build().load();
+
+      final elsewhere = DocumentsCubit(
+        documentsRepository: backend.documentsKept,
+        library: backend.library,
+        renderer: backend.renderer,
+        sharer: backend.sharer,
+        organizationId: 'another-workspace',
+        remembered: remembered,
+      );
+      addTearDown(elsewhere.close);
+
+      expect(elsewhere.state.status, DocumentsStatus.loading);
     });
   });
 

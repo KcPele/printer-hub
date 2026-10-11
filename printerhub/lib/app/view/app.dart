@@ -11,6 +11,7 @@ import 'package:notifications_repository/notifications_repository.dart';
 import 'package:organizations_repository/organizations_repository.dart';
 import 'package:preferences_repository/preferences_repository.dart';
 import 'package:printerhub/activity/job_recovery.dart';
+import 'package:printerhub/app/remembered.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/library/cubit/sync_cubit.dart';
@@ -114,6 +115,7 @@ class App extends StatelessWidget {
         RepositoryProvider.value(value: signatureStore),
         RepositoryProvider.value(value: linkOpener),
         RepositoryProvider.value(value: library),
+        RepositoryProvider(create: (_) => Remembered()),
       ],
       child: MultiBlocProvider(
         providers: [
@@ -250,10 +252,15 @@ class _AppViewState extends State<AppView> {
     // A job the app was closed during is settled as soon as there is a
     // workspace to settle it in: at start, and on moving to another.
     final session = context.read<SessionCubit>();
+    final remembered = context.read<Remembered>();
     _workspaces = session.stream
         .map((state) => state.organization?.id)
         .distinct()
-        .listen(_recover);
+        .listen((organizationId) {
+          // What one person's screens showed is not for the next.
+          if (organizationId == null) remembered.clear();
+          _recover(organizationId);
+        });
     _recover(session.state.organization?.id);
   }
 

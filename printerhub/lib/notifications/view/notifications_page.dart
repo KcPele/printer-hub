@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:notifications_repository/notifications_repository.dart';
 import 'package:printerhub/activity/job_words.dart';
+import 'package:printerhub/app/remembered.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
@@ -23,6 +24,7 @@ class NotificationsPage extends StatelessWidget {
       create: (context) {
         final cubit = NotificationsCubit(
           notificationsRepository: context.read<NotificationsRepository>(),
+          remembered: context.read<Remembered>(),
         );
         unawaited(cubit.load());
         return cubit;

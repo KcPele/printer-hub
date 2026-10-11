@@ -5,6 +5,7 @@ import 'package:api_client/api_client.dart';
 import 'package:bloc/bloc.dart';
 import 'package:documents_repository/documents_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:printerhub/app/remembered.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/library/library_item.dart';
 import 'package:printerhub/print/documents.dart';
@@ -101,7 +102,11 @@ class DocumentsCubit extends Cubit<DocumentsState> {
     required this._sharer,
     required this._organizationId,
     this._bringsRecent = false,
-  }) : super(const DocumentsState()) {
+    this._remembered,
+  }) : super(
+         _remembered?.of<DocumentsState>('documents.$_organizationId') ??
+             const DocumentsState(),
+       ) {
     // Something was made, or reached the account: the list is read again
     // without being cleared first.
     _changes = _library.changes.listen((_) {
@@ -121,6 +126,26 @@ class DocumentsCubit extends Cubit<DocumentsState> {
   /// the account are brought onto the phone as it is read.
   final bool _bringsRecent;
   bool _bringing = false;
+
+  /// Where the list is kept between visits, so a screen opens on what it
+  /// showed last and not on a wait.
+  final Remembered? _remembered;
+
+  @override
+  void onChange(Change<DocumentsState> change) {
+    super.onChange(change);
+    final next = change.nextState;
+    // The whole list as it stands at rest: not a search, not mid-change.
+    if (next.status == DocumentsStatus.ready &&
+        next.query.isEmpty &&
+        next.busyId == null &&
+        next.error == null &&
+        !next.fetchFailed &&
+        !next.loadingMore) {
+      _remembered?.keep('documents.$_organizationId', next);
+    }
+  }
+
   late final StreamSubscription<void> _changes;
 
   @override
@@ -133,7 +158,10 @@ class DocumentsCubit extends Cubit<DocumentsState> {
   int _reads = 0;
 
   /// Reads the list from the start.
-  Future<void> load() => search(state.query);
+  Future<void> load() {
+    // What is already shown stays until the news is in.
+    return _read(state.query, quiet: state.status == DocumentsStatus.ready);
+  }
 
   /// Reads the list again for the documents that match [query].
   Future<void> search(String query) => _read(query);
@@ -187,11 +215,14 @@ class DocumentsCubit extends Cubit<DocumentsState> {
     } on ApiProblem catch (error) {
       if (read != _reads || isClosed) return;
       emit(
-        DocumentsState(
-          status: DocumentsStatus.failed,
-          query: query,
-          error: error,
-        ),
+        quiet
+            // What was read before is still worth showing.
+            ? _with(error: error)
+            : DocumentsState(
+                status: DocumentsStatus.failed,
+                query: query,
+                error: error,
+              ),
       );
     } on ApiException {
       // No network: what this phone has is still there to open.

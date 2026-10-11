@@ -163,6 +163,7 @@ extension PumpApp on WidgetTester {
           RepositoryProvider<PageCamera>.value(value: api.camera),
           RepositoryProvider<SignatureStore>.value(value: api.signatures),
           RepositoryProvider<LinkOpener>.value(value: api.links),
+          RepositoryProvider<Remembered>(create: (_) => Remembered()),
           RepositoryProvider<Library>.value(value: api.library),
         ],
         child: MultiBlocProvider(
