@@ -12,7 +12,10 @@ import 'package:printerhub/tools/view/make_scaffold.dart';
 
 /// Sets the pages of a PDF two or four to a sheet, to save paper.
 class PagesPerSheetPage extends StatelessWidget {
-  const new({super.key});
+  const new({this.document, super.key});
+
+  /// A PDF that is already open. Null asks for one.
+  final PickedDocument? document;
 
   @override
   Widget build(BuildContext context) {
@@ -20,15 +23,20 @@ class PagesPerSheetPage extends StatelessWidget {
       MaterialLocalizations.of(context).formatMediumDate(DateTime.now()),
     );
     return BlocProvider(
-      create: (context) => PagesPerSheetCubit(
-        sharer: context.read<ScanSharer>(),
-        keep: context.read<Library>().keeper(
-          context.read<SessionCubit>().state.organization!.id,
-        ),
-        name: name,
-        picker: context.read<PrintDocuments>().picker,
-        renderer: context.read<PrintDocuments>().renderer,
-      ),
+      create: (context) {
+        final cubit = PagesPerSheetCubit(
+          sharer: context.read<ScanSharer>(),
+          keep: context.read<Library>().keeper(
+            context.read<SessionCubit>().state.organization!.id,
+          ),
+          name: name,
+          picker: context.read<PrintDocuments>().picker,
+          renderer: context.read<PrintDocuments>().renderer,
+        );
+        final document = this.document;
+        if (document != null) cubit.use(document);
+        return cubit;
+      },
       child: const PagesPerSheetView(),
     );
   }

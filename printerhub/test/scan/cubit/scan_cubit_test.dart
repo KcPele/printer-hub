@@ -666,6 +666,19 @@ void main() {
       expect(state.pages.last.file.path, picture.path);
     });
 
+    test('are taken as pages when they are already open, with nothing to '
+        'choose', () async {
+      backend.renderer.pageCount = 2;
+      final cubit = phoneOnly();
+
+      await cubit.addDocuments([pickedPdf()]);
+
+      expect(backend.picker.opened, 0);
+      expect(cubit.state.step, ScanStep.review);
+      expect(cubit.state.pages, hasLength(2));
+      expect(cubit.state.redrawn, isTrue);
+    });
+
     test('that are all pictures leave nothing redrawn', () async {
       backend.picker.files = [pickedPicture(backend.scans, name: 'A.png')];
       final cubit = phoneOnly();

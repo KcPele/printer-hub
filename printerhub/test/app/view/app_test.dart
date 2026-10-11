@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:api_client/testing.dart';
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -437,6 +440,68 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(ToolsPage), findsOneWidget);
+      });
+
+      testWidgets('opens a document, and each tool on it with the '
+          'document already in', (tester) async {
+        backend.features = {'local_ocr': true};
+        await pump(tester);
+        await tester.pumpAndSettle();
+        final file = pickedPdfFile(backend.scans, name: 'Contract.pdf');
+        GoRouter router() =>
+            GoRouter.of(tester.element(find.byType(Scaffold).last));
+
+        router().go(AppRoutes.documents);
+        await tester.pumpAndSettle();
+        final document = OpenDocument(
+          file: File(file.path),
+          name: 'Contract.pdf',
+          mimeType: 'application/pdf',
+        );
+        unawaited(router().push(AppRoutes.documentView, extra: document));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(DocumentViewPage), findsOneWidget);
+        expect(find.text('Contract.pdf'), findsWidgets);
+
+        for (final (route, screen) in [
+          (AppRoutes.documentEdit, ScanPage),
+          (AppRoutes.documentText, ExtractTextPage),
+          (AppRoutes.documentPictures, PdfPicturesPage),
+          (AppRoutes.documentLongPicture, PdfPicturesPage),
+          (AppRoutes.documentPerSheet, PagesPerSheetPage),
+        ]) {
+          unawaited(router().push(route, extra: document.picked));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          expect(find.byType(screen), findsOneWidget);
+
+          router().pop();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          expect(find.byType(DocumentViewPage), findsOneWidget);
+        }
+
+        // Pages per sheet has the PDF, with nothing to choose.
+        unawaited(
+          router().push(AppRoutes.documentPerSheet, extra: document.picked),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text('Choose another'), findsOneWidget);
+      });
+
+      testWidgets('goes to the documents when the open one is no longer '
+          'known', (tester) async {
+        await pump(tester);
+        await tester.pumpAndSettle();
+
+        GoRouter.of(tester.element(find.byType(Scaffold).last))
+            .go(AppRoutes.documentView);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DocumentViewPage), findsNothing);
+        expect(find.byType(DocumentsPage), findsOneWidget);
       });
 
       testWidgets('opens each tool from the Tools screen', (tester) async {

@@ -3708,5 +3708,21 @@
     "documentViewFailedBody": "Share it to open it in another app.",
     "@documentViewFailedBody": {
         "description": "What to do when a document cannot be drawn on the phone"
+    },
+    "documentMore": "More",
+    "@documentMore": {
+        "description": "Button on an open document that lists what else can be done with it"
+    },
+    "documentMoreTitle": "Do more with it",
+    "@documentMoreTitle": {
+        "description": "Title of the list of tools for an open document"
+    },
+    "documentToolEdit": "Edit the pages",
+    "@documentToolEdit": {
+        "description": "Tool that opens a document's pages to change them"
+    },
+    "documentToolEditBody": "Reorder, turn, remove, sign, watermark",
+    "@documentToolEditBody": {
+        "description": "What editing a document's pages offers"
     }
 }

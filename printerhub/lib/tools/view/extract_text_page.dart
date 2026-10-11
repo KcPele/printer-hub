@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,17 +12,25 @@ import 'package:printerhub/tools/view/tool_scaffold.dart';
 
 /// Reads the words in a PDF or a picture, to copy or share.
 class ExtractTextPage extends StatelessWidget {
-  const new({super.key});
+  const new({this.document, super.key});
+
+  /// A document that is already open, read at once. Null asks for one.
+  final PickedDocument? document;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ExtractTextCubit(
-        picker: context.read<PrintDocuments>().picker,
-        renderer: context.read<PrintDocuments>().renderer,
-        reader: context.read<ScanTextReader>(),
-        sharer: context.read<ScanSharer>(),
-      ),
+      create: (context) {
+        final cubit = ExtractTextCubit(
+          picker: context.read<PrintDocuments>().picker,
+          renderer: context.read<PrintDocuments>().renderer,
+          reader: context.read<ScanTextReader>(),
+          sharer: context.read<ScanSharer>(),
+        );
+        final document = this.document;
+        if (document != null) unawaited(cubit.start(document));
+        return cubit;
+      },
       child: const ExtractTextView(),
     );
   }

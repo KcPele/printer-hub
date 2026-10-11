@@ -89,6 +89,17 @@ abstract final class AppRoutes {
   /// The documents the workspace keeps.
   static const String documents = '/activity/documents';
 
+  /// A document, open. Takes an `OpenDocument` as its extra.
+  static const String documentView = '/activity/documents/view';
+
+  /// The tools, opened on a document that is already open. Each takes a
+  /// `PickedDocument` as its extra.
+  static const String documentEdit = '/activity/documents/edit';
+  static const String documentText = '/activity/documents/text';
+  static const String documentPictures = '/activity/documents/pictures';
+  static const String documentLongPicture = '/activity/documents/long-picture';
+  static const String documentPerSheet = '/activity/documents/per-sheet';
+
   /// One job from the history.
   static String job(String id) => '/activity/$id';
   static const String settings = '/settings';
@@ -340,6 +351,51 @@ GoRouter createAppRouter({
                   GoRoute(
                     path: 'documents',
                     builder: (context, state) => const DocumentsPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'view',
+                        builder: (context, state) => switch (state.extra) {
+                          final OpenDocument document => DocumentViewPage(
+                            document: document,
+                          ),
+                          // Come back to after the app was closed: the
+                          // open document is no longer known.
+                          _ => const DocumentsPage(),
+                        },
+                      ),
+                      GoRoute(
+                        path: 'edit',
+                        builder: (context, state) => ScanPage(
+                          startWithDocuments: [?state.extra as PickedDocument?],
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'text',
+                        builder: (context, state) => ExtractTextPage(
+                          document: state.extra as PickedDocument?,
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'pictures',
+                        builder: (context, state) => PdfPicturesPage(
+                          long: false,
+                          document: state.extra as PickedDocument?,
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'long-picture',
+                        builder: (context, state) => PdfPicturesPage(
+                          long: true,
+                          document: state.extra as PickedDocument?,
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'per-sheet',
+                        builder: (context, state) => PagesPerSheetPage(
+                          document: state.extra as PickedDocument?,
+                        ),
+                      ),
+                    ],
                   ),
                   GoRoute(
                     path: ':jobId',

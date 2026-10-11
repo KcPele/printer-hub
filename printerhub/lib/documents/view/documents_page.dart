@@ -9,7 +9,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/documents/cubit/documents_cubit.dart';
 import 'package:printerhub/documents/document_words.dart';
-import 'package:printerhub/documents/view/document_view_page.dart';
+import 'package:printerhub/documents/open_document.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/library/library.dart';
@@ -199,13 +199,14 @@ class DocumentCard extends StatelessWidget {
     final l10n = context.l10n;
     switch (action) {
       case _DocumentAction.open:
-        // Opened to be read here, on the phone.
-        final navigator = Navigator.of(context);
+        // Opened to be read here, on the phone, with what can be done
+        // with it.
         final file = await cubit.fetch(document);
-        if (file == null) return;
-        await navigator.push<void>(
-          MaterialPageRoute(
-            builder: (_) => DocumentViewPage(
+        if (file == null || !context.mounted) return;
+        unawaited(
+          context.push(
+            AppRoutes.documentView,
+            extra: OpenDocument(
               file: file,
               name: document.name,
               mimeType: document.mimeType,

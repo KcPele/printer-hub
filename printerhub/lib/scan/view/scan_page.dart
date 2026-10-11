@@ -33,6 +33,7 @@ class ScanPage extends StatelessWidget {
     this.printerId,
     this.startWithPictures = false,
     this.startWithFiles = false,
+    this.startWithDocuments = const [],
     super.key,
   });
 
@@ -45,6 +46,10 @@ class ScanPage extends StatelessWidget {
   /// True opens it for PDFs and pictures at once: the "Merge files" and
   /// "Take pages from a PDF" tools are this screen, begun that way.
   final bool startWithFiles;
+
+  /// Documents that are already open, taken as pages at once: a document
+  /// is brought here to have its pages changed.
+  final List<PickedDocument> startWithDocuments;
 
   @override
   Widget build(BuildContext context) {
@@ -64,20 +69,26 @@ class ScanPage extends StatelessWidget {
       MaterialLocalizations.of(context).formatMediumDate(DateTime.now()),
     );
     return BlocProvider(
-      create: (context) => ScanCubit(
-        printersRepository: context.read<PrintersRepository>(),
-        jobsRepository: context.read<JobsRepository>(),
-        documentsRepository: context.read<DocumentsRepository>(),
-        library: context.read<Library>(),
-        sharer: context.read<ScanSharer>(),
-        textReader: context.read<ScanTextReader>(),
-        camera: context.read<PageCamera>(),
-        picker: context.read<PrintDocuments>().picker,
-        renderer: context.read<PrintDocuments>().renderer,
-        organizationId: context.read<SessionCubit>().state.organization!.id,
-        printer: printer,
-        name: name,
-      )..startWith(pictures: startWithPictures, files: startWithFiles),
+      create: (context) {
+        final cubit = ScanCubit(
+          printersRepository: context.read<PrintersRepository>(),
+          jobsRepository: context.read<JobsRepository>(),
+          documentsRepository: context.read<DocumentsRepository>(),
+          library: context.read<Library>(),
+          sharer: context.read<ScanSharer>(),
+          textReader: context.read<ScanTextReader>(),
+          camera: context.read<PageCamera>(),
+          picker: context.read<PrintDocuments>().picker,
+          renderer: context.read<PrintDocuments>().renderer,
+          organizationId: context.read<SessionCubit>().state.organization!.id,
+          printer: printer,
+          name: name,
+        )..startWith(pictures: startWithPictures, files: startWithFiles);
+        if (startWithDocuments.isNotEmpty) {
+          unawaited(cubit.addDocuments(startWithDocuments));
+        }
+        return cubit;
+      },
       child: ScanView(printer: printer),
     );
   }

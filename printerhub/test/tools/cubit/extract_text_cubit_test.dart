@@ -23,6 +23,21 @@ void main() {
     return cubit;
   }
 
+  test('reads a document that is already open, with nothing to choose, '
+      'one at a time', () async {
+    final document = pickedPdfFile(backend.scans, name: 'Invoice.pdf');
+    final cubit = build();
+
+    final first = cubit.start(document);
+    await cubit.start(document);
+    await first;
+
+    expect(cubit.state.status, ToolStatus.done);
+    expect(cubit.state.name, 'Invoice');
+    expect(backend.picker.opened, 0);
+    expect(backend.textReader.asked, hasLength(1));
+  });
+
   test('starts with nothing chosen', () {
     expect(build().state, const ToolState());
   });

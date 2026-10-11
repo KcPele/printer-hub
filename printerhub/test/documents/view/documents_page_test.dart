@@ -147,21 +147,30 @@ void main() {
     });
 
     testWidgets('opens a document when it is tapped', (tester) async {
-      await pump(tester);
+      final router = recordingRouter();
+      await tester.pumpApp(
+        const DocumentsPage(),
+        backend: backend,
+        router: router,
+      );
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('Contract.pdf'));
       await tester.pump();
       await settle(tester);
 
       // It opens to be read, here: nothing is handed to another app.
-      expect(find.byType(DocumentViewPage), findsOneWidget);
+      final opened = verify(
+        () => router.push<Object?>(
+          AppRoutes.documentView,
+          extra: captureAny(named: 'extra'),
+        ),
+      )..called(1);
+      final document = opened.captured.single as OpenDocument;
+      expect(document.name, 'Contract.pdf');
+      expect(document.mimeType, 'application/pdf');
+      expect(document.file.existsSync(), isTrue);
       expect(backend.sharer.shared, isEmpty);
-
-      // And back to the list it came from.
-      await tester.pageBack();
-      await tester.pumpAndSettle();
-      expect(find.byType(DocumentViewPage), findsNothing);
-      expect(find.text('Photo.jpg'), findsOneWidget);
     });
 
     testWidgets('shares a document from its menu, showing it is at work', (
@@ -432,7 +441,13 @@ void main() {
       testWidgets('is listed first, marked as waiting, and opens with no '
           'network', (tester) async {
         await make(tester, 'Note.pdf');
-        await pump(tester);
+        final router = recordingRouter();
+        await tester.pumpApp(
+          const DocumentsPage(),
+          backend: backend,
+          router: router,
+        );
+        await tester.pumpAndSettle();
 
         expect(find.text('Note.pdf'), findsOneWidget);
         expect(find.text('Waiting to sync'), findsOneWidget);
@@ -441,7 +456,12 @@ void main() {
         await tester.tap(find.text('Note.pdf'));
         await settle(tester);
 
-        expect(find.byType(DocumentViewPage), findsOneWidget);
+        verify(
+          () => router.push<Object?>(
+            AppRoutes.documentView,
+            extra: any(named: 'extra'),
+          ),
+        ).called(1);
       });
 
       testWidgets('is what the list shows when the account cannot be '

@@ -36,6 +36,17 @@ class ExtractTextCubit extends Cubit<ToolState> {
     }
   }
 
+  /// Works on a document that is already open, with nothing to choose.
+  Future<void> start(PickedDocument document) async {
+    if (_busy) return;
+    _busy = true;
+    try {
+      await _work(document);
+    } finally {
+      _busy = false;
+    }
+  }
+
   Future<void> _work(PickedDocument? document) async {
     if (document == null || isClosed) return;
     final name = nameWithoutEnding(document.name);

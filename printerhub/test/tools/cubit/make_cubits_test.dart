@@ -287,6 +287,16 @@ void main() {
       );
     });
 
+    test('takes a PDF that is already open, with nothing to choose', () async {
+      final cubit = build()..use(pickedPdf(name: 'Open.pdf'));
+
+      expect(cubit.ready(cubit.state.choices), isTrue);
+      await cubit.make();
+
+      expect(picker.opened, 0);
+      expect(cubit.state.file, isNotNull);
+    });
+
     test('says when the PDF cannot be read', () async {
       final cubit = build();
       renderer.unreadable = true;

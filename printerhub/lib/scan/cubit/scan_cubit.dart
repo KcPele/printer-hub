@@ -463,12 +463,20 @@ class ScanCubit extends Cubit<ScanState> {
   /// chosen: a picture is a page, and a PDF is drawn, a picture a page.
   /// It is how files are joined into one, and how some pages of a PDF
   /// are kept without the rest.
-  Future<void> addFiles() async {
+  Future<void> addFiles() => _take(_picker.pickFiles);
+
+  /// Adds documents that are already open as pages, with nothing to
+  /// choose: a document is opened here to be changed.
+  Future<void> addDocuments(List<PickedDocument> documents) {
+    return _take(() async => documents);
+  }
+
+  Future<void> _take(Future<List<PickedDocument>> Function() files) async {
     if (!_settled || state.card || _choosing) return;
     _choosing = true;
     final step = state.step;
     try {
-      final chosen = await _picker.pickFiles();
+      final chosen = await files();
       if (isClosed || chosen.isEmpty) return;
       emit(state._with(reading: true));
 

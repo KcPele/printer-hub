@@ -63,6 +63,11 @@ class PagesPerSheetCubit extends MakeCubit<PagesPerSheetChoices> {
     }
   }
 
+  /// Takes a PDF that is already open, with nothing to choose.
+  void use(PickedDocument document) {
+    change(state.choices.copyWith(document: document));
+  }
+
   @override
   bool ready(PagesPerSheetChoices choices) => choices.document != null;
 

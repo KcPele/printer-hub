@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
@@ -12,22 +14,30 @@ import 'package:printerhub/tools/view/tool_scaffold.dart';
 /// Turns a PDF into pictures to share: one a page, or with [long] one
 /// tall picture of every page.
 class PdfPicturesPage extends StatelessWidget {
-  const new({required this.long, super.key});
+  const new({required this.long, this.document, super.key});
 
   final bool long;
+
+  /// A PDF that is already open, worked on at once. Null asks for one.
+  final PickedDocument? document;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => PdfPicturesCubit(
-        picker: context.read<PrintDocuments>().picker,
-        renderer: context.read<PrintDocuments>().renderer,
-        sharer: context.read<ScanSharer>(),
-        keep: context.read<Library>().keeper(
-          context.read<SessionCubit>().state.organization!.id,
-        ),
-        long: long,
-      ),
+      create: (context) {
+        final cubit = PdfPicturesCubit(
+          picker: context.read<PrintDocuments>().picker,
+          renderer: context.read<PrintDocuments>().renderer,
+          sharer: context.read<ScanSharer>(),
+          keep: context.read<Library>().keeper(
+            context.read<SessionCubit>().state.organization!.id,
+          ),
+          long: long,
+        );
+        final document = this.document;
+        if (document != null) unawaited(cubit.start(document));
+        return cubit;
+      },
       child: const PdfPicturesView(),
     );
   }

@@ -31,6 +31,20 @@ void main() {
     for (final file in state.files) file.uri.pathSegments.last,
   ];
 
+  test('works on a PDF that is already open, with nothing to choose, one '
+      'at a time', () async {
+    final document = pickedPdfFile(backend.scans, name: 'Invoice.pdf');
+    final cubit = build();
+
+    final first = cubit.start(document);
+    await cubit.start(document);
+    await first;
+
+    expect(cubit.state.status, ToolStatus.done);
+    expect(names(cubit.state), ['Invoice 1.jpg', 'Invoice 2.jpg']);
+    expect(backend.picker.opened, 0);
+  });
+
   test('makes a picture of each page', () async {
     final cubit = build();
 
