@@ -31,6 +31,7 @@ void main() {
   DocumentsCubit build() => DocumentsCubit(
     documentsRepository: backend.documentsKept,
     library: backend.library,
+    renderer: backend.renderer,
     sharer: backend.sharer,
     organizationId: _org,
   );
@@ -424,6 +425,8 @@ void main() {
       ]) {
         backend.storage.broken = false;
         backend.routes.clear();
+        // Not on the phone yet, so it has to be fetched each time.
+        await backend.library.remove('document-3');
         final cubit = build();
         await cubit.load();
         arrange();
@@ -432,6 +435,191 @@ void main() {
         await expectLater(opening, completes);
       }
       expect(backend.sharer.shared, isEmpty);
+    });
+  });
+
+  group('what a document looks like', () {
+    Future<LibraryItem> made(String name, String mimeType) {
+      final file = File('${backend.scans.path}/$name')
+        ..writeAsBytesSync(name.endsWith('.pdf') ? '%PDF'.codeUnits : tinyJpeg);
+      return backend.library.add(
+        organizationId: _org,
+        file: file,
+        mimeType: mimeType,
+      );
+    }
+
+    test('is the picture itself, and a PDF’s first page, drawn once and '
+        'kept beside it', () async {
+      backend.renderer.firstPage = tinyPng;
+      final photo = await made('Photo.jpg', 'image/jpeg');
+      final scan = await made('Scan.pdf', 'application/pdf');
+
+      final cubit = await loaded();
+
+      expect(cubit.state.thumbnails[photo.id], photo.path);
+      final drawn = File(cubit.state.thumbnails[scan.id]!);
+      expect(drawn.path, isNot(scan.path));
+      expect(drawn.readAsBytesSync(), tinyPng);
+      // The account's own documents are not on this phone: no likeness.
+      expect(cubit.state.thumbnails, hasLength(2));
+
+      // Read again, it is not drawn again.
+      backend.renderer.firstPage = null;
+      await cubit.load();
+      expect(cubit.state.thumbnails[scan.id], drawn.path);
+      final again = await loaded();
+      expect(again.state.thumbnails[scan.id], drawn.path);
+    });
+
+    test('is left to a sign when it cannot be drawn', () async {
+      final scan = await made('Scan.pdf', 'application/pdf');
+      final words = await made('Notes.txt', 'text/plain');
+
+      // A first page that the phone could not draw.
+      final cubit = await loaded();
+      expect(cubit.state.thumbnails, isEmpty);
+
+      // A PDF that cannot be read at all.
+      backend.renderer.unreadable = true;
+      await cubit.load();
+      expect(cubit.state.thumbnails.keys, isNot(contains(scan.id)));
+      expect(cubit.state.thumbnails.keys, isNot(contains(words.id)));
+    });
+
+    test('is found offline too', () async {
+      final photo = await made('Photo.jpg', 'image/jpeg');
+      backend.offline = true;
+
+      final cubit = await loaded();
+
+      expect(cubit.state.thumbnails[photo.id], photo.path);
+    });
+
+    test('is there for a document of the account once it has been '
+        'fetched', () async {
+      backend.renderer.firstPage = tinyPng;
+      final cubit = await loaded();
+      final contract = cubit.state.documents.first;
+      expect(cubit.state.thumbnails, isEmpty);
+
+      final file = await cubit.fetch(contract);
+      await cubit.load();
+
+      // Kept on the phone from then on.
+      expect(file!.path, backend.library.fileOf('document-3')!.path);
+      expect(cubit.state.onPhone, contains('document-3'));
+      expect(cubit.state.thumbnails.keys, contains('document-3'));
+      backend.offline = true;
+      expect((await cubit.fetch(contract))!.path, file.path);
+    });
+
+    test('says nothing once the screen has gone', () async {
+      backend.renderer.firstPage = tinyPng;
+      await made('Scan.pdf', 'application/pdf');
+      final cubit = build();
+      final loading = cubit.load();
+      await cubit.stream.firstWhere(
+        (state) => state.status == DocumentsStatus.ready,
+      );
+      await cubit.close();
+      await loading;
+    });
+  });
+
+  group('the newest documents of the account', () {
+    DocumentsCubit onScreen() {
+      final cubit = DocumentsCubit(
+        documentsRepository: backend.documentsKept,
+        library: backend.library,
+        renderer: backend.renderer,
+        sharer: backend.sharer,
+        organizationId: _org,
+        bringsRecent: true,
+      );
+      addTearDown(cubit.close);
+      return cubit;
+    }
+
+    setUp(() {
+      backend.renderer.firstPage = tinyPng;
+      for (final id in ['document-3', 'document-2', 'document-1']) {
+        backend.storage.stored['/$id'] = '%PDF $id'.codeUnits;
+      }
+    });
+
+    test('are brought onto the phone as the list is read, and shown as '
+        'they look', () async {
+      final cubit = onScreen();
+
+      await cubit.load();
+      await cubit.stream.firstWhere((state) => state.thumbnails.length == 3);
+
+      expect(cubit.state.onPhone, {'document-3', 'document-2', 'document-1'});
+      expect(backend.library.of(_org).every((item) => item.synced), isTrue);
+    });
+
+    test('are left where they are when they are large, cannot be fetched, '
+        'or are here already', () async {
+      backend.documentList = [
+        documentBody(
+          id: 'large',
+          name: 'Large.pdf',
+          sizeBytes: 9 * 1024 * 1024,
+        ),
+        documentBody(
+          id: 'elsewhere',
+          name: 'On a phone.pdf',
+          storageMode: 'local',
+          uploadStatus: 'not_applicable',
+        ),
+        documentBody(id: 'document-3', name: 'Contract.pdf'),
+      ];
+      final cubit = await loaded();
+
+      await cubit.bringRecent();
+      expect(backend.library.of(_org).map((item) => item.id), ['document-3']);
+
+      final fetches = backend.sent('GET $_documents/document-3/download-url');
+      await cubit.bringRecent();
+      expect(
+        backend.sent('GET $_documents/document-3/download-url'),
+        hasLength(fetches.length),
+      );
+    });
+
+    test('are brought a few at a time', () async {
+      backend.documentList = [
+        for (var i = 9; i > 0; i--)
+          documentBody(id: 'doc-$i', name: 'Doc $i.pdf'),
+      ];
+      for (var i = 1; i < 10; i++) {
+        backend.storage.stored['/doc-$i'] = '%PDF'.codeUnits;
+      }
+      final cubit = await loaded();
+
+      await cubit.bringRecent();
+
+      expect(backend.library.of(_org), hasLength(6));
+    });
+
+    test('stop at the first that cannot be fetched, and one bringing '
+        'runs at a time', () async {
+      backend.storage.stored.remove('/document-3');
+      final cubit = await loaded();
+
+      final first = cubit.bringRecent();
+      await cubit.bringRecent();
+      await first;
+
+      expect(backend.library.of(_org), isEmpty);
+    });
+
+    test('say nothing once the screen has gone', () async {
+      final cubit = await loaded();
+      final bringing = cubit.bringRecent();
+      await cubit.close();
+      await bringing;
     });
   });
 

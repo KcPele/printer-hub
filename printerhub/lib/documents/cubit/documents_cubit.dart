@@ -7,6 +7,7 @@ import 'package:documents_repository/documents_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/library/library_item.dart';
+import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
 
 enum DocumentsStatus { loading, ready, failed }
@@ -24,6 +25,7 @@ class DocumentsState extends Equatable {
     this.onPhone = const {},
     this.waiting = const {},
     this.offline = false,
+    this.thumbnails = const {},
   });
 
   final DocumentsStatus status;
@@ -60,6 +62,11 @@ class DocumentsState extends Equatable {
   /// this phone has.
   final bool offline;
 
+  /// What a document looks like, where this phone has its file and can
+  /// draw it: the path of a small picture, by the document's identifier.
+  /// A document that is not here is shown by a sign for its kind.
+  final Map<String, String> thumbnails;
+
   /// True when [document] can be opened: this phone has its file, or the
   /// account does.
   bool canOpen(StoredDocument document) =>
@@ -78,6 +85,7 @@ class DocumentsState extends Equatable {
     onPhone,
     waiting,
     offline,
+    thumbnails,
   ];
 }
 
@@ -89,8 +97,10 @@ class DocumentsCubit extends Cubit<DocumentsState> {
   new({
     required this._documentsRepository,
     required this._library,
+    required this._renderer,
     required this._sharer,
     required this._organizationId,
+    this._bringsRecent = false,
   }) : super(const DocumentsState()) {
     // Something was made, or reached the account: the list is read again
     // without being cleared first.
@@ -103,8 +113,14 @@ class DocumentsCubit extends Cubit<DocumentsState> {
 
   final DocumentsRepository _documentsRepository;
   final Library _library;
+  final PageRenderer _renderer;
   final ScanSharer _sharer;
   final String _organizationId;
+
+  /// True for a list on screen: the newest few documents that are only in
+  /// the account are brought onto the phone as it is read.
+  final bool _bringsRecent;
+  bool _bringing = false;
   late final StreamSubscription<void> _changes;
 
   @override
@@ -163,8 +179,11 @@ class DocumentsCubit extends Cubit<DocumentsState> {
             for (final item in local)
               if (!item.synced && !listed.contains(item.id)) item.id,
           },
+          thumbnails: state.thumbnails,
         ),
       );
+      await _draw(read);
+      if (_bringsRecent && !quiet) unawaited(bringRecent());
     } on ApiProblem catch (error) {
       if (read != _reads || isClosed) return;
       emit(
@@ -189,8 +208,89 @@ class DocumentsCubit extends Cubit<DocumentsState> {
               if (!item.synced) item.id,
           },
           offline: true,
+          thumbnails: state.thumbnails,
         ),
       );
+      await _draw(read);
+    }
+  }
+
+  /// The most documents brought onto the phone at a time, and the largest
+  /// that is brought without being asked for.
+  static const int _mostBrought = 6;
+  static const int _largestBrought = 8 * 1024 * 1024;
+
+  /// Brings the newest few documents that are only in the account onto
+  /// this phone, quietly: a scan made on another phone, or before the app
+  /// was installed again, then shows what it looks like and opens with no
+  /// network. Large ones wait to be opened. It stops at the first that
+  /// cannot be fetched.
+  Future<void> bringRecent() async {
+    if (_bringing) return;
+    _bringing = true;
+    try {
+      var brought = 0;
+      for (final document in [...state.documents]) {
+        if (isClosed || brought == _mostBrought) return;
+        if (!document.canFetch ||
+            document.sizeBytes > _largestBrought ||
+            _library.fileOf(document.id) != null) {
+          continue;
+        }
+        final fetched = await _documentsRepository.fetch(
+          organizationId: _organizationId,
+          document: document,
+        );
+        // The library says it has changed, and the list is read again
+        // with the document's likeness in it.
+        await _library.adopt(
+          organizationId: _organizationId,
+          document: document,
+          file: fetched,
+        );
+        brought++;
+      }
+    } on Exception {
+      // No network, or no file: they keep their signs until opened.
+    } finally {
+      _bringing = false;
+    }
+  }
+
+  /// Finds what each document on this phone looks like, one at a time,
+  /// and shows each as it is found. A picture is its own likeness; a PDF
+  /// is drawn once and the drawing kept beside it.
+  Future<void> _draw(int read) async {
+    for (final document in state.documents) {
+      if (state.thumbnails.containsKey(document.id)) continue;
+      final file = _library.fileOf(document.id);
+      if (file == null) continue;
+      final picture = await _likeness(document, file);
+      if (read != _reads || isClosed) return;
+      if (picture == null) continue;
+      emit(
+        _with(
+          busyId: state.busyId,
+          thumbnails: {...state.thumbnails, document.id: picture.path},
+        ),
+      );
+    }
+  }
+
+  Future<File?> _likeness(StoredDocument document, File file) async {
+    if (document.mimeType.startsWith('image/')) return file;
+    if (document.mimeType != 'application/pdf') return null;
+    final kept = File('${file.parent.path}/thumbnail.png');
+    if (kept.existsSync()) return kept;
+    try {
+      final first = (await _renderer.preview(PickedDocument.fromFile(file)))
+          .firstPage;
+      if (first == null) return null;
+      kept.writeAsBytesSync(first, flush: true);
+      return kept;
+    } on Object {
+      // It is shown by its sign.
+      return null;
     }
   }
 
@@ -227,7 +327,8 @@ class DocumentsCubit extends Cubit<DocumentsState> {
   /// sheet, where it can be opened, saved, or sent.
   Future<void> send(StoredDocument document) async {
     final file = await fetch(document);
-    if (file != null) await _sharer.share([file], name: document.name);
+    if (file == null || isClosed) return;
+    await _sharer.share([file], name: document.name);
   }
 
   /// Brings a document's file onto the phone, to print it. Null when it
@@ -240,9 +341,16 @@ class DocumentsCubit extends Cubit<DocumentsState> {
     if (!document.canFetch) return null;
     emit(_with(busyId: document.id));
     try {
-      final file = await _documentsRepository.fetch(
+      final fetched = await _documentsRepository.fetch(
         organizationId: _organizationId,
         document: document,
+      );
+      // Kept on this phone from now on: it opens with no network, and the
+      // list can show what it looks like.
+      final file = await _library.adopt(
+        organizationId: _organizationId,
+        document: document,
+        file: fetched,
       );
       if (isClosed) return null;
       emit(_with());
@@ -336,6 +444,7 @@ class DocumentsCubit extends Cubit<DocumentsState> {
     ApiException? error,
     String? busyId,
     bool fetchFailed = false,
+    Map<String, String>? thumbnails,
   }) {
     return DocumentsState(
       status: state.status,
@@ -349,6 +458,7 @@ class DocumentsCubit extends Cubit<DocumentsState> {
       onPhone: state.onPhone,
       waiting: state.waiting,
       offline: state.offline,
+      thumbnails: thumbnails ?? state.thumbnails,
     );
   }
 }

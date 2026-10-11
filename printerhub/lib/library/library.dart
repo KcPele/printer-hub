@@ -196,6 +196,41 @@ class Library {
     return item;
   }
 
+  /// Keeps a copy of a document the account already has, fetched onto
+  /// this phone: from then on it opens with no network, and shows what it
+  /// looks like in a list. Answers with the copy.
+  Future<File> adopt({
+    required String organizationId,
+    required StoredDocument document,
+    required File file,
+  }) async {
+    open();
+    final folder = Directory('${_directory.path}/${document.id}');
+    await folder.create(recursive: true);
+    final kept = await file.copy(
+      '${folder.path}/${document.name.replaceAll(RegExp(r'[\\/]'), '-')}',
+    );
+    _items
+      ..removeWhere((item) => item.id == document.id)
+      ..add(
+        LibraryItem(
+          id: document.id,
+          organizationId: organizationId,
+          name: document.name,
+          path: kept.path,
+          mimeType: document.mimeType,
+          sizeBytes: document.sizeBytes,
+          createdAt: document.createdAt,
+          pageCount: document.pageCount,
+          source: document.source,
+          printerId: document.printerId,
+          standing: LibraryStanding.synced,
+        ),
+      );
+    _save();
+    return kept;
+  }
+
   /// Sends what the account does not have yet, oldest first, and answers
   /// with how many are still waiting. Only one pass runs at a time: one
   /// asked for meanwhile runs after it.

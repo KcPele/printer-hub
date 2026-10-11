@@ -261,7 +261,7 @@ void main() {
         expect(handedTo('printer-2').name, 'Contract.pdf');
       });
 
-      testWidgets('fetches nothing when no printer is chosen', (tester) async {
+      testWidgets('prints nothing when no printer is chosen', (tester) async {
         await open(tester, [
           printerBody(),
           printerBody(id: 'printer-2', name: 'Back office'),
@@ -271,10 +271,8 @@ void main() {
         await tester.tapAt(const Offset(10, 10));
         await tester.pumpAndSettle();
 
-        expect(
-          backend.sent('GET $_documents/document-3/download-url'),
-          isEmpty,
-        );
+        // Nothing is printed. (The list may have brought the file onto
+        // the phone by itself, to show what it looks like.)
         verifyNever(() => router.go(any(), extra: any(named: 'extra')));
       });
 
@@ -464,6 +462,69 @@ void main() {
 
         expect(find.textContaining('You are offline'), findsOneWidget);
         expect(find.text('No documents yet'), findsNothing);
+      });
+    });
+
+    group('what a document looks like', () {
+      Future<void> keep(
+        WidgetTester tester,
+        String name,
+        List<int> bytes,
+      ) async {
+        await tester.runAsync(
+          () => backend.library.add(
+            organizationId: _org,
+            file: File('${backend.scans.path}/$name')..writeAsBytesSync(bytes),
+            mimeType: 'image/jpeg',
+          ),
+        );
+      }
+
+      /// Lets a picture, which takes real time to read, be shown.
+      Future<void> shown(WidgetTester tester) async {
+        for (var i = 0; i < 20; i++) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 10)),
+          );
+          await tester.pump(const Duration(milliseconds: 20));
+        }
+      }
+
+      testWidgets('is shown in place of its sign, where the phone has '
+          'it', (tester) async {
+        await keep(tester, 'Photo of a page.jpg', tinyJpeg);
+        await pump(tester);
+        await shown(tester);
+
+        final card = find.ancestor(
+          of: find.text('Photo of a page.jpg'),
+          matching: find.byType(DocumentCard),
+        );
+        expect(
+          find.descendant(of: card, matching: find.byType(Image)),
+          findsOneWidget,
+        );
+        // What is only in the account keeps its sign.
+        expect(find.byIcon(Icons.picture_as_pdf_outlined), findsWidgets);
+      });
+
+      testWidgets('falls back to its sign when the picture cannot be '
+          'drawn', (tester) async {
+        await keep(tester, 'Broken.jpg', 'not a picture'.codeUnits);
+        await pump(tester);
+        await shown(tester);
+
+        final card = find.ancestor(
+          of: find.text('Broken.jpg'),
+          matching: find.byType(DocumentCard),
+        );
+        expect(
+          find.descendant(
+            of: card,
+            matching: find.byIcon(Icons.image_outlined),
+          ),
+          findsOneWidget,
+        );
       });
     });
 

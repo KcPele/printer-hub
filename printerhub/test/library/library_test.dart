@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:documents_repository/documents_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/library/library_item.dart';
@@ -374,6 +375,45 @@ void main() {
 
       expect(kept, isNull);
     });
+  });
+
+  test('keeps a copy of a document fetched from the account, as one it '
+      'already has', () async {
+    final fetched = made('fetched.pdf');
+    final document = StoredDocument(
+      id: 'document-9',
+      name: 'Over/due.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 14,
+      createdAt: DateTime.utc(2026, 10, 9),
+      pageCount: 2,
+      source: 'printer_scan',
+      inCloud: true,
+      uploaded: true,
+    );
+
+    final kept = await library.adopt(
+      organizationId: _org,
+      document: document,
+      file: fetched,
+    );
+    // Fetched again, it takes the place of the copy it had.
+    await library.adopt(
+      organizationId: _org,
+      document: document,
+      file: fetched,
+    );
+
+    final item = library.of(_org).single;
+    expect(item.id, 'document-9');
+    expect(item.synced, isTrue);
+    expect(item.name, 'Over/due.pdf');
+    expect(kept.path, endsWith('/document-9/Over-due.pdf'));
+    expect(library.fileOf('document-9')!.path, kept.path);
+    // Nothing is owed to the account for it.
+    expect(library.waiting(_org), 0);
+    expect(await library.sync(_org), 0);
+    expect(backend.sent(_documents), isEmpty);
   });
 
   test('renames what it has, and leaves alone what it has not', () async {

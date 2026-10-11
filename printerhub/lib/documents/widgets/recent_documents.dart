@@ -10,6 +10,7 @@ import 'package:printerhub/documents/cubit/documents_cubit.dart';
 import 'package:printerhub/documents/view/documents_page.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/library/library.dart';
+import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/session/session.dart';
 
@@ -39,8 +40,10 @@ class RecentDocuments extends StatelessWidget {
         final cubit = DocumentsCubit(
           documentsRepository: context.read<DocumentsRepository>(),
           library: context.read<Library>(),
+          renderer: context.read<PrintDocuments>().renderer,
           sharer: context.read<ScanSharer>(),
           organizationId: organizationId,
+          bringsRecent: true,
         );
         unawaited(cubit.load());
         return cubit;

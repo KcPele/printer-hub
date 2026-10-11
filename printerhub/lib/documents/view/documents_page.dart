@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:app_ui/app_ui.dart';
 import 'package:documents_repository/documents_repository.dart';
@@ -30,8 +31,10 @@ class DocumentsPage extends StatelessWidget {
         final cubit = DocumentsCubit(
           documentsRepository: context.read<DocumentsRepository>(),
           library: context.read<Library>(),
+          renderer: context.read<PrintDocuments>().renderer,
           sharer: context.read<ScanSharer>(),
           organizationId: context.read<SessionCubit>().state.organization!.id,
+          bringsRecent: true,
         );
         unawaited(cubit.load());
         return cubit;
@@ -306,7 +309,10 @@ class DocumentCard extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           else
-            Icon(DocumentWords.icon(document), color: colors.emphasis),
+            _Likeness(
+              document: document,
+              picture: state.thumbnails[document.id],
+            ),
           const SizedBox(width: AppSpacing.lg),
           Expanded(
             child: Column(
@@ -369,6 +375,49 @@ class DocumentCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// What a document looks like, small: its first page or the picture
+/// itself. One this phone cannot draw, or does not have, is a sign for
+/// its kind.
+class _Likeness extends StatelessWidget {
+  const new({required this.document, required this.picture});
+
+  final StoredDocument document;
+
+  /// Where the small picture is, or null when there is none.
+  final String? picture;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final sign = Icon(DocumentWords.icon(document), color: colors.emphasis);
+    final picture = this.picture;
+    if (picture == null) return SizedBox(width: 44, child: sign);
+
+    return ClipRRect(
+      borderRadius: context.shapes.chipRadius,
+      child: DecoratedBox(
+        // Paper is white in every theme.
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: colors.outline),
+        ),
+        child: SizedBox(
+          width: 44,
+          height: 58,
+          child: Image.file(
+            File(picture),
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+            // Drawn small: a list is no place for a full page in memory.
+            cacheWidth: 132,
+            errorBuilder: (_, _, _) => Center(child: sign),
+          ),
+        ),
       ),
     );
   }
