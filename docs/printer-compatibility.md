@@ -138,3 +138,4 @@ The Mopria eSCL specification is public but sits behind a licence agreement to a
 ## Learned on a phone
 
 - **Bluetooth looked switched off on an Android phone that had it on** (2026-10-10, the owner's phone). The plugin reports the adapter's state as unknown until the phone has answered, and the app read it the moment the screen opened. `PluginBluetoothScanner.isAvailable` now waits for the first real answer. Android asks for the "Nearby devices" permission when the first search begins, not before.
+- **And was still greyed out after that** (2026-10-11, the same phone, Android 10). Android 11 and older know Bluetooth by other permissions (`BLUETOOTH`, `BLUETOOTH_ADMIN`) and need the phone's location to look for a device nearby; the app declared only Android 12's. They are now declared with `maxSdkVersion`, so a newer phone is not asked for location.
