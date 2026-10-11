@@ -37,6 +37,7 @@ class MockGoRouter extends Mock implements GoRouter;
 MockPreferencesRepository emptyPreferences({
   String? themeName,
   String? brightnessName,
+  int? textSizePercent,
   bool onboardingCompleted = false,
   String? activeOrganizationId,
 }) {
@@ -53,6 +54,12 @@ MockPreferencesRepository emptyPreferences({
   when(() => repository.saveBrightnessName(any()))
       .thenAnswer((invocation) async {
         brightness = invocation.positionalArguments.single as String;
+      });
+  var textSize = textSizePercent;
+  when(() => repository.textSizePercent).thenAnswer((_) => textSize);
+  when(() => repository.saveTextSizePercent(any()))
+      .thenAnswer((invocation) async {
+        textSize = invocation.positionalArguments.single as int;
       });
   when(() => repository.onboardingCompleted).thenAnswer((_) => welcomed);
   when(repository.completeOnboarding).thenAnswer((_) async => welcomed = true);
@@ -173,6 +180,9 @@ extension PumpApp on WidgetTester {
               create: (_) =>
                   BrightnessCubit(preferencesRepository: preferences),
             ),
+            BlocProvider(
+              create: (_) => TextSizeCubit(preferencesRepository: preferences),
+            ),
             BlocProvider.value(value: session),
             BlocProvider.value(value: printers),
             BlocProvider.value(value: unread),
@@ -184,6 +194,7 @@ extension PumpApp on WidgetTester {
               theme: AppTheme.of(theme).data(),
               darkTheme: AppTheme.of(theme).data(Brightness.dark),
               themeMode: context.watch<BrightnessCubit>().state,
+              builder: (context, child) => TextSizeScope(child: child!),
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: router == null

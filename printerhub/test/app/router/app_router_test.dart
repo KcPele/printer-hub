@@ -74,6 +74,10 @@ void main() {
                     BrightnessCubit(preferencesRepository: preferences),
               ),
               BlocProvider(
+                create: (_) =>
+                    TextSizeCubit(preferencesRepository: preferences),
+              ),
+              BlocProvider(
                 create: (_) => PrintersCubit(
                   printersRepository: backend.printers,
                   organizationId: session.state.organization?.id,

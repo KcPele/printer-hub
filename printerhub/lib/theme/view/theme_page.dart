@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/theme/cubit/brightness_cubit.dart';
+import 'package:printerhub/theme/cubit/text_size_cubit.dart';
 import 'package:printerhub/theme/widgets/theme_picker.dart';
 
 /// Settings → Theme.
@@ -53,6 +54,29 @@ class ThemePage extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               l10n.themeBrightnessBody,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colors.textMuted,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+            Text(l10n.themeTextSize, style: context.textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.md),
+            SegmentedButton<int>(
+              showSelectedIcon: false,
+              segments: [
+                for (final percent in TextSizeCubit.sizes)
+                  ButtonSegment(
+                    value: percent,
+                    label: Text(l10n.themeTextSizePercent(percent)),
+                  ),
+              ],
+              selected: {context.watch<TextSizeCubit>().state},
+              onSelectionChanged: (chosen) =>
+                  context.read<TextSizeCubit>().select(chosen.single),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              l10n.themeTextSizeBody,
               style: context.textTheme.bodySmall?.copyWith(
                 color: context.colors.textMuted,
               ),

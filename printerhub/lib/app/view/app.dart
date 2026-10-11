@@ -124,6 +124,10 @@ class App extends StatelessWidget {
                 BrightnessCubit(preferencesRepository: preferencesRepository),
           ),
           BlocProvider(
+            create: (_) =>
+                TextSizeCubit(preferencesRepository: preferencesRepository),
+          ),
+          BlocProvider(
             create: (_) => ThemeCubit(
               preferencesRepository: preferencesRepository,
               authRepository: authRepository,
@@ -330,6 +334,7 @@ class _AppViewState extends State<AppView> {
         theme: AppTheme.of(theme).data(),
         darkTheme: AppTheme.of(theme).data(Brightness.dark),
         themeMode: context.watch<BrightnessCubit>().state,
+        builder: (context, child) => TextSizeScope(child: child!),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
       ),

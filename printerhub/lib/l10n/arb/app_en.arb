@@ -3724,5 +3724,22 @@
     "documentToolEditBody": "Reorder, turn, remove, sign, watermark",
     "@documentToolEditBody": {
         "description": "What editing a document's pages offers"
+    },
+    "themeTextSize": "Text size",
+    "@themeTextSize": {
+        "description": "Title above the choice of how large the words are"
+    },
+    "themeTextSizePercent": "{percent}%",
+    "@themeTextSizePercent": {
+        "description": "A text size, as a percentage of full size",
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "themeTextSizeBody": "Make the words smaller to fit more on the screen. 100% is the full size. This is kept on this phone.",
+    "@themeTextSizeBody": {
+        "description": "Explains the text size choice"
     }
 }

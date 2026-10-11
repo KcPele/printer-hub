@@ -9,6 +9,7 @@ class PreferencesRepository {
 
   static const String _themeKey = 'app_theme';
   static const String _brightnessKey = 'app_brightness';
+  static const String _textSizeKey = 'app_text_size';
   static const String _onboardingKey = 'onboarding_completed';
   static const String _organizationKey = 'active_organization_id';
 
@@ -19,6 +20,7 @@ class PreferencesRepository {
         allowList: {
           _themeKey,
           _brightnessKey,
+          _textSizeKey,
           _onboardingKey,
           _organizationKey,
         },
@@ -42,6 +44,15 @@ class PreferencesRepository {
   /// Remembers whether the app is shown light, dark, or as the phone is.
   Future<void> saveBrightnessName(String name) {
     return _store.setString(_brightnessKey, name);
+  }
+
+  /// How large the app's words are, as a percentage of their full size.
+  /// Null when nothing has been chosen.
+  int? get textSizePercent => _store.getInt(_textSizeKey);
+
+  /// Remembers how large the app's words are.
+  Future<void> saveTextSizePercent(int percent) {
+    return _store.setInt(_textSizeKey, percent);
   }
 
   /// Whether the welcome screens have been seen on this device.

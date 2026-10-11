@@ -75,5 +75,46 @@ void main() {
       await tester.pumpAndSettle();
       expect(preferences.brightnessName, 'system');
     });
+
+    testWidgets('makes every word smaller when a smaller size is chosen, '
+        'and keeps the choice', (tester) async {
+      final preferences = emptyPreferences();
+      await tester.pumpApp(
+        const ThemePage(),
+        preferencesRepository: preferences,
+      );
+      await tester.scrollUntilVisible(find.text('90%'), 200);
+      expect(find.text('Text size'), findsOneWidget);
+      double scale() =>
+          MediaQuery.textScalerOf(tester.element(find.byType(ThemePicker)))
+              .scale(100);
+      expect(scale(), 100);
+
+      await tester.ensureVisible(find.text('90%'));
+      await tester.tap(find.text('90%'));
+      await tester.pumpAndSettle();
+
+      expect(scale(), closeTo(90, 0.01));
+      expect(preferences.textSizePercent, 90);
+
+      await tester.tap(find.text('100%'));
+      await tester.pumpAndSettle();
+      expect(scale(), 100);
+    });
+
+    testWidgets('works on top of the phone’s own text size', (tester) async {
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+      await tester.pumpApp(
+        const ThemePage(),
+        preferencesRepository: emptyPreferences(textSizePercent: 90),
+      );
+
+      expect(
+        MediaQuery.textScalerOf(tester.element(find.byType(ThemePicker)))
+            .scale(100),
+        closeTo(135, 0.01),
+      );
+    });
   });
 }

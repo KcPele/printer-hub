@@ -46,6 +46,16 @@ void main() {
       expect((await PreferencesRepository.open()).brightnessName, 'dark');
     });
 
+    test('remembers how large the words are', () async {
+      final first = await PreferencesRepository.open();
+      expect(first.textSizePercent, isNull);
+
+      await first.saveTextSizePercent(90);
+
+      expect(first.textSizePercent, 90);
+      expect((await PreferencesRepository.open()).textSizePercent, 90);
+    });
+
     test('shows the welcome screens on a new install', () async {
       final repository = await PreferencesRepository.open();
 
