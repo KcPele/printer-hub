@@ -205,14 +205,10 @@ export function HeroSection() {
 					/>
 
 					{/* Smartphone Mockup */}
+					{/* In the middle on a phone, to the left where there is room. */}
 					<div
-						className="hidden sm:block"
-						style={{
-							position: "absolute",
-							left: "8%",
-							top: "30px",
-							pointerEvents: "none",
-						}}
+						className="absolute top-[30px] left-1/2 -translate-x-1/2 sm:left-[8%] sm:translate-x-0"
+						style={{ pointerEvents: "none" }}
 					>
 						<AppPhone />
 					</div>
