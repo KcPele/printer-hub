@@ -84,17 +84,11 @@ function EditingArtwork() {
 		<svg
 			viewBox="0 0 600 470"
 			preserveAspectRatio="xMidYMid meet"
-			// Shown whole, whatever the card's shape: the circle may run past
-			// the picture's edge, and the card trims it.
-			style={{
-				width: "100%",
-				height: "100%",
-				display: "block",
-				overflow: "visible",
-			}}
+			// Shown whole, whatever shape the space beside the tools is.
+			style={{ width: "100%", height: "100%", display: "block" }}
 		>
 			<title>A scanned page being cropped and highlighted on a phone</title>
-			<circle cx="470" cy="90" r="150" style={{ fill: "var(--p)" }} />
+			<circle cx="436" cy="168" r="150" style={{ fill: "var(--p)" }} />
 
 			{/* The phone */}
 			<rect
@@ -412,11 +406,10 @@ export function ToolsSection() {
 						gap: "20px",
 					}}
 				>
+					{/* The picture stands on the page itself, with no card around it. */}
 					<div
 						style={{
-							...card,
 							minHeight: "340px",
-							background: "var(--bg)",
 							display: "flex",
 							alignItems: "center",
 						}}

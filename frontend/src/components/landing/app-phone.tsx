@@ -317,8 +317,8 @@ export function AppPhone({
 					style={{
 						marginTop: "auto",
 						display: "grid",
-						gridTemplateColumns: "repeat(4, 1fr)",
-						padding: "10px 8px 18px",
+						gridTemplateColumns: "repeat(5, 1fr)",
+						padding: "10px 4px 18px",
 						background: "var(--sf)",
 						borderTop: "1px solid var(--line)",
 					}}
@@ -346,6 +346,18 @@ export function AppPhone({
 					>
 						<Icon name="print" size={20} />
 						<span style={{ fontSize: "9px" }}>Printers</span>
+					</div>
+					<div
+						style={{
+							display: "flex",
+							flexDirection: "column",
+							alignItems: "center",
+							gap: "2px",
+							color: "var(--mt)",
+						}}
+					>
+						<Icon name="widgets" size={20} />
+						<span style={{ fontSize: "9px" }}>Tools</span>
 					</div>
 					<div
 						style={{
