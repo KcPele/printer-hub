@@ -3891,5 +3891,9 @@
                 "type": "String"
             }
         }
+    },
+    "documentsNoneFiltered": "Nothing matches this filter.",
+    "@documentsNoneFiltered": {
+        "description": "Shown when the filter on the list of documents leaves nothing"
     }
 }

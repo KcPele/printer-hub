@@ -180,7 +180,10 @@ class _Documents extends StatelessWidget {
           AppCard(
             tone: AppCardTone.muted,
             child: Text(
-              l10n.documentsNoMatch,
+              // Narrowed to nothing, or searched for and not found.
+              state.query.isEmpty && !state.filter.isEmpty
+                  ? l10n.documentsNoneFiltered
+                  : l10n.documentsNoMatch,
               style: context.textTheme.bodyLarge,
             ),
           )

@@ -130,6 +130,7 @@ void main() {
       // Narrowed to nothing, it says so, and the search bar stays.
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('No documents yet'), findsNothing);
+      expect(find.text('Nothing matches this filter.'), findsOneWidget);
 
       await tester.tap(find.byTooltip('Filter'));
       await tester.pumpAndSettle();
