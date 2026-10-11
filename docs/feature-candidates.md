@@ -79,6 +79,8 @@ What these do not do, so nobody is surprised:
 - Words the app sets itself (a note, a sign's heading, a calendar) are in Manrope. Letters it does not have, such as some used in Yoruba and Vietnamese, are left out. A font with wider coverage would fix that.
 - Passport-size is the common 35 by 45 mm. Other countries' sizes are part of "ID photo maker" below.
 
+The tools in the two sections below are listed on the Tools screen, greyed and marked "Coming soon", so people see what is on the way (the owner's decision, 2026-10-11). Those that need an AI service are grouped apart, with a line saying a document would leave the phone and that each will ask first.
+
 ## Later: possible on the phone, bigger or with a catch
 
 | Feature | The catch | Size |

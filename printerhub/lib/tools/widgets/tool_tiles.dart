@@ -8,37 +8,74 @@ class ToolTile extends StatelessWidget {
     required this.title,
     required this.body,
     required this.onTap,
+    this.soon,
     super.key,
   });
+
+  /// A tool that is planned and not built yet: shown greyed, marked with
+  /// [soon], and not to be tapped.
+  const new planned({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required String this.soon,
+    super.key,
+  }) : onTap = null;
 
   final IconData icon;
   final String title;
   final String body;
-  final VoidCallback onTap;
+
+  /// Null for a tool that is not built yet.
+  final VoidCallback? onTap;
+
+  /// The words that mark a tool as not built yet, such as "Coming soon".
+  /// Null for one that works.
+  final String? soon;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     final textTheme = context.textTheme;
 
+    final soon = this.soon;
+    final ready = soon == null;
+
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
+      tone: ready ? AppCardTone.surface : AppCardTone.muted,
       onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: colors.primary,
-              shape: BoxShape.circle,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: Icon(icon, color: colors.onPrimary),
-            ),
+          Row(
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: ready ? colors.primary : colors.outline,
+                  shape: BoxShape.circle,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Icon(
+                    icon,
+                    color: ready ? colors.onPrimary : colors.textMuted,
+                  ),
+                ),
+              ),
+              if (soon != null) ...[
+                const Spacer(),
+                StatusPill(status: AppStatus.neutral, label: soon),
+              ],
+            ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(title, style: textTheme.titleMedium),
+          Text(
+            title,
+            style: textTheme.titleMedium?.copyWith(
+              color: ready ? null : colors.textMuted,
+            ),
+          ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             body,

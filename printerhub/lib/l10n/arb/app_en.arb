@@ -3556,5 +3556,153 @@
     "themeBrightnessBody": "Every theme has a dark look. This is kept on this phone.",
     "@themeBrightnessBody": {
         "description": "Explains the light or dark choice"
+    },
+    "toolsSoon": "Coming soon",
+    "@toolsSoon": {
+        "description": "Marks a tool that is planned and not built yet"
+    },
+    "toolsSoonTitle": "Coming soon",
+    "@toolsSoonTitle": {
+        "description": "Title above the tools that are planned and not built yet"
+    },
+    "toolsSoonBody": "Tools we are building next. They are shown here so you know what is on the way.",
+    "@toolsSoonBody": {
+        "description": "Explains the planned tools"
+    },
+    "toolsSoonAiTitle": "Coming soon: AI tools",
+    "@toolsSoonAiTitle": {
+        "description": "Title above the planned tools that use AI"
+    },
+    "toolsSoonAiBody": "These need an AI service, so a document would leave your phone to be worked on. Each will ask first.",
+    "@toolsSoonAiBody": {
+        "description": "Explains the planned AI tools"
+    },
+    "toolsSoonIdPhoto": "ID photo maker",
+    "@toolsSoonIdPhoto": {
+        "description": "Title of the planned tool: ID photo maker"
+    },
+    "toolsSoonIdPhotoBody": "Passport and visa photos at official sizes",
+    "@toolsSoonIdPhotoBody": {
+        "description": "What the planned tool ID photo maker will do"
+    },
+    "toolsSoonBook": "Book pages",
+    "@toolsSoonBook": {
+        "description": "Title of the planned tool: Book pages"
+    },
+    "toolsSoonBookBody": "Split a two-page spread into pages",
+    "@toolsSoonBookBody": {
+        "description": "What the planned tool Book pages will do"
+    },
+    "toolsSoonEditPdf": "Sign any PDF",
+    "@toolsSoonEditPdf": {
+        "description": "Title of the planned tool: Sign any PDF"
+    },
+    "toolsSoonEditPdfBody": "Sign or watermark a PDF from anywhere",
+    "@toolsSoonEditPdfBody": {
+        "description": "What the planned tool Sign any PDF will do"
+    },
+    "toolsSoonSearchable": "Searchable PDF",
+    "@toolsSoonSearchable": {
+        "description": "Title of the planned tool: Searchable PDF"
+    },
+    "toolsSoonSearchableBody": "Make the words in a scan selectable",
+    "@toolsSoonSearchableBody": {
+        "description": "What the planned tool Searchable PDF will do"
+    },
+    "toolsSoonLock": "Lock a PDF",
+    "@toolsSoonLock": {
+        "description": "Title of the planned tool: Lock a PDF"
+    },
+    "toolsSoonLockBody": "Put a password on a PDF",
+    "@toolsSoonLockBody": {
+        "description": "What the planned tool Lock a PDF will do"
+    },
+    "toolsSoonTranslate": "Translate a photo",
+    "@toolsSoonTranslate": {
+        "description": "Title of the planned tool: Translate a photo"
+    },
+    "toolsSoonTranslateBody": "Read a page in another language",
+    "@toolsSoonTranslateBody": {
+        "description": "What the planned tool Translate a photo will do"
+    },
+    "toolsSoonChat": "Ask about a document",
+    "@toolsSoonChat": {
+        "description": "Title of the planned tool: Ask about a document"
+    },
+    "toolsSoonChatBody": "Ask questions and get answers from it",
+    "@toolsSoonChatBody": {
+        "description": "What the planned tool Ask about a document will do"
+    },
+    "toolsSoonSolver": "Solve a problem",
+    "@toolsSoonSolver": {
+        "description": "Title of the planned tool: Solve a problem"
+    },
+    "toolsSoonSolverBody": "Work through a question from a photo",
+    "@toolsSoonSolverBody": {
+        "description": "What the planned tool Solve a problem will do"
+    },
+    "toolsSoonWord": "To Word",
+    "@toolsSoonWord": {
+        "description": "Title of the planned tool: To Word"
+    },
+    "toolsSoonWordBody": "A scan as a document you can edit",
+    "@toolsSoonWordBody": {
+        "description": "What the planned tool To Word will do"
+    },
+    "toolsSoonExcel": "To Excel",
+    "@toolsSoonExcel": {
+        "description": "Title of the planned tool: To Excel"
+    },
+    "toolsSoonExcelBody": "A table in a scan as a spreadsheet",
+    "@toolsSoonExcelBody": {
+        "description": "What the planned tool To Excel will do"
+    },
+    "toolsSoonSlides": "To PowerPoint",
+    "@toolsSoonSlides": {
+        "description": "Title of the planned tool: To PowerPoint"
+    },
+    "toolsSoonSlidesBody": "Pages as slides",
+    "@toolsSoonSlidesBody": {
+        "description": "What the planned tool To PowerPoint will do"
+    },
+    "toolsSoonFormula": "Formula",
+    "@toolsSoonFormula": {
+        "description": "Title of the planned tool: Formula"
+    },
+    "toolsSoonFormulaBody": "Maths in a photo as text you can copy",
+    "@toolsSoonFormulaBody": {
+        "description": "What the planned tool Formula will do"
+    },
+    "toolsSoonErase": "Smart erase",
+    "@toolsSoonErase": {
+        "description": "Title of the planned tool: Smart erase"
+    },
+    "toolsSoonEraseBody": "Take something out of a picture",
+    "@toolsSoonEraseBody": {
+        "description": "What the planned tool Smart erase will do"
+    },
+    "toolsSoonMarks": "Erase marks",
+    "@toolsSoonMarks": {
+        "description": "Title of the planned tool: Erase marks"
+    },
+    "toolsSoonMarksBody": "Clean pen marks and stains off a page",
+    "@toolsSoonMarksBody": {
+        "description": "What the planned tool Erase marks will do"
+    },
+    "toolsSoonRestore": "Restore a photo",
+    "@toolsSoonRestore": {
+        "description": "Title of the planned tool: Restore a photo"
+    },
+    "toolsSoonRestoreBody": "Sharpen and repair an old picture",
+    "@toolsSoonRestoreBody": {
+        "description": "What the planned tool Restore a photo will do"
+    },
+    "toolsSoonCount": "Count things",
+    "@toolsSoonCount": {
+        "description": "Title of the planned tool: Count things"
+    },
+    "toolsSoonCountBody": "Count the items in a photo",
+    "@toolsSoonCountBody": {
+        "description": "What the planned tool Count things will do"
     }
 }

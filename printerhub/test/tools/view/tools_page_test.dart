@@ -63,6 +63,31 @@ void main() {
     verify(() => router.push<Object?>(AppRoutes.filesToPdf)).called(2);
   });
 
+  testWidgets('shows what is planned, greyed and not to be opened', (
+    tester,
+  ) async {
+    await pump(tester);
+
+    // Those that will work on the phone, then those that need AI.
+    await tester.scrollUntilVisible(find.text('Lock a PDF'), 120);
+    expect(find.text('Coming soon'), findsWidgets);
+    await tester.scrollUntilVisible(find.text('To Word'), 120);
+    expect(
+      find.text('Coming soon: AI tools', skipOffstage: false),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(find.text('To Word'));
+    await tester.pumpAndSettle();
+
+    final tile = tester.widget<ToolTile>(
+      find.ancestor(of: find.text('To Word'), matching: find.byType(ToolTile)),
+    );
+    expect(tile.soon, 'Coming soon');
+    expect(tile.onTap, isNull);
+    await tester.tap(find.text('To Word'));
+    verifyNever(() => router.push<Object?>(any()));
+  });
+
   testWidgets('leaves out what cannot work here', (tester) async {
     await pump(tester);
 
