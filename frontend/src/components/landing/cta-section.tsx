@@ -65,9 +65,13 @@ export function CtaSection() {
 					</p>
 
 					<div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-						<a
-							href="#top"
+						{/* Not in the App Store yet: said, not linked. */}
+						<div
+							role="note"
+							aria-label="Coming soon on the App Store"
 							style={{
+								opacity: 0.6,
+								cursor: "default",
 								display: "flex",
 								alignItems: "center",
 								gap: "10px",
@@ -87,13 +91,13 @@ export function CtaSection() {
 								}}
 							>
 								<span style={{ fontSize: "11px", opacity: 0.8 }}>
-									Download on the
+									Coming soon on the
 								</span>
 								<span style={{ fontSize: "16px", fontWeight: 700 }}>
 									App Store
 								</span>
 							</span>
-						</a>
+						</div>
 
 						<a
 							href="#top"
