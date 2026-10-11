@@ -225,7 +225,7 @@ class DocumentsCubit extends Cubit<DocumentsState> {
 
   /// Brings a document's file onto the phone and hands it to the share
   /// sheet, where it can be opened, saved, or sent.
-  Future<void> open(StoredDocument document) async {
+  Future<void> send(StoredDocument document) async {
     final file = await fetch(document);
     if (file != null) await _sharer.share([file], name: document.name);
   }

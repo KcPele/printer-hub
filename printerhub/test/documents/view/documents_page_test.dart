@@ -107,7 +107,7 @@ void main() {
       expect(backend.sent('GET $_documents/document-2/download-url'), isEmpty);
       await tester.tap(find.byTooltip('Show menu').last);
       await tester.pumpAndSettle();
-      expect(find.text('Open or share'), findsNothing);
+      expect(find.text('Share'), findsNothing);
       expect(find.text('Rename'), findsOneWidget);
     });
 
@@ -153,17 +153,25 @@ void main() {
       await tester.pump();
       await settle(tester);
 
-      expect(backend.sharer.shared.single.name, 'Contract.pdf');
+      // It opens to be read, here: nothing is handed to another app.
+      expect(find.byType(DocumentViewPage), findsOneWidget);
+      expect(backend.sharer.shared, isEmpty);
+
+      // And back to the list it came from.
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.byType(DocumentViewPage), findsNothing);
+      expect(find.text('Photo.jpg'), findsOneWidget);
     });
 
-    testWidgets('opens a document from its menu, showing it is at work', (
+    testWidgets('shares a document from its menu, showing it is at work', (
       tester,
     ) async {
       await pump(tester);
 
       await tester.tap(find.byTooltip('Show menu').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Open or share'));
+      await tester.tap(find.text('Share'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -304,7 +312,7 @@ void main() {
         await tester.tap(find.byTooltip('Show menu').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Open or share'), findsOneWidget);
+        expect(find.text('Share'), findsOneWidget);
         expect(find.text('Print'), findsNothing);
       });
 
@@ -320,7 +328,7 @@ void main() {
         await tester.tap(find.byTooltip('Show menu'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Open or share'), findsOneWidget);
+        expect(find.text('Share'), findsOneWidget);
         expect(find.text('Print'), findsNothing);
       });
     });
@@ -435,7 +443,7 @@ void main() {
         await tester.tap(find.text('Note.pdf'));
         await settle(tester);
 
-        expect(backend.sharer.shared.single.name, 'Note.pdf');
+        expect(find.byType(DocumentViewPage), findsOneWidget);
       });
 
       testWidgets('is what the list shows when the account cannot be '

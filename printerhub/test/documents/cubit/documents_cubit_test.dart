@@ -129,7 +129,7 @@ void main() {
       backend.offline = true;
       final file = await cubit.fetch(document);
       expect(file!.path, note.path);
-      await cubit.open(document);
+      await cubit.send(document);
       expect(backend.sharer.shared.single.files.single.path, note.path);
     });
 
@@ -349,7 +349,7 @@ void main() {
       final cubit = await loaded();
       final contract = cubit.state.documents.first;
 
-      final opening = cubit.open(contract);
+      final opening = cubit.send(contract);
       expect(cubit.state.busyId, 'document-3');
       await opening;
 
@@ -373,7 +373,7 @@ void main() {
       final cubit = await loaded();
 
       // Nothing was ever stored for this one.
-      await cubit.open(cubit.state.documents.last);
+      await cubit.send(cubit.state.documents.last);
 
       expect(cubit.state.fetchFailed, isTrue);
       expect(cubit.state.busyId, isNull);
@@ -388,7 +388,7 @@ void main() {
         'permission.denied',
       );
 
-      await cubit.open(cubit.state.documents.first);
+      await cubit.send(cubit.state.documents.first);
 
       expect(cubit.state.error, isA<ApiProblem>());
       expect(cubit.state.fetchFailed, isFalse);
@@ -403,11 +403,11 @@ void main() {
       final cubit = await loaded();
       final [local, contract, ...] = cubit.state.documents;
 
-      await cubit.open(local);
+      await cubit.send(local);
       expect(backend.sent('GET $_documents/document-1/download-url'), isEmpty);
 
-      final first = cubit.open(contract);
-      await cubit.open(contract);
+      final first = cubit.send(contract);
+      await cubit.send(contract);
       await first;
       expect(backend.sharer.shared, hasLength(1));
     });
@@ -427,7 +427,7 @@ void main() {
         final cubit = build();
         await cubit.load();
         arrange();
-        final opening = cubit.open(cubit.state.documents.first);
+        final opening = cubit.send(cubit.state.documents.first);
         await cubit.close();
         await expectLater(opening, completes);
       }

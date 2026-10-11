@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/documents/cubit/documents_cubit.dart';
 import 'package:printerhub/documents/document_words.dart';
+import 'package:printerhub/documents/view/document_view_page.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/library/library.dart';
@@ -178,7 +179,7 @@ class _Documents extends StatelessWidget {
   }
 }
 
-enum _DocumentAction { open, print, rename, share, unshare, delete }
+enum _DocumentAction { open, send, print, rename, share, unshare, delete }
 
 /// One document, with what can be done with it: open, print, rename,
 /// share with the workspace, delete.
@@ -195,7 +196,21 @@ class DocumentCard extends StatelessWidget {
     final l10n = context.l10n;
     switch (action) {
       case _DocumentAction.open:
-        await cubit.open(document);
+        // Opened to be read here, on the phone.
+        final navigator = Navigator.of(context);
+        final file = await cubit.fetch(document);
+        if (file == null) return;
+        await navigator.push<void>(
+          MaterialPageRoute(
+            builder: (_) => DocumentViewPage(
+              file: file,
+              name: document.name,
+              mimeType: document.mimeType,
+            ),
+          ),
+        );
+      case _DocumentAction.send:
+        await cubit.send(document);
       case _DocumentAction.print:
         final router = GoRouter.of(context);
         final printer = await choosePrinter(context);
@@ -326,8 +341,8 @@ class DocumentCard extends StatelessWidget {
             itemBuilder: (_) => [
               if (canOpen)
                 PopupMenuItem(
-                  value: _DocumentAction.open,
-                  child: Text(l10n.documentOpen),
+                  value: _DocumentAction.send,
+                  child: Text(l10n.documentSend),
                 ),
               if (canOpen && canPrint)
                 PopupMenuItem(
