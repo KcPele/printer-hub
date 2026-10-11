@@ -99,7 +99,9 @@ void main() {
         .emit(PictureState(file: changed, width: 2, height: 2, changed: true));
     await tester.pump();
     await tester.tap(find.text('Save'));
-    await tester.pumpAndSettle();
+    // The picture's screen goes; keeping the picture has only begun.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
   }
 
   /// Lets the phone's files, which take real time, and the screen, which
@@ -145,6 +147,8 @@ void main() {
       ..writeAsBytesSync(tinyJpeg);
 
     await saveChanged(tester, find.byType(OpenablePicture), changed);
+    // It shows that it is being kept.
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
     await until(
       tester,
       () => find.text('Saved as a new document').evaluate().isNotEmpty,

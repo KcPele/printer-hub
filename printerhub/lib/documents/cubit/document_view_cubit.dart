@@ -14,6 +14,7 @@ class DocumentViewState extends Equatable {
     required this.document,
     this.status = DocumentViewStatus.loading,
     this.pages = const [],
+    this.keeping = false,
   });
 
   /// The document that is open. It changes when a picture is changed and
@@ -24,10 +25,14 @@ class DocumentViewState extends Equatable {
   /// The document's pages as pictures, as far as they have been drawn.
   final List<File> pages;
 
+  /// True while a picture that was changed is being kept.
+  final bool keeping;
+
   @override
   List<Object?> get props => [
     document,
     status,
+    keeping,
     [for (final page in pages) page.path],
   ];
 }
@@ -131,14 +136,27 @@ class DocumentViewCubit extends Cubit<DocumentViewState> {
   /// not be kept.
   Future<bool> keepChanged(File picture, {required String name}) async {
     final keep = _keep;
-    if (keep == null) return false;
+    if (keep == null || state.keeping) return false;
+    final before = state;
+    emit(
+      DocumentViewState(
+        document: before.document,
+        status: before.status,
+        pages: before.pages,
+        keeping: true,
+      ),
+    );
     try {
       // Under its new name, so that is what it is kept as.
       final named = await picture.copy(
         '${picture.parent.path}/${scanFileName(name)}.jpg',
       );
       final kept = await keep(named, mimeType: 'image/jpeg', pageCount: 1);
-      if (kept == null || isClosed) return false;
+      if (isClosed) return false;
+      if (kept == null) {
+        emit(before);
+        return false;
+      }
       final file = File(kept.path);
       emit(
         DocumentViewState(
@@ -153,6 +171,7 @@ class DocumentViewCubit extends Cubit<DocumentViewState> {
       );
       return true;
     } on FileSystemException {
+      if (!isClosed) emit(before);
       return false;
     }
   }

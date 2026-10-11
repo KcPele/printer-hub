@@ -53,9 +53,14 @@ void main() {
       await cubit.load();
       expect(cubit.editable, isTrue);
 
-      final kept = await cubit.keepChanged(changed(), name: 'Photo edited');
+      final keeping = cubit.keepChanged(changed(), name: 'Photo edited');
+      // It shows that it is at work, and is not begun twice.
+      expect(cubit.state.keeping, isTrue);
+      expect(await cubit.keepChanged(changed(), name: 'Again'), isFalse);
+      final kept = await keeping;
 
       expect(kept, isTrue);
+      expect(cubit.state.keeping, isFalse);
       expect(cubit.state.document.name, 'Photo edited.jpg');
       expect(cubit.state.document.file.path, isNot(document.file.path));
       expect(cubit.state.pages.single.path, cubit.state.document.file.path);
@@ -82,6 +87,7 @@ void main() {
       final full = build(photo(), keep: KeptFiles().keep);
       expect(await full.keepChanged(changed(), name: 'Photo edited'), isFalse);
       expect(full.state.document.name, 'Photo.jpg');
+      expect(full.state.keeping, isFalse);
 
       // The changed picture has gone.
       final gone = build(photo(), keep: KeptFiles().keep);
@@ -92,6 +98,21 @@ void main() {
         ),
         isFalse,
       );
+      expect(gone.state.keeping, isFalse);
+
+      // And the screen has gone before it is known.
+      final closed = DocumentViewCubit(
+        renderer: backend.renderer,
+        sharer: backend.sharer,
+        document: photo(),
+        keep: KeptFiles().keep,
+      );
+      final failing = closed.keepChanged(
+        File('${backend.scans.path}/gone.jpg'),
+        name: 'Photo edited',
+      );
+      await closed.close();
+      expect(await failing, isFalse);
     });
 
     test('opens nothing once the screen has gone', () async {

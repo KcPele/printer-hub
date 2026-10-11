@@ -99,6 +99,8 @@ class DocumentViewView extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
+            // A changed picture is on its way to being kept.
+            if (state.keeping) const LinearProgressIndicator(),
             Expanded(
               child: switch (state.status) {
                 DocumentViewStatus.failed => EmptyState(
