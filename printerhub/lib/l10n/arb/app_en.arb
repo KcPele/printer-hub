@@ -3741,5 +3741,9 @@
     "themeTextSizeBody": "Make the words smaller to fit more on the screen. 100% is the full size. This is kept on this phone.",
     "@themeTextSizeBody": {
         "description": "Explains the text size choice"
+    },
+    "documentOpenIt": "Open it to do more",
+    "@documentOpenIt": {
+        "description": "Button that opens a file just made in the document screen, where it can be read and worked on"
     }
 }

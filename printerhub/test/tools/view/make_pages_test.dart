@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printerhub/app/app.dart';
+import 'package:printerhub/documents/documents.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/tools/tools.dart';
@@ -133,6 +134,18 @@ void main() {
 
       await press(tester, find.widgetWithText(OutlinedButton, 'Share'));
       expect(backend.sharer.shared, hasLength(1));
+
+      // And it opens where a document can be read and worked on further.
+      await press(tester, find.text('Open it to do more'));
+      final opened = verify(
+        () => router.go(
+          AppRoutes.documentView,
+          extra: captureAny(named: 'extra'),
+        ),
+      )..called(1);
+      final document = opened.captured.single as OpenDocument;
+      expect(document.name, startsWith('QR code '));
+      expect(document.mimeType, 'application/pdf');
     });
 
     testWidgets('makes a sign for a Wi-Fi network', (tester) async {

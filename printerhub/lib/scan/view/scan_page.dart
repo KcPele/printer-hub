@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/app/router/app_router.dart';
+import 'package:printerhub/documents/widgets/open_document_button.dart';
 import 'package:printerhub/documents/widgets/recent_documents.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
@@ -777,6 +778,11 @@ class _Saved extends StatelessWidget {
           ],
           AppSubmitButton(label: l10n.scanShare, onPressed: cubit.share),
           const SizedBox(height: AppSpacing.sm),
+          // One file opens to be read and worked on further.
+          if (state.files.length == 1) ...[
+            OpenDocumentButton(file: state.files.single),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           // One file is one print. Several pictures are shared instead.
           if (state.files.length == 1 &&
               (printerId != null ||

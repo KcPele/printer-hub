@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/app/router/app_router.dart';
+import 'package:printerhub/documents/widgets/open_document_button.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
@@ -113,6 +114,8 @@ class PhotoSheetView extends StatelessWidget {
                   icon: const Icon(Icons.ios_share),
                   label: Text(l10n.scanShare),
                 ),
+                const SizedBox(height: AppSpacing.sm),
+                OpenDocumentButton(file: file),
                 const SizedBox(height: AppSpacing.xl),
               ] else ...[
                 Text(
