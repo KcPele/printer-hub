@@ -36,7 +36,7 @@ void main() {
 
     expect(cubit.state[photo.path], photo.path);
     final drawn = File(cubit.state[sign.path]!);
-    expect(drawn.path, '${sign.path}.thumbnail.png');
+    expect(drawn.path, '${sign.path}.${madeAt(sign)}.thumbnail.png');
     expect(drawn.readAsBytesSync(), tinyPng);
 
     // The drawing is kept: it is not made again.
@@ -45,6 +45,30 @@ void main() {
     await again.load();
     expect(again.state[sign.path], drawn.path);
   });
+
+  test(
+    'draws a file again when it is made again under the same name',
+    () async {
+      backend.renderer.firstPage = tinyPng;
+      final sheet = pdf('Photos.pdf');
+      final first = build([sheet]);
+      await first.load();
+      final before = first.state[sheet.path];
+
+      // Made again, a moment later, with other photos on it.
+      sheet
+        ..writeAsStringSync('%PDF-1.7 another sheet')
+        ..setLastModifiedSync(DateTime.now().add(const Duration(seconds: 5)));
+      backend.renderer.firstPage = tinyJpeg;
+      final again = build([sheet]);
+      await again.load();
+
+      expect(again.state[sheet.path], isNot(before));
+      expect(File(again.state[sheet.path]!).readAsBytesSync(), tinyJpeg);
+      // A file that has gone has no making to tell.
+      expect(madeAt(File('${backend.scans.path}/gone.pdf')), 0);
+    },
+  );
 
   test('leaves a file it cannot draw to the sign for its kind', () async {
     // A PDF with no first page to show, one that cannot be read, and a

@@ -31,8 +31,11 @@ class MadeFiles extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      // Other files are other pictures.
-      key: ValueKey([for (final file in files) file.path].join('\n')),
+      // Other files are other pictures, and so is a file made again
+      // under the same name.
+      key: ValueKey(
+        [for (final file in files) '${file.path} ${madeAt(file)}'].join('\n'),
+      ),
       create: (context) {
         final cubit = MadeFilesCubit(
           renderer: context.read<PrintDocuments>().renderer,
