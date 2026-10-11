@@ -627,6 +627,217 @@ void main() {
     });
   });
 
+  group('narrowed', () {
+    setUp(() {
+      backend.documentList = [
+        documentBody(id: 'document-4', name: 'Scan.pdf'),
+        documentBody(
+          id: 'document-3',
+          name: 'Resume 1.jpg',
+          source: 'pdf_pictures',
+          createdAt: '2026-10-03T10:00:00Z',
+        ),
+        documentBody(
+          id: 'document-2',
+          name: 'Note.pdf',
+          source: 'note',
+          createdAt: '2026-09-20T10:00:00Z',
+        ),
+        documentBody(
+          name: 'Camera.pdf',
+          source: 'camera_scan',
+          createdAt: '2026-08-01T10:00:00Z',
+        ),
+      ];
+    });
+
+    DocumentsCubit build({
+      Set<String> sources = const {},
+      DateTime? now,
+      Remembered? remembered,
+    }) {
+      final cubit = DocumentsCubit(
+        documentsRepository: backend.documentsKept,
+        library: backend.library,
+        renderer: backend.renderer,
+        sharer: backend.sharer,
+        organizationId: _org,
+        sources: sources,
+        remembered: remembered,
+        now: () => now ?? DateTime(2026, 10, 7, 12),
+      );
+      addTearDown(cubit.close);
+      return cubit;
+    }
+
+    test('a list of what one screen makes is only ever of that', () async {
+      final scans = build(sources: DocumentSources.scans);
+      await scans.load();
+      expect(names(scans.state), ['Scan.pdf', 'Camera.pdf']);
+
+      final pictures = build(sources: {DocumentSources.pdfPictures});
+      await pictures.load();
+      expect(names(pictures.state), ['Resume 1.jpg']);
+      // A search stays inside it.
+      await pictures.search('scan');
+      expect(names(pictures.state), isEmpty);
+    });
+
+    test('is narrowed by the person to what made a document', () async {
+      final cubit = build();
+      await cubit.load();
+      expect(cubit.state.filter.isEmpty, isTrue);
+
+      const filter = DocumentsFilter(
+        sources: {DocumentSources.note, DocumentSources.pdfPictures},
+      );
+      await cubit.filterBy(filter);
+
+      expect(cubit.state.filter, filter);
+      expect(cubit.state.filter.isEmpty, isFalse);
+      expect(names(cubit.state), ['Resume 1.jpg', 'Note.pdf']);
+
+      // Asked for again, nothing is read again.
+      final asked = backend.sent('GET $_documents').length;
+      await cubit.filterBy(filter);
+      expect(backend.sent('GET $_documents'), hasLength(asked));
+
+      // It holds through a search and a fresh reading, until it is taken
+      // off.
+      await cubit.search('note');
+      expect(names(cubit.state), ['Note.pdf']);
+      await cubit.search('');
+      await cubit.load();
+      expect(names(cubit.state), ['Resume 1.jpg', 'Note.pdf']);
+      await cubit.filterBy(const DocumentsFilter());
+      expect(names(cubit.state), hasLength(4));
+    });
+
+    test('is narrowed to when a document was made', () async {
+      final cubit = build();
+      await cubit.load();
+
+      await cubit.filterBy(const DocumentsFilter(age: DocumentsAge.today));
+      expect(names(cubit.state), ['Scan.pdf']);
+      await cubit.filterBy(const DocumentsFilter(age: DocumentsAge.week));
+      expect(names(cubit.state), ['Scan.pdf', 'Resume 1.jpg']);
+      await cubit.filterBy(const DocumentsFilter(age: DocumentsAge.month));
+      expect(names(cubit.state), ['Scan.pdf', 'Resume 1.jpg', 'Note.pdf']);
+
+      // Both at once.
+      await cubit.filterBy(
+        const DocumentsFilter(
+          sources: {DocumentSources.note},
+          age: DocumentsAge.week,
+        ),
+      );
+      expect(names(cubit.state), isEmpty);
+    });
+
+    test('begins each span at the start of a day', () {
+      final now = DateTime(2026, 10, 7, 15, 30);
+      expect(DocumentsAge.any.since(now), isNull);
+      expect(DocumentsAge.today.since(now), DateTime(2026, 10, 7));
+      expect(DocumentsAge.week.since(now), DateTime(2026, 10));
+      expect(DocumentsAge.month.since(now), DateTime(2026, 9, 8));
+    });
+
+    test('reads on inside what it is narrowed to', () async {
+      backend.documentPageSize = 1;
+      final cubit = build(sources: DocumentSources.scans);
+      await cubit.load();
+      expect(names(cubit.state), ['Scan.pdf']);
+
+      await cubit.more();
+
+      expect(names(cubit.state), ['Scan.pdf', 'Camera.pdf']);
+      expect(cubit.state.next, isNull);
+    });
+
+    test('narrows what waits on this phone too, online and off', () async {
+      Future<void> made(String name, String source) async {
+        final file = File('${backend.scans.path}/$name')
+          ..writeAsStringSync('%PDF made here');
+        await backend.library.add(
+          organizationId: _org,
+          file: file,
+          mimeType: 'application/pdf',
+          source: source,
+        );
+      }
+
+      await made('Sign.pdf', DocumentSources.codeSheet);
+      await made('Lined.pdf', DocumentSources.printable);
+
+      final signs = build(sources: {DocumentSources.codeSheet});
+      await signs.load();
+      expect(names(signs.state), ['Sign.pdf']);
+
+      backend.offline = true;
+      final offline = build(sources: {DocumentSources.printable});
+      await offline.load();
+      expect(names(offline.state), ['Lined.pdf']);
+      expect(offline.state.offline, isTrue);
+
+      // What was made before the span asked for is left out.
+      final later = build(now: DateTime(2031));
+      await later.load();
+      await later.filterBy(const DocumentsFilter(age: DocumentsAge.today));
+      expect(names(later.state), isEmpty);
+      expect(later.state.filter.age, DocumentsAge.today);
+    });
+
+    test('says so, narrowed, when the list cannot be read', () async {
+      final cubit = build();
+      await cubit.load();
+      backend.fail('GET $_documents', 500, 'server.error');
+
+      const filter = DocumentsFilter(sources: {DocumentSources.note});
+      await cubit.filterBy(filter);
+
+      expect(cubit.state.status, DocumentsStatus.failed);
+      expect(cubit.state.filter, filter);
+    });
+
+    test('is kept between visits apart from every other list, and never '
+        'as the person narrowed it', () async {
+      final remembered = Remembered();
+      await build(
+        sources: DocumentSources.scans,
+        remembered: remembered,
+      ).load();
+      final everything = build(remembered: remembered);
+      await everything.load();
+      await everything.filterBy(
+        const DocumentsFilter(sources: {DocumentSources.note}),
+      );
+
+      // Each opens on its own list, whole.
+      expect(
+        names(
+          build(sources: DocumentSources.scans, remembered: remembered).state,
+        ),
+        ['Scan.pdf', 'Camera.pdf'],
+      );
+      expect(names(build(remembered: remembered).state), hasLength(4));
+      expect(
+        build(sources: {DocumentSources.note}, remembered: remembered).state,
+        const DocumentsState(),
+      );
+    });
+
+    test('a filter compares by value', () {
+      expect(
+        const DocumentsFilter(sources: {'note'}, age: DocumentsAge.week),
+        const DocumentsFilter(sources: {'note'}, age: DocumentsAge.week),
+      );
+      expect(
+        const DocumentsFilter(sources: {'note'}),
+        isNot(const DocumentsFilter()),
+      );
+    });
+  });
+
   group('opened again', () {
     late Remembered remembered;
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:equatable/equatable.dart';
+import 'package:printerhub/documents/document_sources.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/tools/cubit/make_cubit.dart';
 import 'package:printerhub/tools/made_pages.dart';
@@ -38,6 +39,9 @@ class NoteCubit extends MakeCubit<NoteChoices> {
   }) : super(choices: const NoteChoices());
 
   final PdfFontLoader _font;
+
+  @override
+  String get source => DocumentSources.note;
 
   @override
   bool ready(NoteChoices choices) => choices.text.trim().isNotEmpty;

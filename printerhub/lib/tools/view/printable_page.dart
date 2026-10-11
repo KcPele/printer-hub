@@ -1,6 +1,7 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:printerhub/documents/document_sources.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/scan/scan_output.dart';
@@ -53,6 +54,7 @@ class PrintableView extends StatelessWidget {
       state: state,
       onMake: cubit.make,
       onShare: cubit.share,
+      made: DocumentSources.printable,
       children: [
         DropdownButtonFormField<Printable>(
           key: ValueKey(choices.kind),

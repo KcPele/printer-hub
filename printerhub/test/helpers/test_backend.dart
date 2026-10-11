@@ -686,7 +686,11 @@ class TestBackend {
     }
     final documentRoute = _documentRoute.firstMatch(key);
     if (documentRoute != null) {
-      return _answerDocuments(documentRoute, body, request.uri.queryParameters);
+      return _answerDocuments(
+        documentRoute,
+        body,
+        request.uri.queryParametersAll,
+      );
     }
     final presetRoute = _presetRoute.firstMatch(key);
     if (presetRoute != null) return _answerPresets(presetRoute, body);
@@ -891,7 +895,7 @@ class TestBackend {
   FakeResponse _answerDocuments(
     RegExpMatch route,
     Map<String, dynamic> body,
-    Map<String, String> query,
+    Map<String, List<String>> query,
   ) {
     final method = route.group(1)!;
     final documentId = route.group(2);
@@ -926,13 +930,21 @@ class TestBackend {
           'upload': link(body['id'] as String),
         });
       }
-      final wanted = (query['q'] ?? '').toLowerCase();
+      final wanted = (query['q']?.single ?? '').toLowerCase();
+      final sources = query['source'] ?? const [];
+      final since = query['created_from']?.single;
       final matching = [
         for (final document in documentList)
-          if ((document['file_name']! as String).toLowerCase().contains(wanted))
+          if ((document['file_name']! as String).toLowerCase().contains(
+                wanted,
+              ) &&
+              (sources.isEmpty || sources.contains(document['source'])) &&
+              (since == null ||
+                  !DateTime.parse(document['created_at']! as String)
+                      .isBefore(DateTime.parse(since))))
             document,
       ];
-      final from = int.parse(query['cursor'] ?? '0');
+      final from = int.parse(query['cursor']?.single ?? '0');
       final to = from + documentPageSize;
       return FakeResponse(200, {
         'items': matching.skip(from).take(documentPageSize).toList(),

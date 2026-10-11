@@ -136,9 +136,9 @@ void main() {
       expect(backend.sharer.shared, hasLength(1));
 
       // And it opens where a document can be read and worked on further.
-      await press(tester, find.text('Open it to do more'));
+      await press(tester, find.byType(MadeFiles));
       final opened = verify(
-        () => router.go(
+        () => router.push<Object?>(
           AppRoutes.documentView,
           extra: captureAny(named: 'extra'),
         ),

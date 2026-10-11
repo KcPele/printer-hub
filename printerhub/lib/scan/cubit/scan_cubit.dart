@@ -9,6 +9,7 @@ import 'package:documents_repository/documents_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:image/image.dart' as img;
 import 'package:jobs_repository/jobs_repository.dart';
+import 'package:printerhub/documents/document_sources.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/library/library_item.dart';
 import 'package:printerhub/print/documents.dart';
@@ -724,7 +725,8 @@ class ScanCubit extends Cubit<ScanState> {
         // printer's only when the printer made some of it.
         source: _sourceOfPages,
         printerId:
-            _sourceOfPages == 'upload' || state.pages.every(state.fromCamera)
+            _sourceOfPages == DocumentSources.joinedFiles ||
+                state.pages.every(state.fromCamera)
             ? null
             : _printer?.id,
         text: text,
@@ -816,12 +818,12 @@ class ScanCubit extends Cubit<ScanState> {
   }
 
   /// What a kept scan is recorded as. Any page from the camera makes it a
-  /// camera scan; pictures from the phone alone make it an upload; the
+  /// camera scan; files from the phone alone are files put together; the
   /// rest is the printer's.
   String get _sourceOfPages {
-    if (state.pages.any(state.fromCamera)) return 'camera_scan';
-    if (state.pages.every(state.fromPhone)) return 'upload';
-    return 'printer_scan';
+    if (state.pages.any(state.fromCamera)) return DocumentSources.cameraScan;
+    if (state.pages.every(state.fromPhone)) return DocumentSources.joinedFiles;
+    return DocumentSources.printerScan;
   }
 
   /// Goes back to the pages, to add to them or change their order.

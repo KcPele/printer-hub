@@ -9,6 +9,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/app/remembered.dart';
 import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/documents/cubit/documents_cubit.dart';
+import 'package:printerhub/documents/document_sources.dart';
 import 'package:printerhub/documents/document_words.dart';
 import 'package:printerhub/documents/open_document.dart';
 import 'package:printerhub/errors/error_messages.dart';
@@ -57,6 +58,7 @@ class DocumentsView extends StatelessWidget {
     final nothingYet =
         state.status == DocumentsStatus.ready &&
         state.query.isEmpty &&
+        state.filter.isEmpty &&
         state.documents.isEmpty &&
         // Offline, the list says so instead of saying there is nothing.
         !state.offline;
@@ -147,6 +149,21 @@ class _Documents extends StatelessWidget {
           decoration: InputDecoration(
             labelText: l10n.documentsSearch,
             prefixIcon: const Icon(Icons.search),
+            // Narrows the list to what made a document, and when.
+            suffixIcon: IconButton(
+              tooltip: l10n.documentsFilter,
+              onPressed: () => showModalBottomSheet<void>(
+                context: context,
+                showDragHandle: true,
+                isScrollControlled: true,
+                builder: (_) =>
+                    BlocProvider.value(value: cubit, child: const _Filter()),
+              ),
+              icon: Badge(
+                isLabelVisible: !state.filter.isEmpty,
+                child: const Icon(Icons.tune),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -180,6 +197,99 @@ class _Documents extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// The choice of what the list is narrowed to: what made a document,
+/// and how far back. Each choice is applied as it is made.
+class _Filter extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final textTheme = context.textTheme;
+    final cubit = context.read<DocumentsCubit>();
+    final filter = context.select<DocumentsCubit, DocumentsFilter>(
+      (cubit) => cubit.state.filter,
+    );
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.page,
+          0,
+          AppSpacing.page,
+          AppSpacing.lg,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.documentsFilterTitle, style: textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.lg),
+            Text(l10n.documentsFilterWhen, style: textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (final age in DocumentsAge.values)
+                  ChoiceChip(
+                    label: Text(DocumentWords.age(l10n, age)),
+                    selected: filter.age == age,
+                    showCheckmark: false,
+                    onSelected: (_) => cubit.filterBy(
+                      DocumentsFilter(sources: filter.sources, age: age),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(l10n.documentsFilterMadeBy, style: textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
+                for (final source in DocumentSources.all)
+                  FilterChip(
+                    label: Text(DocumentWords.source(l10n, source)),
+                    selected: filter.sources.contains(source),
+                    showCheckmark: false,
+                    // Several can be chosen: the list is of any of them.
+                    onSelected: (chosen) => cubit.filterBy(
+                      DocumentsFilter(
+                        sources: {
+                          for (final other in filter.sources)
+                            if (other != source) other,
+                          if (chosen) source,
+                        },
+                        age: filter.age,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: filter.isEmpty
+                      ? null
+                      : () => cubit.filterBy(const DocumentsFilter()),
+                  child: Text(l10n.documentsFilterClear),
+                ),
+                const Spacer(),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(l10n.documentsFilterDone),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -312,8 +422,8 @@ class DocumentCard extends StatelessWidget {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           else
-            _Likeness(
-              document: document,
+            DocumentLikeness(
+              mimeType: document.mimeType,
               picture: state.thumbnails[document.id],
             ),
           const SizedBox(width: AppSpacing.lg),
@@ -383,13 +493,12 @@ class DocumentCard extends StatelessWidget {
   }
 }
 
-/// What a document looks like, small: its first page or the picture
-/// itself. One this phone cannot draw, or does not have, is a sign for
-/// its kind.
-class _Likeness extends StatelessWidget {
-  const new({required this.document, required this.picture});
+/// What a document looks like, small: its picture where there is one,
+/// and the sign for its kind where there is not.
+class DocumentLikeness extends StatelessWidget {
+  const new({required this.mimeType, required this.picture, super.key});
 
-  final StoredDocument document;
+  final String mimeType;
 
   /// Where the small picture is, or null when there is none.
   final String? picture;
@@ -397,7 +506,7 @@ class _Likeness extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final sign = Icon(DocumentWords.icon(document), color: colors.emphasis);
+    final sign = Icon(DocumentWords.iconOf(mimeType), color: colors.emphasis);
     final picture = this.picture;
     if (picture == null) return SizedBox(width: 44, child: sign);
 

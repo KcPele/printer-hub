@@ -71,6 +71,7 @@ void main() {
         backend.library.of(org).map((item) => item.name),
         contains('Photo edited.jpg'),
       );
+      expect(backend.library.of(org).first.source, 'edited_picture');
     });
 
     test('cannot be kept where there is nowhere to keep it, and only a '

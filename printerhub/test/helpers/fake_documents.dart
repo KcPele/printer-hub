@@ -211,7 +211,8 @@ class FakeScanTextReader implements ScanTextReader {
 
 /// Stands in for the library, and remembers what it was handed to keep.
 class KeptFiles {
-  final List<({File file, String mimeType, int? pageCount})> kept = [];
+  final List<({File file, String mimeType, int? pageCount, String source})>
+  kept = [];
 
   KeepFile get keep =>
       (
@@ -222,7 +223,12 @@ class KeptFiles {
         printerId,
         text,
       }) async {
-        kept.add((file: file, mimeType: mimeType, pageCount: pageCount));
+        kept.add((
+          file: file,
+          mimeType: mimeType,
+          pageCount: pageCount,
+          source: source,
+        ));
         return null;
       };
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:equatable/equatable.dart';
+import 'package:printerhub/documents/document_sources.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/tools/cubit/make_cubit.dart';
 import 'package:printerhub/tools/made_pages.dart';
@@ -64,6 +65,9 @@ class PrintableCubit extends MakeCubit<PrintableChoices> {
   /// Words a calendar for a month, in the app's language.
   final CalendarMonth Function(int year, int month) _calendar;
   final PdfFontLoader _font;
+
+  @override
+  String get source => DocumentSources.printable;
 
   @override
   Future<File> build(PrintableChoices choices) async {

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:printerhub/documents/document_sources.dart';
 import 'package:printerhub/documents/open_document.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
@@ -151,7 +152,12 @@ class DocumentViewCubit extends Cubit<DocumentViewState> {
       final named = await picture.copy(
         '${picture.parent.path}/${scanFileName(name)}.jpg',
       );
-      final kept = await keep(named, mimeType: 'image/jpeg', pageCount: 1);
+      final kept = await keep(
+        named,
+        mimeType: 'image/jpeg',
+        pageCount: 1,
+        source: DocumentSources.editedPicture,
+      );
       if (isClosed) return false;
       if (kept == null) {
         emit(before);

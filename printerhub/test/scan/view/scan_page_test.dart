@@ -224,7 +224,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
       }
 
-      expect(find.text('Recent documents'), findsOneWidget);
+      expect(find.text('Recent scans'), findsOneWidget);
       expect(find.text('Scan yesterday.pdf'), findsOneWidget);
     });
 
@@ -758,12 +758,21 @@ void main() {
       testWidgets('shows what was scanned before, below the buttons', (
         tester,
       ) async {
-        backend.documentList = [documentBody(name: 'Scan yesterday.pdf')];
+        backend.documentList = [
+          documentBody(name: 'Scan yesterday.pdf'),
+          // What a tool made is not a scan, and is not shown here.
+          documentBody(
+            id: 'document-2',
+            name: 'Resume 1.jpg',
+            source: 'pdf_pictures',
+          ),
+        ];
         await pumpPhoneOnly(tester);
         await recents(tester);
 
-        expect(find.text('Recent documents'), findsOneWidget);
+        expect(find.text('Recent scans'), findsOneWidget);
         expect(find.text('Scan yesterday.pdf'), findsOneWidget);
+        expect(find.text('Resume 1.jpg'), findsNothing);
       });
 
       testWidgets('does not offer to print in a workspace with no printer', (

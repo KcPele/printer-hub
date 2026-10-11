@@ -554,7 +554,7 @@ void main() {
       await cubit.save();
       expect(cubit.state.files.single.path, endsWith('/Album.pdf'));
       final sent = backend.lastBody(documents);
-      expect(sent['source'], 'upload');
+      expect(sent['source'], 'joined_files');
       expect(sent['source_printer_id'], isNull);
     });
 

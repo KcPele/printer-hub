@@ -63,6 +63,7 @@ void main() {
       // Kept without being asked, once.
       expect(kept.kept.single.file.path, cubit.state.file!.path);
       expect(kept.kept.single.mimeType, 'application/pdf');
+      expect(kept.kept.single.source, 'code_sheet');
 
       await cubit.share();
       expect(sharer.shared.single.name, 'QR code today');

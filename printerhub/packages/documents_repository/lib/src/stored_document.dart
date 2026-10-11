@@ -44,7 +44,8 @@ class StoredDocument extends Equatable {
   final DateTime createdAt;
   final int? pageCount;
 
-  /// Where it came from: `printer_scan`, `camera_scan`, or `upload`.
+  /// Where it came from: `printer_scan`, `camera_scan`, `upload`, or the
+  /// tool that made it, such as `pdf_pictures`.
   final String source;
 
   /// True when its file is kept in the workspace's storage. Otherwise only

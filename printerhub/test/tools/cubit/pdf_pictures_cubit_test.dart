@@ -58,6 +58,8 @@ void main() {
       for (final file in cubit.state.files) file.path,
     ]);
     expect(kept.kept.first.mimeType, 'image/jpeg');
+    // Under the name of the tool that made them.
+    expect(kept.kept.first.source, 'pdf_pictures');
   });
 
   test('makes one tall picture of every page', () async {
@@ -66,6 +68,7 @@ void main() {
     await cubit.choose();
 
     expect(names(cubit.state), ['Report.jpg']);
+    expect(kept.kept.single.source, 'long_picture');
   });
 
   test('will not join more pages than a picture can hold', () async {

@@ -115,6 +115,7 @@ void main() {
     // And it was kept without being asked.
     expect(kept.kept.single.file.path, file.path);
     expect(kept.kept.single.mimeType, 'application/pdf');
+    expect(kept.kept.single.source, 'photo_sheet');
   });
 
   test('drops a sheet that is no longer what was asked for', () async {

@@ -6,6 +6,7 @@ import 'package:bloc/bloc.dart';
 import 'package:documents_repository/documents_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:printerhub/app/remembered.dart';
+import 'package:printerhub/documents/likeness.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/library/library_item.dart';
 import 'package:printerhub/print/documents.dart';
@@ -13,10 +14,50 @@ import 'package:printerhub/scan/scan_output.dart';
 
 enum DocumentsStatus { loading, ready, failed }
 
+/// How far back a list of documents goes.
+enum DocumentsAge {
+  any,
+  today,
+
+  /// Today and the six days before it.
+  week,
+
+  /// Today and the twenty-nine days before it.
+  month;
+
+  /// The moment the list begins at, when it is [now]. Null for any time.
+  DateTime? since(DateTime now) {
+    final today = DateTime(now.year, now.month, now.day);
+    return switch (this) {
+      DocumentsAge.any => null,
+      DocumentsAge.today => today,
+      DocumentsAge.week => today.subtract(const Duration(days: 6)),
+      DocumentsAge.month => today.subtract(const Duration(days: 29)),
+    };
+  }
+}
+
+/// What a list of documents is narrowed to: what made them, and when.
+class DocumentsFilter extends Equatable {
+  const new({this.sources = const {}, this.age = DocumentsAge.any});
+
+  /// Where the documents came from, as `DocumentSources` names them.
+  /// None is any.
+  final Set<String> sources;
+  final DocumentsAge age;
+
+  /// True when it narrows nothing.
+  bool get isEmpty => sources.isEmpty && age == DocumentsAge.any;
+
+  @override
+  List<Object?> get props => [sources, age];
+}
+
 class DocumentsState extends Equatable {
   const new({
     this.status = DocumentsStatus.loading,
     this.query = '',
+    this.filter = const DocumentsFilter(),
     this.documents = const [],
     this.next,
     this.loadingMore = false,
@@ -33,6 +74,9 @@ class DocumentsState extends Equatable {
 
   /// What the list is searched for.
   final String query;
+
+  /// What the person narrowed the list to.
+  final DocumentsFilter filter;
 
   /// The documents the workspace keeps, newest first, as far as read.
   final List<StoredDocument> documents;
@@ -77,6 +121,7 @@ class DocumentsState extends Equatable {
   List<Object?> get props => [
     status,
     query,
+    filter,
     documents,
     next,
     loadingMore,
@@ -101,17 +146,19 @@ class DocumentsCubit extends Cubit<DocumentsState> {
     required this._renderer,
     required this._sharer,
     required this._organizationId,
+    this._sources = const {},
     this._bringsRecent = false,
     this._remembered,
+    this._now = DateTime.now,
   }) : super(
-         _remembered?.of<DocumentsState>('documents.$_organizationId') ??
+         _remembered?.of<DocumentsState>(_place(_organizationId, _sources)) ??
              const DocumentsState(),
        ) {
     // Something was made, or reached the account: the list is read again
     // without being cleared first.
     _changes = _library.changes.listen((_) {
       if (state.status == DocumentsStatus.ready && state.busyId == null) {
-        unawaited(_read(state.query, quiet: true));
+        unawaited(_read(state.query, state.filter, quiet: true));
       }
     });
   }
@@ -121,6 +168,19 @@ class DocumentsCubit extends Cubit<DocumentsState> {
   final PageRenderer _renderer;
   final ScanSharer _sharer;
   final String _organizationId;
+
+  /// What this list is only ever of: the documents one screen makes.
+  /// None is every document. The person's own filter narrows it further.
+  final Set<String> _sources;
+  final DateTime Function() _now;
+
+  /// Where a list of [sources] is kept between visits.
+  static String _place(String organizationId, Set<String> sources) =>
+      'documents.$organizationId.${(sources.toList()..sort()).join(',')}';
+
+  /// The sources asked for: the person's choice, or what this list is of.
+  Set<String> _wanted(DocumentsFilter filter) =>
+      filter.sources.isEmpty ? _sources : filter.sources;
 
   /// True for a list on screen: the newest few documents that are only in
   /// the account are brought onto the phone as it is read.
@@ -138,11 +198,12 @@ class DocumentsCubit extends Cubit<DocumentsState> {
     // The whole list as it stands at rest: not a search, not mid-change.
     if (next.status == DocumentsStatus.ready &&
         next.query.isEmpty &&
+        next.filter.isEmpty &&
         next.busyId == null &&
         next.error == null &&
         !next.fetchFailed &&
         !next.loadingMore) {
-      _remembered?.keep('documents.$_organizationId', next);
+      _remembered?.keep(_place(_organizationId, _sources), next);
     }
   }
 
@@ -160,40 +221,61 @@ class DocumentsCubit extends Cubit<DocumentsState> {
   /// Reads the list from the start.
   Future<void> load() {
     // What is already shown stays until the news is in.
-    return _read(state.query, quiet: state.status == DocumentsStatus.ready);
+    return _read(
+      state.query,
+      state.filter,
+      quiet: state.status == DocumentsStatus.ready,
+    );
   }
 
   /// Reads the list again for the documents that match [query].
-  Future<void> search(String query) => _read(query);
+  Future<void> search(String query) => _read(query, state.filter);
+
+  /// Reads the list again, narrowed to [filter].
+  Future<void> filterBy(DocumentsFilter filter) {
+    if (filter == state.filter) return Future.value();
+    return _read(state.query, filter);
+  }
 
   /// What this phone has that matches [query], newest first.
-  List<LibraryItem> _local(String query) {
+  List<LibraryItem> _local(String query, DocumentsFilter filter) {
     final wanted = query.trim().toLowerCase();
+    final sources = _wanted(filter);
+    final since = filter.age.since(_now());
     return [
       for (final item in _library.of(_organizationId))
-        if (wanted.isEmpty ||
-            item.name.toLowerCase().contains(wanted) ||
-            (item.text?.toLowerCase().contains(wanted) ?? false))
+        if ((wanted.isEmpty ||
+                item.name.toLowerCase().contains(wanted) ||
+                (item.text?.toLowerCase().contains(wanted) ?? false)) &&
+            (sources.isEmpty || sources.contains(item.source)) &&
+            (since == null || !item.createdAt.isBefore(since)))
           item,
     ];
   }
 
-  Future<void> _read(String query, {bool quiet = false}) async {
+  Future<void> _read(
+    String query,
+    DocumentsFilter filter, {
+    bool quiet = false,
+  }) async {
     final read = ++_reads;
-    if (!quiet) emit(DocumentsState(query: query));
+    if (!quiet) emit(DocumentsState(query: query, filter: filter));
     _library.open();
     try {
       final page = await _documentsRepository.list(
         organizationId: _organizationId,
         query: query,
+        sources: _wanted(filter),
+        since: filter.age.since(_now()),
       );
       if (read != _reads || isClosed) return;
-      final local = _local(query);
+      final local = _local(query, filter);
       final listed = {for (final document in page.documents) document.id};
       emit(
         DocumentsState(
           status: DocumentsStatus.ready,
           query: query,
+          filter: filter,
           documents: [
             // What the account does not have yet comes first: it is the
             // newest.
@@ -221,17 +303,19 @@ class DocumentsCubit extends Cubit<DocumentsState> {
             : DocumentsState(
                 status: DocumentsStatus.failed,
                 query: query,
+                filter: filter,
                 error: error,
               ),
       );
     } on ApiException {
       // No network: what this phone has is still there to open.
       if (read != _reads || isClosed) return;
-      final local = _local(query);
+      final local = _local(query, filter);
       emit(
         DocumentsState(
           status: DocumentsStatus.ready,
           query: query,
+          filter: filter,
           documents: [for (final item in local) item.asDocument],
           onPhone: _onPhone,
           waiting: {
@@ -308,21 +392,13 @@ class DocumentsCubit extends Cubit<DocumentsState> {
     }
   }
 
-  Future<File?> _likeness(StoredDocument document, File file) async {
-    if (document.mimeType.startsWith('image/')) return file;
-    if (document.mimeType != 'application/pdf') return null;
-    final kept = File('${file.parent.path}/thumbnail.png');
-    if (kept.existsSync()) return kept;
-    try {
-      final first = (await _renderer.preview(PickedDocument.fromFile(file)))
-          .firstPage;
-      if (first == null) return null;
-      kept.writeAsBytesSync(first, flush: true);
-      return kept;
-    } on Object {
-      // It is shown by its sign.
-      return null;
-    }
+  Future<File?> _likeness(StoredDocument document, File file) {
+    return likenessOf(
+      _renderer,
+      file,
+      mimeType: document.mimeType,
+      kept: File('${file.parent.path}/thumbnail.png'),
+    );
   }
 
   Set<String> get _onPhone => {
@@ -340,6 +416,8 @@ class DocumentsCubit extends Cubit<DocumentsState> {
         organizationId: _organizationId,
         query: state.query,
         cursor: cursor,
+        sources: _wanted(state.filter),
+        since: state.filter.age.since(_now()),
       );
       if (read != _reads || isClosed) return;
       emit(
@@ -480,6 +558,7 @@ class DocumentsCubit extends Cubit<DocumentsState> {
     return DocumentsState(
       status: state.status,
       query: state.query,
+      filter: state.filter,
       documents: documents ?? state.documents,
       next: next == null ? state.next : next(),
       loadingMore: loadingMore,

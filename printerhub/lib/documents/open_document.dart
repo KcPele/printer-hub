@@ -31,3 +31,15 @@ class OpenDocument extends Equatable {
   @override
   List<Object?> get props => [file.path, name, mimeType];
 }
+
+/// What kind of file [name] is, from its ending.
+String mimeTypeOfName(String name) {
+  final dot = name.lastIndexOf('.');
+  return switch (dot < 0 ? '' : name.substring(dot + 1).toLowerCase()) {
+    'pdf' => 'application/pdf',
+    'jpg' || 'jpeg' => 'image/jpeg',
+    'png' => 'image/png',
+    'txt' => 'text/plain',
+    _ => 'application/octet-stream',
+  };
+}

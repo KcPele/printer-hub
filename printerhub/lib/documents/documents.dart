@@ -1,8 +1,11 @@
 export 'cubit/document_view_cubit.dart';
 export 'cubit/documents_cubit.dart';
+export 'cubit/made_files_cubit.dart';
 export 'document_actions.dart';
+export 'document_sources.dart';
 export 'document_words.dart';
+export 'likeness.dart';
 export 'open_document.dart';
 export 'view/document_view_page.dart';
 export 'view/documents_page.dart';
-export 'widgets/open_document_button.dart';
+export 'widgets/made_files.dart';

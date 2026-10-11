@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:equatable/equatable.dart';
+import 'package:printerhub/documents/document_sources.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/tools/cubit/make_cubit.dart';
 import 'package:printerhub/tools/made_pages.dart';
@@ -70,6 +71,9 @@ class CodeSheetCubit extends MakeCubit<CodeSheetChoices> {
   /// The longest words a code is asked to carry: past this it is too
   /// fine to read off paper.
   static const int maxLength = 500;
+
+  @override
+  String get source => DocumentSources.codeSheet;
 
   @override
   bool ready(CodeSheetChoices choices) => choices.wifi

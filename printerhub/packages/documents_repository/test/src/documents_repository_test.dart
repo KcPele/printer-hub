@@ -300,6 +300,30 @@ void main() {
       expect(asked['cursor'], 'next-page');
     });
 
+    test('is narrowed to where documents came from, and when', () async {
+      await repository.list(
+        organizationId: _org,
+        sources: {'printer_scan', 'camera_scan'},
+        since: DateTime.utc(2026, 10, 4),
+      );
+
+      final asked = api.requests.single.queryParameters;
+      expect(asked['source'], [
+        DocumentSource.printerScan,
+        DocumentSource.cameraScan,
+      ]);
+      // Sent as the words the API knows.
+      expect('${(asked['source'] as List).first}', 'printer_scan');
+      expect(asked['created_from'], '2026-10-04T00:00:00.000Z');
+
+      await repository.list(organizationId: _org);
+      expect(api.requests.last.queryParameters, isNot(contains('source')));
+      expect(
+        api.requests.last.queryParameters,
+        isNot(contains('created_from')),
+      );
+    });
+
     test('is not searched for nothing', () async {
       await repository.list(organizationId: _org, query: '  ');
 

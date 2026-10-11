@@ -1,5 +1,9 @@
+import 'package:api_client/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:printerhub/app/app.dart';
+import 'package:printerhub/documents/documents.dart';
 import 'package:printerhub/tools/tools.dart';
 
 import '../../helpers/helpers.dart';
@@ -40,6 +44,43 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Share'));
     await tester.pump();
     expect(backend.sharer.shared.single.files, hasLength(2));
+  });
+
+  testWidgets('shows each picture as a card that opens it, and what the '
+      'tool made before, below the button', (tester) async {
+    backend.documentList = [
+      documentBody(
+        name: 'Resume 1.jpg',
+        mimeType: 'image/jpeg',
+        source: 'pdf_pictures',
+      ),
+      // What another screen made is not shown here.
+      documentBody(id: 'document-2', name: 'Scan.pdf'),
+    ];
+    final router = recordingRouter();
+    await tester.pumpApp(
+      const PdfPicturesPage(long: false),
+      backend: backend,
+      router: router,
+    );
+    await settle(tester);
+
+    expect(find.text('Made here lately'), findsOneWidget);
+    expect(find.text('Resume 1.jpg'), findsOneWidget);
+    expect(find.text('Scan.pdf'), findsNothing);
+
+    await tester.tap(find.text('Choose a PDF'));
+    await settle(tester);
+    expect(find.byType(MadeFiles), findsOneWidget);
+    await tester.tap(find.text('Report 2.jpg'));
+
+    final opened = verify(
+      () => router.push<Object?>(
+        AppRoutes.documentView,
+        extra: captureAny(named: 'extra'),
+      ),
+    )..called(1);
+    expect((opened.captured.single as OpenDocument).name, 'Report 2.jpg');
   });
 
   testWidgets('makes one tall picture', (tester) async {

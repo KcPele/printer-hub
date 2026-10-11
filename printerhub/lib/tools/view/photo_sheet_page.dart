@@ -6,7 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/app/router/app_router.dart';
-import 'package:printerhub/documents/widgets/open_document_button.dart';
+import 'package:printerhub/documents/document_sources.dart';
+import 'package:printerhub/documents/widgets/made_files.dart';
+import 'package:printerhub/documents/widgets/recent_documents.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/pictures/pictures.dart';
@@ -103,6 +105,9 @@ class PhotoSheetView extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xl),
+                // Shown as it looks, and opened by a touch.
+                MadeFiles(files: [file]),
+                const SizedBox(height: AppSpacing.md),
                 if (printersThatPrint(context).isNotEmpty) ...[
                   AppSubmitButton(
                     label: l10n.scanPrint,
@@ -115,8 +120,6 @@ class PhotoSheetView extends StatelessWidget {
                   icon: const Icon(Icons.ios_share),
                   label: Text(l10n.scanShare),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                OpenDocumentButton(file: file),
                 const SizedBox(height: AppSpacing.xl),
               ] else ...[
                 Text(
@@ -256,6 +259,11 @@ class PhotoSheetView extends StatelessWidget {
                   onPressed: cubit.make,
                 ),
               ],
+              const SizedBox(height: AppSpacing.xxl),
+              RecentDocuments(
+                title: l10n.documentsRecentHere,
+                sources: const {DocumentSources.photoSheet},
+              ),
             ],
           ),
         ),

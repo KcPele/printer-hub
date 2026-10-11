@@ -3742,10 +3742,6 @@
     "@themeTextSizeBody": {
         "description": "Explains the text size choice"
     },
-    "documentOpenIt": "Open it to do more",
-    "@documentOpenIt": {
-        "description": "Button that opens a file just made in the document screen, where it can be read and worked on"
-    },
     "pictureCrop": "Crop",
     "@pictureCrop": {
         "description": "Tool that cuts a picture down to a part of it"
@@ -3797,6 +3793,99 @@
     "documentEditedName": "{name} edited",
     "@documentEditedName": {
         "description": "Name of the new document a changed picture is kept as",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "documentsRecentScans": "Recent scans",
+    "@documentsRecentScans": {
+        "description": "Title above the last few scans, on the scan screen"
+    },
+    "documentsRecentHere": "Made here lately",
+    "@documentsRecentHere": {
+        "description": "Title above the last few documents a tool made, on that tool's screen"
+    },
+    "documentsFilter": "Filter",
+    "@documentsFilter": {
+        "description": "Tooltip of the button that narrows the list of documents"
+    },
+    "documentsFilterTitle": "Show only",
+    "@documentsFilterTitle": {
+        "description": "Title of the sheet that narrows the list of documents"
+    },
+    "documentsFilterMadeBy": "What made it",
+    "@documentsFilterMadeBy": {
+        "description": "Heading above the choice of what made a document"
+    },
+    "documentsFilterWhen": "When",
+    "@documentsFilterWhen": {
+        "description": "Heading above the choice of how far back documents go"
+    },
+    "documentsFilterAnyTime": "Any time",
+    "@documentsFilterAnyTime": {
+        "description": "No limit on when a document was made"
+    },
+    "documentsFilterToday": "Today",
+    "@documentsFilterToday": {
+        "description": "Only documents made today"
+    },
+    "documentsFilterWeek": "Last 7 days",
+    "@documentsFilterWeek": {
+        "description": "Only documents made in the last seven days"
+    },
+    "documentsFilterMonth": "Last 30 days",
+    "@documentsFilterMonth": {
+        "description": "Only documents made in the last thirty days"
+    },
+    "documentsFilterClear": "Show everything",
+    "@documentsFilterClear": {
+        "description": "Button that removes every filter from the list of documents"
+    },
+    "documentsFilterDone": "Done",
+    "@documentsFilterDone": {
+        "description": "Button that closes the filter sheet"
+    },
+    "documentSourcePrinterScan": "Scanned on a printer",
+    "@documentSourcePrinterScan": {
+        "description": "A document that came from a printer's scanner"
+    },
+    "documentSourceCameraScan": "Scanned with the camera",
+    "@documentSourceCameraScan": {
+        "description": "A document that came from the phone's camera"
+    },
+    "documentSourceJoinedFiles": "Files put together",
+    "@documentSourceJoinedFiles": {
+        "description": "A document made by joining files from the phone"
+    },
+    "documentSourceCodeSheet": "QR code sign",
+    "@documentSourceCodeSheet": {
+        "description": "A document that is a sign with a QR code"
+    },
+    "documentSourceNote": "Note",
+    "@documentSourceNote": {
+        "description": "A document that is a typed note"
+    },
+    "documentSourcePrintable": "Printable page",
+    "@documentSourcePrintable": {
+        "description": "A document that is a ruled page or calendar"
+    },
+    "documentSourcePhotoSheet": "Photo sheet",
+    "@documentSourcePhotoSheet": {
+        "description": "A document that is photos laid out on a sheet"
+    },
+    "documentSourceEdited": "Edited picture",
+    "@documentSourceEdited": {
+        "description": "A document that is a picture someone changed"
+    },
+    "documentSourceOther": "Other",
+    "@documentSourceOther": {
+        "description": "A document that came from somewhere else"
+    },
+    "madeFileOpen": "Open {name}",
+    "@madeFileOpen": {
+        "description": "Label for a card that opens a file just made",
         "placeholders": {
             "name": {
                 "type": "String"

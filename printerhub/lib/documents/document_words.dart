@@ -1,5 +1,7 @@
 import 'package:documents_repository/documents_repository.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:printerhub/documents/cubit/documents_cubit.dart';
+import 'package:printerhub/documents/document_sources.dart';
 import 'package:printerhub/l10n/l10n.dart';
 
 /// The words the app uses for a document the workspace keeps: how big it
@@ -15,12 +17,43 @@ abstract final class DocumentWords {
     return l10n.documentSizeMb((bytes / (kb * kb)).toStringAsFixed(1));
   }
 
-  static IconData icon(StoredDocument document) {
-    return document.mimeType == 'application/pdf'
+  static IconData icon(StoredDocument document) => iconOf(document.mimeType);
+
+  /// The sign for a kind of file.
+  static IconData iconOf(String mimeType) {
+    return mimeType == 'application/pdf'
         ? Icons.picture_as_pdf_outlined
-        : document.mimeType.startsWith('image/')
+        : mimeType.startsWith('image/')
         ? Icons.image_outlined
         : Icons.description_outlined;
+  }
+
+  /// What made a document, from its source as `DocumentSources` names it.
+  static String source(AppLocalizations l10n, String source) {
+    return switch (source) {
+      DocumentSources.printerScan => l10n.documentSourcePrinterScan,
+      DocumentSources.cameraScan => l10n.documentSourceCameraScan,
+      DocumentSources.joinedFiles => l10n.documentSourceJoinedFiles,
+      DocumentSources.pdfPictures => l10n.toolsPictures,
+      DocumentSources.longPicture => l10n.toolsLongPicture,
+      DocumentSources.photoSheet => l10n.documentSourcePhotoSheet,
+      DocumentSources.pagesPerSheet => l10n.toolsPerSheet,
+      DocumentSources.codeSheet => l10n.documentSourceCodeSheet,
+      DocumentSources.note => l10n.documentSourceNote,
+      DocumentSources.printable => l10n.documentSourcePrintable,
+      DocumentSources.editedPicture => l10n.documentSourceEdited,
+      _ => l10n.documentSourceOther,
+    };
+  }
+
+  /// How far back a list goes.
+  static String age(AppLocalizations l10n, DocumentsAge age) {
+    return switch (age) {
+      DocumentsAge.any => l10n.documentsFilterAnyTime,
+      DocumentsAge.today => l10n.documentsFilterToday,
+      DocumentsAge.week => l10n.documentsFilterWeek,
+      DocumentsAge.month => l10n.documentsFilterMonth,
+    };
   }
 
   /// What is worth knowing of a document in one line: its pages, its

@@ -8,7 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/app/router/app_router.dart';
-import 'package:printerhub/documents/widgets/open_document_button.dart';
+import 'package:printerhub/documents/document_sources.dart';
+import 'package:printerhub/documents/widgets/made_files.dart';
 import 'package:printerhub/documents/widgets/recent_documents.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
@@ -213,7 +214,10 @@ class _Choose extends StatelessWidget {
           ],
           // What was scanned before is here to be found again.
           const SizedBox(height: AppSpacing.xl),
-          RecentDocuments(title: l10n.documentsRecent),
+          RecentDocuments(
+            title: l10n.documentsRecentScans,
+            sources: DocumentSources.scans,
+          ),
         ],
       ),
     );
@@ -307,7 +311,10 @@ class _CameraOnly extends StatelessWidget {
           ],
           // What was scanned before is here to be found again.
           const SizedBox(height: AppSpacing.xl),
-          RecentDocuments(title: l10n.documentsRecent),
+          RecentDocuments(
+            title: l10n.documentsRecentScans,
+            sources: DocumentSources.scans,
+          ),
         ],
       ),
     );
@@ -740,7 +747,6 @@ class _Saved extends StatelessWidget {
     final textTheme = context.textTheme;
     final cubit = context.read<ScanCubit>();
     final state = context.watch<ScanCubit>().state;
-    final files = [for (final file in state.files) file.uri.pathSegments.last];
     final keeping = state.kept == ScanKept.keeping;
     final tone = context.semanticColors.status(AppStatus.success);
 
@@ -766,21 +772,8 @@ class _Saved extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.lg),
-          AppCard(
-            tone: AppCardTone.muted,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final file in files)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.xxs,
-                    ),
-                    child: Text(Uri.decodeComponent(file)),
-                  ),
-              ],
-            ),
-          ),
+          // Each file shown as it looks, and opened by a touch.
+          MadeFiles(files: state.files),
           const SizedBox(height: AppSpacing.xl),
           if (state.error != null) ...[
             AppNotice(message: errorMessage(l10n, state.error)),
@@ -788,11 +781,6 @@ class _Saved extends StatelessWidget {
           ],
           AppSubmitButton(label: l10n.scanShare, onPressed: cubit.share),
           const SizedBox(height: AppSpacing.sm),
-          // One file opens to be read and worked on further.
-          if (state.files.length == 1) ...[
-            OpenDocumentButton(file: state.files.single),
-            const SizedBox(height: AppSpacing.sm),
-          ],
           // One file is one print. Several pictures are shared instead.
           if (state.files.length == 1 &&
               (printerId != null ||

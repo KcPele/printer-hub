@@ -75,6 +75,70 @@ void main() {
       expect(find.byType(TextField), findsNothing);
     });
 
+    testWidgets('is narrowed to what made a document, and when, from the '
+        'search bar', (tester) async {
+      backend.documentList = [
+        documentBody(id: 'document-3', name: 'Scan.pdf'),
+        documentBody(
+          id: 'document-2',
+          name: 'Resume 1.jpg',
+          mimeType: 'image/jpeg',
+          source: 'pdf_pictures',
+        ),
+        documentBody(name: 'Note.pdf', source: 'note'),
+      ];
+      await pump(tester);
+      expect(find.byType(DocumentCard), findsNWidgets(3));
+
+      await tester.tap(find.byTooltip('Filter'));
+      await tester.pumpAndSettle();
+      expect(find.text('Show only'), findsOneWidget);
+      // Nothing is narrowed yet, so there is nothing to take off.
+      expect(
+        tester
+            .widget<TextButton>(
+              find.widgetWithText(TextButton, 'Show everything'),
+            )
+            .enabled,
+        isFalse,
+      );
+
+      await tester.tap(find.widgetWithText(FilterChip, 'PDF to pictures'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.widgetWithText(FilterChip, 'Note'));
+      await tester.tap(find.widgetWithText(FilterChip, 'Note'));
+      await tester.pumpAndSettle();
+      // The list behind the sheet is already narrowed.
+      expect(find.byType(DocumentCard), findsNWidgets(2));
+      expect(find.text('Scan.pdf'), findsNothing);
+
+      // Chosen again, one is taken off.
+      await tester.tap(find.widgetWithText(FilterChip, 'Note'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DocumentCard), findsOneWidget);
+
+      // They were all made long ago.
+      await tester.ensureVisible(find.widgetWithText(ChoiceChip, 'Today'));
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Today'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DocumentCard), findsNothing);
+
+      await tester.ensureVisible(find.text('Done'));
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      expect(find.text('Show only'), findsNothing);
+      // Narrowed to nothing, it says so, and the search bar stays.
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('No documents yet'), findsNothing);
+
+      await tester.tap(find.byTooltip('Filter'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Show everything'));
+      await tester.tap(find.text('Show everything'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DocumentCard), findsNWidgets(3));
+    });
+
     testWidgets('lists each document with what is known of it', (tester) async {
       await pump(tester);
 

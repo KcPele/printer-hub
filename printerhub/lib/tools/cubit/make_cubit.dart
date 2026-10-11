@@ -57,6 +57,10 @@ abstract class MakeCubit<C> extends Cubit<MakeState<C>> {
   /// Where the document is written.
   final Directory directory;
 
+  /// What made the document, as the API names it: one of
+  /// `DocumentSources`.
+  String get source;
+
   /// True when [choices] say enough to make the document.
   bool ready(C choices) => true;
 
@@ -77,7 +81,7 @@ abstract class MakeCubit<C> extends Cubit<MakeState<C>> {
     try {
       final file = await build(choices);
       if (!isClosed) emit(MakeState(choices: choices, file: file));
-      await _keep(file, mimeType: 'application/pdf');
+      await _keep(file, mimeType: 'application/pdf', source: source);
     } on Object {
       if (!isClosed) {
         emit(MakeState(choices: choices, failure: 'tools.unreadable'));

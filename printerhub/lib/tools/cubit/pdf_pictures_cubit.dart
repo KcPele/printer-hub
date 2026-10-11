@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
+import 'package:printerhub/documents/document_sources.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
@@ -84,7 +85,14 @@ class PdfPicturesCubit extends Cubit<ToolState> {
         emit(ToolState(status: ToolStatus.done, name: name, files: files));
       }
       for (final file in files) {
-        await _keep(file, mimeType: 'image/jpeg', pageCount: 1);
+        await _keep(
+          file,
+          mimeType: 'image/jpeg',
+          pageCount: 1,
+          source: long
+              ? DocumentSources.longPicture
+              : DocumentSources.pdfPictures,
+        );
       }
     } on Object {
       if (!isClosed) emit(ToolState(name: name, failure: 'tools.unreadable'));

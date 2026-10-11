@@ -18,10 +18,23 @@ import 'package:printerhub/session/session.dart';
 /// The last few documents the person made, each with what can be done
 /// with it, and a way to the rest. Shows nothing until there is one, so
 /// it can sit on any screen.
+///
+/// With [sources] it is only what one screen makes: the scan screen shows
+/// scans, a tool shows what that tool made. "See all" always leads to
+/// every document.
 class RecentDocuments extends StatelessWidget {
-  const new({required this.title, this.limit = 3, super.key});
+  const new({
+    required this.title,
+    this.sources = const {},
+    this.limit = 3,
+    super.key,
+  });
 
   final String title;
+
+  /// Where the documents shown came from, as `DocumentSources` names
+  /// them. None is any.
+  final Set<String> sources;
 
   /// How many are shown.
   final int limit;
@@ -44,6 +57,7 @@ class RecentDocuments extends StatelessWidget {
           renderer: context.read<PrintDocuments>().renderer,
           sharer: context.read<ScanSharer>(),
           organizationId: organizationId,
+          sources: sources,
           bringsRecent: true,
           remembered: context.read<Remembered>(),
         );

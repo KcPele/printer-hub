@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:equatable/equatable.dart';
+import 'package:printerhub/documents/document_sources.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/tools/cubit/make_cubit.dart';
@@ -67,6 +68,9 @@ class PagesPerSheetCubit extends MakeCubit<PagesPerSheetChoices> {
   void use(PickedDocument document) {
     change(state.choices.copyWith(document: document));
   }
+
+  @override
+  String get source => DocumentSources.pagesPerSheet;
 
   @override
   bool ready(PagesPerSheetChoices choices) => choices.document != null;

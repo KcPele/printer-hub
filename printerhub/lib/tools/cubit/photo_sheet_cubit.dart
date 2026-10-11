@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:printerhub/documents/document_sources.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
@@ -151,7 +152,11 @@ class PhotoSheetCubit extends Cubit<PhotoSheetState> {
         directory: _directory,
       );
       if (!isClosed) emit(state._with(file: file));
-      await _keep(file, mimeType: 'application/pdf');
+      await _keep(
+        file,
+        mimeType: 'application/pdf',
+        source: DocumentSources.photoSheet,
+      );
     } on Object {
       if (!isClosed) emit(state._with(failure: 'tools.unreadable'));
     }

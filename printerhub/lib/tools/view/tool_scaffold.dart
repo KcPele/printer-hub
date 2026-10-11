@@ -1,5 +1,6 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:printerhub/documents/widgets/recent_documents.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/tools/cubit/tool_state.dart';
 import 'package:printerhub/tools/tool_words.dart';
@@ -15,6 +16,7 @@ class ToolScaffold extends StatelessWidget {
     required this.state,
     required this.onChoose,
     required this.result,
+    this.made = const {},
     super.key,
   });
 
@@ -27,6 +29,11 @@ class ToolScaffold extends StatelessWidget {
 
   /// What is shown once the tool is done, above "choose another".
   final List<Widget> result;
+
+  /// What this tool's documents are recorded as, as `DocumentSources`
+  /// names them. The last few it made are shown below the button; none
+  /// shows nothing, for a tool that makes no document.
+  final Set<String> made;
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +86,13 @@ class ToolScaffold extends StatelessWidget {
                   loading: working,
                   onPressed: onChoose,
                 ),
+                if (made.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xxl),
+                  RecentDocuments(
+                    title: l10n.documentsRecentHere,
+                    sources: made,
+                  ),
+                ],
               ] else ...[
                 ...result,
                 const SizedBox(height: AppSpacing.sm),

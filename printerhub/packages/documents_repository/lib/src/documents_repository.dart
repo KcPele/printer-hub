@@ -131,6 +131,8 @@ class DocumentsRepository {
     required String organizationId,
     String? query,
     String? cursor,
+    Set<String> sources = const {},
+    DateTime? since,
   }) async {
     final wanted = query?.trim() ?? '';
     final page = await apiCall(
@@ -138,6 +140,12 @@ class DocumentsRepository {
         orgId: organizationId,
         q: wanted.isEmpty ? null : wanted,
         cursor: cursor,
+        // Only those that came from one of [sources], and were made at or
+        // after [since].
+        source: sources.isEmpty
+            ? null
+            : [for (final source in sources) DocumentSource.fromJson(source)],
+        createdFrom: since?.toUtc(),
       ),
     );
     return (

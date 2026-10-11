@@ -31,6 +31,36 @@ void main() {
     );
   }
 
+  test('what made a document is said by name', () {
+    final said = {
+      for (final source in DocumentSources.all)
+        source: DocumentWords.source(l10n, source),
+    };
+    // Each has words of its own.
+    expect(said.values.toSet(), hasLength(DocumentSources.all.length));
+    expect(said[DocumentSources.printerScan], 'Scanned on a printer');
+    expect(said[DocumentSources.pdfPictures], 'PDF to pictures');
+    expect(said[DocumentSources.upload], 'Other');
+    // One the app has not heard of is no worse than that.
+    expect(DocumentWords.source(l10n, 'something_new'), 'Other');
+  });
+
+  test('how far back a list goes is said in words', () {
+    expect(
+      [for (final age in DocumentsAge.values) DocumentWords.age(l10n, age)],
+      ['Any time', 'Today', 'Last 7 days', 'Last 30 days'],
+    );
+  });
+
+  test('a kind of file has its sign', () {
+    expect(
+      DocumentWords.iconOf('application/pdf'),
+      Icons.picture_as_pdf_outlined,
+    );
+    expect(DocumentWords.iconOf('image/png'), Icons.image_outlined);
+    expect(DocumentWords.iconOf('text/plain'), Icons.description_outlined);
+  });
+
   test('a size is said the way people say it', () {
     expect(DocumentWords.size(l10n, 1), '1 KB');
     expect(DocumentWords.size(l10n, 1024), '1 KB');

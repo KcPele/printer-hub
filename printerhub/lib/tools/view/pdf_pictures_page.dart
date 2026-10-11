@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:printerhub/documents/document_sources.dart';
+import 'package:printerhub/documents/widgets/made_files.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
@@ -62,6 +64,12 @@ class PdfPicturesView extends StatelessWidget {
       chooseLabel: l10n.toolsChoosePdf,
       state: state,
       onChoose: cubit.choose,
+      made: {
+        if (cubit.long)
+          DocumentSources.longPicture
+        else
+          DocumentSources.pdfPictures,
+      },
       result: [
         const SizedBox(height: AppSpacing.xl),
         Icon(Icons.check_circle_outline, size: 72, color: tone.foreground),
@@ -72,19 +80,8 @@ class PdfPicturesView extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: AppSpacing.lg),
-        AppCard(
-          tone: AppCardTone.muted,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final file in state.files)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
-                  child: Text(Uri.decodeComponent(file.uri.pathSegments.last)),
-                ),
-            ],
-          ),
-        ),
+        // Each shown as it looks, and opened by a touch.
+        MadeFiles(files: state.files),
         const SizedBox(height: AppSpacing.xl),
         AppSubmitButton(label: l10n.scanShare, onPressed: cubit.share),
       ],

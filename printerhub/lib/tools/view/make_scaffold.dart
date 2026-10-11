@@ -5,7 +5,8 @@ import 'package:app_ui/app_ui.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/app/router/app_router.dart';
-import 'package:printerhub/documents/widgets/open_document_button.dart';
+import 'package:printerhub/documents/widgets/made_files.dart';
+import 'package:printerhub/documents/widgets/recent_documents.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/print/print_words.dart';
@@ -24,6 +25,7 @@ class MakeScaffold extends StatelessWidget {
     required this.children,
     required this.onMake,
     required this.onShare,
+    required this.made,
     super.key,
   });
 
@@ -37,6 +39,10 @@ class MakeScaffold extends StatelessWidget {
   /// Makes the document. Null when not enough has been said to make it.
   final VoidCallback? onMake;
   final VoidCallback onShare;
+
+  /// What this tool's documents are recorded as, as `DocumentSources`
+  /// names it. The last few it made are shown below the button.
+  final String made;
 
   Future<void> _print(BuildContext context, File file) async {
     final router = GoRouter.of(context);
@@ -84,6 +90,9 @@ class MakeScaffold extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppSpacing.xl),
+                // Shown as it looks, and opened by a touch.
+                MadeFiles(files: [file]),
+                const SizedBox(height: AppSpacing.md),
                 if (printersThatPrint(context).isNotEmpty) ...[
                   AppSubmitButton(
                     label: l10n.scanPrint,
@@ -96,8 +105,6 @@ class MakeScaffold extends StatelessWidget {
                   icon: const Icon(Icons.ios_share),
                   label: Text(l10n.scanShare),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                OpenDocumentButton(file: file),
                 const SizedBox(height: AppSpacing.xl),
               ] else ...[
                 Text(
@@ -119,6 +126,8 @@ class MakeScaffold extends StatelessWidget {
                 loading: state.working,
                 onPressed: onMake,
               ),
+              const SizedBox(height: AppSpacing.xxl),
+              RecentDocuments(title: l10n.documentsRecentHere, sources: {made}),
             ],
           ),
         ),

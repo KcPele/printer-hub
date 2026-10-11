@@ -1,6 +1,7 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:printerhub/documents/document_sources.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/library/library.dart';
 import 'package:printerhub/scan/scan_output.dart';
@@ -49,6 +50,7 @@ class CodeSheetView extends StatelessWidget {
       state: state,
       onMake: cubit.ready(choices) ? cubit.make : null,
       onShare: cubit.share,
+      made: DocumentSources.codeSheet,
       children: [
         SegmentedButton<bool>(
           segments: [
