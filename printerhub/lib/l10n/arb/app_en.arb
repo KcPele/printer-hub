@@ -3789,5 +3789,18 @@
     "documentEditedSaved": "Saved as a new document",
     "@documentEditedSaved": {
         "description": "Shown after a changed picture was kept as a new document"
+    },
+    "documentEditedFailed": "The changed picture could not be saved.",
+    "@documentEditedFailed": {
+        "description": "Shown when a changed picture could not be kept as a new document"
+    },
+    "documentEditedName": "{name} edited",
+    "@documentEditedName": {
+        "description": "Name of the new document a changed picture is kept as",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
     }
 }

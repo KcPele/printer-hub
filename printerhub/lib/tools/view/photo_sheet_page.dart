@@ -9,6 +9,7 @@ import 'package:printerhub/app/router/app_router.dart';
 import 'package:printerhub/documents/widgets/open_document_button.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/library/library.dart';
+import 'package:printerhub/pictures/pictures.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/print/print_words.dart';
 import 'package:printerhub/printers/widgets/printer_choice_sheet.dart';
@@ -139,11 +140,18 @@ class PhotoSheetView extends StatelessWidget {
                             dimension: 56,
                             child: ColoredBox(
                               color: context.colors.surfaceMuted,
-                              child: Image.file(
-                                File(photo.path),
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) =>
-                                    const Icon(Icons.image_outlined),
+                              child: OpenablePicture(
+                                picture: File(photo.path),
+                                onChanged: state.working
+                                    ? null
+                                    : (changed) =>
+                                          cubit.replace(photo, changed),
+                                child: Image.file(
+                                  File(photo.path),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) =>
+                                      const Icon(Icons.image_outlined),
+                                ),
                               ),
                             ),
                           ),

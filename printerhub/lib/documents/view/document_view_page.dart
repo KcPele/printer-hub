@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:app_ui/app_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,11 +8,16 @@ import 'package:printerhub/documents/cubit/document_view_cubit.dart';
 import 'package:printerhub/documents/document_actions.dart';
 import 'package:printerhub/documents/open_document.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/library/library.dart';
+import 'package:printerhub/pictures/pictures.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
+import 'package:printerhub/session/session.dart';
 
-/// A document, open: its pages one under another to read and pinch
-/// larger, and below them what can be done with it. Printing and sharing
+/// A document, open: its pages one under another, edge to edge, and
+/// below them what can be done with it. A page that is touched opens
+/// full screen; a picture can be cropped, highlighted, and turned there,
+/// and what is saved is kept as a new document. Printing and sharing
 /// are a tap away; everything else the app can do with it is under
 /// "More".
 ///
@@ -27,29 +33,64 @@ class DocumentViewPage extends StatelessWidget {
       // Another document is another screen.
       key: ValueKey(document),
       create: (context) {
+        final organization = context.read<SessionCubit>().state.organization;
         final cubit = DocumentViewCubit(
           renderer: context.read<PrintDocuments>().renderer,
           sharer: context.read<ScanSharer>(),
           document: document,
+          keep: organization == null
+              ? null
+              : context.read<Library>().keeper(organization.id),
         );
         unawaited(cubit.load());
         return cubit;
       },
-      child: DocumentViewView(document: document),
+      child: const DocumentViewView(),
     );
   }
 }
 
 class DocumentViewView extends StatelessWidget {
-  const new({required this.document, super.key});
-
-  final OpenDocument document;
+  const new({super.key});
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final cubit = context.read<DocumentViewCubit>();
     final state = context.watch<DocumentViewCubit>().state;
+    final document = state.document;
+
+    /// Keeps a picture that was changed full screen, and says so.
+    Future<void> keep(File changed) async {
+      final messenger = ScaffoldMessenger.of(context);
+      final name = document.name.replaceFirst(RegExp(r'\.[^.]+$'), '');
+      final kept = await cubit.keepChanged(
+        changed,
+        name: l10n.documentEditedName(name),
+      );
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            kept ? l10n.documentEditedSaved : l10n.documentEditedFailed,
+          ),
+        ),
+      );
+    }
+
+    Widget page(int index) => OpenablePicture(
+      picture: state.pages[index],
+      onChanged: cubit.editable ? keep : null,
+      child: Image.file(
+        state.pages[index],
+        key: ValueKey(state.pages[index].path),
+        gaplessPlayback: true,
+        semanticLabel: l10n.scanPageNumber(index + 1),
+        errorBuilder: (_, _, _) => const Padding(
+          padding: EdgeInsets.all(AppSpacing.xxl),
+          child: Icon(Icons.image_outlined),
+        ),
+      ),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -68,30 +109,13 @@ class DocumentViewView extends StatelessWidget {
                 _ when state.pages.isEmpty => const Center(
                   child: CircularProgressIndicator(),
                 ),
-                _ => InteractiveViewer(
-                  maxScale: 5,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    itemCount: state.pages.length,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: AppSpacing.md),
-                    itemBuilder: (context, index) => DecoratedBox(
-                      // A page is white, whatever the theme: it is paper.
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: context.colors.outline),
-                      ),
-                      child: Image.file(
-                        state.pages[index],
-                        gaplessPlayback: true,
-                        semanticLabel: l10n.scanPageNumber(index + 1),
-                        errorBuilder: (_, _, _) => const Padding(
-                          padding: EdgeInsets.all(AppSpacing.xxl),
-                          child: Icon(Icons.image_outlined),
-                        ),
-                      ),
-                    ),
-                  ),
+                // One page is shown whole, as a photo is.
+                _ when state.pages.length == 1 => Center(child: page(0)),
+                _ => ListView.separated(
+                  itemCount: state.pages.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: AppSpacing.sm),
+                  itemBuilder: (_, index) => page(index),
                 ),
               },
             ),

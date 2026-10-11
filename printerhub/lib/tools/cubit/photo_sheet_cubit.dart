@@ -105,6 +105,28 @@ class PhotoSheetCubit extends Cubit<PhotoSheetState> {
     );
   }
 
+  /// Puts [picture] in the place of [photo]: the photo as it was changed
+  /// when it was opened full screen. It keeps its name.
+  void replace(PickedDocument photo, File picture) {
+    if (state.working) return;
+    emit(
+      state._with(
+        photos: [
+          for (final other in state.photos)
+            if (other == photo)
+              PickedDocument(
+                name: photo.name,
+                path: picture.path,
+                length: picture.lengthSync(),
+                open: picture.openRead,
+              )
+            else
+              other,
+        ],
+      ),
+    );
+  }
+
   /// Changes how the photos are laid out. A sheet already made is no
   /// longer what was asked for, and is dropped.
   void setLayout(PhotoLayout layout) {

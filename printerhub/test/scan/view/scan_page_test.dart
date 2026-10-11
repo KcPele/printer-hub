@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:api_client/testing.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,6 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printer_protocols/testing.dart';
 import 'package:printerhub/app/app.dart';
+import 'package:printerhub/pictures/pictures.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/scan/scan.dart';
@@ -68,6 +71,23 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 20));
     }
+  }
+
+  /// Opens [small] full screen and saves [changed] there, as someone who
+  /// changed the picture would.
+  Future<void> saveChanged(
+    WidgetTester tester,
+    Finder small,
+    File changed,
+  ) async {
+    await tester.tap(small);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    BlocProvider.of<PictureCubit>(tester.element(find.byType(PictureViewView)))
+        .emit(PictureState(file: changed, width: 2, height: 2, changed: true));
+    await tester.pump();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
   }
 
   /// Waits until nothing is at work any more.
@@ -648,6 +668,29 @@ void main() {
         await tester.pump();
         await until(tester, () => find.text('Page 4').evaluate().isNotEmpty);
         expect(find.text('Page 4'), findsOneWidget);
+      });
+
+      testWidgets('opens a page full screen when it is touched, and takes '
+          'the picture it was changed to', (tester) async {
+        backend.picker.pictures = [pickedPicture(backend.scans)];
+        await pumpPhoneOnly(tester);
+        await press(tester, find.text('Choose pictures'));
+        await until(tester, () => find.text('Page 1').evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+        final before = cubitOf(tester).state.pages.single;
+        final changed = File('${backend.scans.path}/changed.jpg')
+          ..writeAsBytesSync(tinyJpeg);
+
+        await tester.ensureVisible(find.byType(OpenablePicture));
+        await tester.pumpAndSettle();
+        await saveChanged(tester, find.byType(OpenablePicture), changed);
+        await until(tester, () => cubitOf(tester).state.pages.single != before);
+
+        expect(
+          cubitOf(tester).state.pages.single.file.path,
+          isNot(before.file.path),
+        );
+        expect(find.text('Page 1'), findsOneWidget);
       });
 
       testWidgets('shows that files are being read, in the pages too', (

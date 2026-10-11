@@ -819,6 +819,25 @@ void main() {
       expect(turned.file.existsSync(), isFalse);
     });
 
+    test('takes the picture a page was changed to, in its place', () async {
+      backend.scanPages = [tinyJpeg, tinyJpeg];
+      final cubit = build()..change(const ScanChoices(source: 'adf'));
+      await cubit.scan();
+      final [first, second] = cubit.state.pages;
+      final changed = File('${backend.scans.path}/changed.jpg')
+        ..writeAsBytesSync(wide());
+
+      await cubit.replace(first, changed);
+
+      final replaced = cubit.state.pages.first;
+      expect(cubit.state.pages, [replaced, second]);
+      final picture = img.decodeJpg(replaced.file.readAsBytesSync())!;
+      expect((picture.width, picture.height), (6, 2));
+      // It is a page of the scan's own, and the page it was goes.
+      expect(replaced.file.path, isNot(changed.path));
+      expect(first.file.existsSync(), isFalse);
+    });
+
     test('keeps a camera page a camera page', () async {
       final cubit = phoneOnly();
       await cubit.useCamera();

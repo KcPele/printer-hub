@@ -528,7 +528,22 @@ class ScanCubit extends Cubit<ScanState> {
 
   /// Turns [page] a quarter turn to the right. The turned page is a new
   /// picture: one chosen from the phone is left as it was.
-  Future<void> rotate(ScannedPage page) async {
+  Future<void> rotate(ScannedPage page) {
+    return _remade(page, (bytes) => Isolate.run(() => _turned(bytes)));
+  }
+
+  /// Puts [picture] in the place of [page]: the page as it was changed
+  /// when it was opened full screen.
+  Future<void> replace(ScannedPage page, File picture) {
+    return _remade(page, (_) => picture.readAsBytes());
+  }
+
+  /// Puts what [remake] makes of [page] in its place, as a picture of
+  /// this scan's own.
+  Future<void> _remade(
+    ScannedPage page,
+    Future<Uint8List> Function(Uint8List bytes) remake,
+  ) async {
     if (state.step != ScanStep.review ||
         state.reading ||
         _choosing ||
@@ -538,9 +553,9 @@ class ScanCubit extends Cubit<ScanState> {
     _choosing = true;
     try {
       final bytes = await page.file.readAsBytes();
-      final turned = await _ownPage(await Isolate.run(() => _turned(bytes)));
+      final remade = await _ownPage(await remake(bytes));
       if (isClosed || !state.pages.contains(page)) {
-        _delete([turned.file]);
+        _delete([remade.file]);
         return;
       }
       final fromCamera = state.fromCamera(page);
@@ -549,9 +564,9 @@ class ScanCubit extends Cubit<ScanState> {
         state._with(
           pages: [
             for (final other in state.pages)
-              if (other == page) turned else other,
+              if (other == page) remade else other,
           ],
-          cameraPages: {...state.cameraPages, if (fromCamera) turned.file.path},
+          cameraPages: {...state.cameraPages, if (fromCamera) remade.file.path},
         ),
       );
     } on Object {

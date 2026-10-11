@@ -3,14 +3,22 @@ import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:printerhub/documents/open_document.dart';
+import 'package:printerhub/library/library.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
 
 enum DocumentViewStatus { loading, ready, failed }
 
 class DocumentViewState extends Equatable {
-  const new({this.status = DocumentViewStatus.loading, this.pages = const []});
+  const new({
+    required this.document,
+    this.status = DocumentViewStatus.loading,
+    this.pages = const [],
+  });
 
+  /// The document that is open. It changes when a picture is changed and
+  /// kept: the new document is then the one open.
+  final OpenDocument document;
   final DocumentViewStatus status;
 
   /// The document's pages as pictures, as far as they have been drawn.
@@ -18,6 +26,7 @@ class DocumentViewState extends Equatable {
 
   @override
   List<Object?> get props => [
+    document,
     status,
     [for (final page in pages) page.path],
   ];
@@ -30,12 +39,30 @@ class DocumentViewState extends Equatable {
 /// A PDF is drawn once. Its pages are kept as pictures beside it, so the
 /// next time it is opened they are there at once.
 class DocumentViewCubit extends Cubit<DocumentViewState> {
-  new({required this._renderer, required this._sharer, required this._document})
-    : super(const DocumentViewState());
+  new({
+    required this._renderer,
+    required this._sharer,
+    required OpenDocument document,
+    this._keep,
+  }) : super(DocumentViewState(document: document));
 
   final PageRenderer _renderer;
   final ScanSharer _sharer;
-  final OpenDocument _document;
+
+  /// Keeps a changed picture. Null where there is no workspace to keep it
+  /// in.
+  final KeepFile? _keep;
+
+  OpenDocument get _document => state.document;
+
+  /// True when the open document is a picture that can be changed and
+  /// kept.
+  bool get editable => _keep != null && _document.isPicture;
+
+  DocumentViewState _now(
+    DocumentViewStatus status, [
+    List<File> pages = const [],
+  ]) => DocumentViewState(document: _document, status: status, pages: pages);
 
   /// Where a PDF's drawn pages are kept, and the mark that says every
   /// page is there.
@@ -48,18 +75,15 @@ class DocumentViewCubit extends Cubit<DocumentViewState> {
       if (_document.isPicture) {
         emit(
           _document.file.existsSync()
-              ? DocumentViewState(
-                  status: DocumentViewStatus.ready,
-                  pages: [_document.file],
-                )
-              : const DocumentViewState(status: DocumentViewStatus.failed),
+              ? _now(DocumentViewStatus.ready, [_document.file])
+              : _now(DocumentViewStatus.failed),
         );
         return;
       }
       if (!_document.isPdf) {
         // A kind of file the phone cannot draw: it can still be shared to
         // an app that can.
-        emit(const DocumentViewState(status: DocumentViewStatus.failed));
+        emit(_now(DocumentViewStatus.failed));
         return;
       }
       if (_complete.existsSync()) {
@@ -70,7 +94,7 @@ class DocumentViewCubit extends Cubit<DocumentViewState> {
                 .where((file) => file.path.endsWith('.png'))
                 .toList()
               ..sort((a, b) => a.path.compareTo(b.path));
-        emit(DocumentViewState(status: DocumentViewStatus.ready, pages: kept));
+        emit(_now(DocumentViewStatus.ready, kept));
         return;
       }
 
@@ -85,19 +109,51 @@ class DocumentViewCubit extends Cubit<DocumentViewState> {
           File('${_drawn.path}/page-$number.png')
             ..writeAsBytesSync(page, flush: true),
         );
-        emit(DocumentViewState(pages: [...pages]));
+        emit(_now(DocumentViewStatus.loading, [...pages]));
       }
       if (isClosed) return;
       if (pages.isEmpty) {
-        emit(const DocumentViewState(status: DocumentViewStatus.failed));
+        emit(_now(DocumentViewStatus.failed));
         return;
       }
       _complete.writeAsStringSync('');
-      emit(DocumentViewState(status: DocumentViewStatus.ready, pages: pages));
+      emit(_now(DocumentViewStatus.ready, pages));
     } on Object {
       if (!isClosed) {
-        emit(const DocumentViewState(status: DocumentViewStatus.failed));
+        emit(_now(DocumentViewStatus.failed));
       }
+    }
+  }
+
+  /// Keeps [picture], the open picture as it was changed, as a new
+  /// document called [name], and opens that one in its place. The
+  /// document it was made from is left as it was. False when it could
+  /// not be kept.
+  Future<bool> keepChanged(File picture, {required String name}) async {
+    final keep = _keep;
+    if (keep == null) return false;
+    try {
+      // Under its new name, so that is what it is kept as.
+      final named = await picture.copy(
+        '${picture.parent.path}/${scanFileName(name)}.jpg',
+      );
+      final kept = await keep(named, mimeType: 'image/jpeg', pageCount: 1);
+      if (kept == null || isClosed) return false;
+      final file = File(kept.path);
+      emit(
+        DocumentViewState(
+          document: OpenDocument(
+            file: file,
+            name: kept.name,
+            mimeType: 'image/jpeg',
+          ),
+          status: DocumentViewStatus.ready,
+          pages: [file],
+        ),
+      );
+      return true;
+    } on FileSystemException {
+      return false;
     }
   }
 

@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:api_client/testing.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printerhub/app/app.dart';
+import 'package:printerhub/pictures/pictures.dart';
 import 'package:printerhub/print/print.dart';
 import 'package:printerhub/printers/printers.dart';
 import 'package:printerhub/tools/tools.dart';
@@ -121,6 +123,39 @@ void main() {
     await press(tester, find.widgetWithText(OutlinedButton, 'Share'));
     await tester.pump();
     expect(backend.sharer.shared, hasLength(1));
+  });
+
+  /// Opens [small] full screen and saves [changed] there, as someone who
+  /// changed the picture would.
+  Future<void> saveChanged(
+    WidgetTester tester,
+    Finder small,
+    File changed,
+  ) async {
+    await tester.tap(small);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    BlocProvider.of<PictureCubit>(tester.element(find.byType(PictureViewView)))
+        .emit(PictureState(file: changed, width: 2, height: 2, changed: true));
+    await tester.pump();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('opens a photo full screen when it is touched, and takes the '
+      'picture it was changed to', (tester) async {
+    await pump(tester);
+    await choosePhotos(tester);
+    final changed = File('${backend.scans.path}/changed.jpg')
+      ..writeAsBytesSync(tinyJpeg);
+
+    await saveChanged(tester, find.byType(OpenablePicture).first, changed);
+
+    final cubit = BlocProvider.of<PhotoSheetCubit>(
+      tester.element(find.byType(PhotoSheetView)),
+    );
+    expect(cubit.state.photos.first.path, changed.path);
+    expect(find.text('One.jpg'), findsOneWidget);
   });
 
   testWidgets('adds more photos to the ones chosen', (tester) async {

@@ -13,6 +13,7 @@ import 'package:printerhub/documents/widgets/recent_documents.dart';
 import 'package:printerhub/errors/error_messages.dart';
 import 'package:printerhub/l10n/l10n.dart';
 import 'package:printerhub/library/library.dart';
+import 'package:printerhub/pictures/pictures.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/printers/cubit/printers_cubit.dart';
 import 'package:printerhub/printers/widgets/printer_choice_sheet.dart';
@@ -448,11 +449,20 @@ class _Review extends StatelessWidget {
                               color: context.colors.surfaceMuted,
                               child: page.mimeType == 'application/pdf'
                                   ? const Icon(Icons.picture_as_pdf_outlined)
-                                  : Image.file(
-                                      page.file,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) =>
-                                          const Icon(Icons.image_outlined),
+                                  // Touched, it opens full screen, to be
+                                  // cropped or marked before it is kept.
+                                  : OpenablePicture(
+                                      picture: page.file,
+                                      onChanged: saving
+                                          ? null
+                                          : (changed) =>
+                                                cubit.replace(page, changed),
+                                      child: Image.file(
+                                        page.file,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, _, _) =>
+                                            const Icon(Icons.image_outlined),
+                                      ),
                                     ),
                             ),
                           ),

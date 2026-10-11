@@ -56,6 +56,28 @@ void main() {
   });
 
   test(
+    'takes the picture a photo was changed to, under the same name',
+    () async {
+      final cubit = build();
+      await cubit.choose();
+      final [first, second] = cubit.state.photos;
+      final changed = File('${backend.scans.path}/changed.jpg')
+        ..writeAsBytesSync(tinyJpeg);
+
+      cubit.replace(first, changed);
+
+      expect(cubit.state.photos.first.path, changed.path);
+      expect(cubit.state.photos.first.name, 'One.jpg');
+      expect(cubit.state.photos.first.length, tinyJpeg.length);
+      expect(
+        await cubit.state.photos.first.open().expand((part) => part).toList(),
+        tinyJpeg,
+      );
+      expect(cubit.state.photos.last, second);
+    },
+  );
+
+  test(
     'changes nothing when none is chosen, and asks once at a time',
     () async {
       backend.picker.pictures = [];
@@ -133,7 +155,8 @@ void main() {
     cubit
       ..setLayout(PhotoLayout.four)
       ..setPaper(photoPapers.last)
-      ..remove(cubit.state.photos.first);
+      ..remove(cubit.state.photos.first)
+      ..replace(cubit.state.photos.first, File('${backend.scans.path}/x.jpg'));
     await cubit.choose();
     await cubit.make();
     await making;
