@@ -71,7 +71,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(shown(), Brightness.light);
 
-      await tester.tap(find.text('As my phone'));
+      await tester.tap(find.text('Auto'));
       await tester.pumpAndSettle();
       expect(preferences.brightnessName, 'system');
     });

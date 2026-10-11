@@ -3541,7 +3541,7 @@
     "@themeBrightness": {
         "description": "Title above the choice of a light or dark look"
     },
-    "themeBrightnessSystem": "As my phone",
+    "themeBrightnessSystem": "Auto",
     "@themeBrightnessSystem": {
         "description": "Choice that follows the phone's own light or dark setting"
     },
@@ -3553,7 +3553,7 @@
     "@themeBrightnessDark": {
         "description": "Choice of the dark look"
     },
-    "themeBrightnessBody": "Every theme has a dark look. This is kept on this phone.",
+    "themeBrightnessBody": "Auto follows your phone. Every theme has a dark look. This is kept on this phone.",
     "@themeBrightnessBody": {
         "description": "Explains the light or dark choice"
     },
