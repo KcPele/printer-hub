@@ -10,6 +10,7 @@ import { StandardsStrip } from "./standards-strip";
 import { TeamsSection } from "./teams-section";
 import { ThemeProvider } from "./theme-context";
 import { ThemesSection } from "./themes-section";
+import { ToolsSection } from "./tools-section";
 
 export function LandingPage() {
 	return (
@@ -28,6 +29,7 @@ export function LandingPage() {
 					<HeroSection />
 					<StandardsStrip />
 					<FeaturesSection />
+					<ToolsSection />
 					<ConnectSection />
 					<AudienceSection />
 					<PrivacySection />

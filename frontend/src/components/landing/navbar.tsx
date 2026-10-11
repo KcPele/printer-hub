@@ -8,6 +8,7 @@ export function Navbar() {
 
 	const navLinks = [
 		{ label: "Features", href: "#features" },
+		{ label: "Tools", href: "#tools" },
 		{ label: "How it connects", href: "#connect" },
 		{ label: "Privacy", href: "#privacy" },
 		{ label: "Themes", href: "#themes" },
