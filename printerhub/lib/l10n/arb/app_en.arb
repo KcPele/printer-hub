@@ -3096,11 +3096,11 @@
             }
         }
     },
-    "toolsPhotosMake": "Make the sheet",
+    "toolsPhotosMake": "Create photo page",
     "@toolsPhotosMake": {
         "description": "Button that lays the photos out"
     },
-    "toolsPhotosMakeAgain": "Make it again",
+    "toolsPhotosMakeAgain": "Create it again",
     "@toolsPhotosMakeAgain": {
         "description": "Button that lays the photos out again after a change"
     },

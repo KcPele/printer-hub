@@ -102,13 +102,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('4 copies of each photo'), findsOneWidget);
 
-    await press(tester, find.widgetWithText(FilledButton, 'Make the sheet'));
+    await press(tester, find.widgetWithText(FilledButton, 'Create photo page'));
     await until(
       tester,
       () => find.text('Your photos are ready').evaluate().isNotEmpty,
     );
     expect(find.text('Your photos are ready'), findsOneWidget);
-    expect(find.text('Make it again'), findsOneWidget);
+    expect(find.text('Create it again'), findsOneWidget);
 
     await press(tester, find.widgetWithText(FilledButton, 'Print it'));
     await tester.pumpAndSettle();
@@ -176,7 +176,7 @@ void main() {
     await pump(tester, withPrinter: false);
     await choosePhotos(tester);
 
-    await press(tester, find.widgetWithText(FilledButton, 'Make the sheet'));
+    await press(tester, find.widgetWithText(FilledButton, 'Create photo page'));
     await until(
       tester,
       () => find.text('Your photos are ready').evaluate().isNotEmpty,
@@ -193,7 +193,7 @@ void main() {
     ];
     await pump(tester);
     await choosePhotos(tester);
-    await press(tester, find.widgetWithText(FilledButton, 'Make the sheet'));
+    await press(tester, find.widgetWithText(FilledButton, 'Create photo page'));
     await until(
       tester,
       () => find.text('Your photos are ready').evaluate().isNotEmpty,
@@ -217,7 +217,7 @@ void main() {
       );
     }
 
-    await press(tester, find.widgetWithText(FilledButton, 'Make the sheet'));
+    await press(tester, find.widgetWithText(FilledButton, 'Create photo page'));
     await until(
       tester,
       () => find.textContaining('could not be read').evaluate().isNotEmpty,
