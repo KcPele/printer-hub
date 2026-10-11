@@ -233,7 +233,7 @@ void main() {
           ),
         );
 
-        verify(() => router.push<Object?>(AppRoutes.tools)).called(1);
+        verify(() => router.go(AppRoutes.tools)).called(1);
       });
 
       testWidgets('leave out reading words where the workspace has it '

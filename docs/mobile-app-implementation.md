@@ -260,7 +260,7 @@ Models other than the C7130 have not been tested on hardware. Their pages say wh
 
 ## 9. Screens
 
-Navigation is the same in every theme. Four areas sit in a bottom bar: Home, Printers, Activity, and Settings. Each keeps its own place, so returning to an area shows the screen that was left. Tapping the current area's tab goes back to its first screen.
+Navigation is the same in every theme. Five areas sit in a bottom bar: Home, Printers, Tools, Activity, and Settings. Each keeps its own place, so returning to an area shows the screen that was left. Tapping the current area's tab goes back to its first screen.
 
 A new install opens on the welcome screens: three introductions, then the theme choice. They are shown once per device.
 
@@ -381,7 +381,7 @@ The simulator's faults make failure paths testable without hardware: offline, pa
 |---|---|---|---|
 | 1 | The three flavors use three app IDs (`.dev`, `.stg`, and none). Firebase knows only `com.kcpele.printerhub`. | A5 | Register the other two in the same Firebase project. It is free and takes minutes. |
 | 2 | Which printer families go in the catalogue first? | A2 | The C7100 series plus about fifteen common office and home families from HP, Canon, Brother, Epson, and Xerox. |
-| 3 | Bottom navigation: which four or five areas? | | Built with the default: Home, Printers, Activity, Settings. Print and Scan will be actions on Home and on each printer. |
+| 3 | Bottom navigation: which four or five areas? | | Built as five: Home, Printers, Tools, Activity, Settings. Tools got a tab of its own once there were enough of them that "See all" on Home was easy to miss. Print and Scan will be actions on Home and on each printer. |
 
 ## 15. Risks
 

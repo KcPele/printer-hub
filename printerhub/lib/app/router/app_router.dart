@@ -40,32 +40,33 @@ abstract final class AppRoutes {
 
   /// The same screen, begun by choosing pictures: several photos as one
   /// PDF.
-  static const String picturesToPdf = '/home/scan/pictures';
+  static const String picturesToPdf = '/tools/from-pictures';
 
   /// Every tool the app has.
   /// Joining PDFs and pictures, or keeping some pages of a PDF: the scan
   /// screen, begun with files.
-  static const String filesToPdf = '/home/scan/files';
+  static const String filesToPdf = '/tools/from-files';
 
-  static const String scanCode = '/home/tools/code';
-  static const String codeSheet = '/home/tools/qr';
-  static const String note = '/home/tools/note';
-  static const String printable = '/home/tools/printable';
-  static const String pagesPerSheet = '/home/tools/per-sheet';
+  static const String scanCode = '/tools/code';
+  static const String codeSheet = '/tools/qr';
+  static const String note = '/tools/note';
+  static const String printable = '/tools/printable';
+  static const String pagesPerSheet = '/tools/per-sheet';
 
-  static const String tools = '/home/tools';
+  /// Every tool the app has: an area of its own, with a tab.
+  static const String tools = '/tools';
 
   /// Reading the words in a file.
-  static const String extractText = '/home/tools/text';
+  static const String extractText = '/tools/text';
 
   /// Photos laid out on a sheet to print.
-  static const String photoSheet = '/home/tools/photos';
+  static const String photoSheet = '/tools/photos';
 
   /// A PDF's pages as pictures.
-  static const String pdfToPictures = '/home/tools/pictures';
+  static const String pdfToPictures = '/tools/pictures';
 
   /// A PDF's pages as one tall picture.
-  static const String pdfToLongPicture = '/home/tools/long-picture';
+  static const String pdfToLongPicture = '/tools/long-picture';
   static const String printers = '/printers';
   static const String addPrinter = '/printers/add';
   static const String catalogue = '/printers/catalogue';
@@ -221,62 +222,6 @@ GoRouter createAppRouter({
                   GoRoute(
                     path: 'scan',
                     builder: (context, state) => const ScanPage(),
-                    routes: [
-                      GoRoute(
-                        path: 'pictures',
-                        builder: (context, state) =>
-                            const ScanPage(startWithPictures: true),
-                      ),
-                      GoRoute(
-                        path: 'files',
-                        builder: (context, state) =>
-                            const ScanPage(startWithFiles: true),
-                      ),
-                    ],
-                  ),
-                  GoRoute(
-                    path: 'tools',
-                    builder: (context, state) => const ToolsPage(),
-                    routes: [
-                      GoRoute(
-                        path: 'text',
-                        builder: (context, state) => const ExtractTextPage(),
-                      ),
-                      GoRoute(
-                        path: 'code',
-                        builder: (context, state) => const ScanCodePage(),
-                      ),
-                      GoRoute(
-                        path: 'qr',
-                        builder: (context, state) => const CodeSheetPage(),
-                      ),
-                      GoRoute(
-                        path: 'note',
-                        builder: (context, state) => const NotePage(),
-                      ),
-                      GoRoute(
-                        path: 'printable',
-                        builder: (context, state) => const PrintablePage(),
-                      ),
-                      GoRoute(
-                        path: 'per-sheet',
-                        builder: (context, state) => const PagesPerSheetPage(),
-                      ),
-                      GoRoute(
-                        path: 'photos',
-                        builder: (context, state) => const PhotoSheetPage(),
-                      ),
-                      GoRoute(
-                        path: 'pictures',
-                        builder: (context, state) =>
-                            const PdfPicturesPage(long: false),
-                      ),
-                      GoRoute(
-                        path: 'long-picture',
-                        builder: (context, state) =>
-                            const PdfPicturesPage(long: true),
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -337,6 +282,66 @@ GoRouter createAppRouter({
                         ),
                       ),
                     ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.tools,
+                builder: (context, state) => const ToolsPage(),
+                routes: [
+                  // The scan screen, begun with files: pictures as one
+                  // PDF, files joined, some pages of a PDF kept.
+                  GoRoute(
+                    path: 'from-pictures',
+                    builder: (context, state) =>
+                        const ScanPage(startWithPictures: true),
+                  ),
+                  GoRoute(
+                    path: 'from-files',
+                    builder: (context, state) =>
+                        const ScanPage(startWithFiles: true),
+                  ),
+                  GoRoute(
+                    path: 'text',
+                    builder: (context, state) => const ExtractTextPage(),
+                  ),
+                  GoRoute(
+                    path: 'code',
+                    builder: (context, state) => const ScanCodePage(),
+                  ),
+                  GoRoute(
+                    path: 'qr',
+                    builder: (context, state) => const CodeSheetPage(),
+                  ),
+                  GoRoute(
+                    path: 'note',
+                    builder: (context, state) => const NotePage(),
+                  ),
+                  GoRoute(
+                    path: 'printable',
+                    builder: (context, state) => const PrintablePage(),
+                  ),
+                  GoRoute(
+                    path: 'per-sheet',
+                    builder: (context, state) => const PagesPerSheetPage(),
+                  ),
+                  GoRoute(
+                    path: 'photos',
+                    builder: (context, state) => const PhotoSheetPage(),
+                  ),
+                  GoRoute(
+                    path: 'pictures',
+                    builder: (context, state) =>
+                        const PdfPicturesPage(long: false),
+                  ),
+                  GoRoute(
+                    path: 'long-picture',
+                    builder: (context, state) =>
+                        const PdfPicturesPage(long: true),
                   ),
                 ],
               ),

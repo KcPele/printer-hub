@@ -3923,5 +3923,9 @@
     "picturePenThick": "Thick",
     "@picturePenThick": {
         "description": "The wide highlighter"
+    },
+    "navTools": "Tools",
+    "@navTools": {
+        "description": "Bottom navigation label for the tools"
     }
 }

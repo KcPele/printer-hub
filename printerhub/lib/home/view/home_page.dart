@@ -252,7 +252,8 @@ class _Tools extends StatelessWidget {
               child: Text(l10n.toolsTitle, style: context.textTheme.titleLarge),
             ),
             TextButton(
-              onPressed: () => context.push(AppRoutes.tools),
+              // The tools are an area of their own.
+              onPressed: () => context.go(AppRoutes.tools),
               child: Text(l10n.toolsSeeAll),
             ),
           ],

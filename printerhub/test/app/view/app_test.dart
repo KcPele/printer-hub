@@ -523,9 +523,8 @@ void main() {
           ('Print a note', NotePage),
           ('Printable pages', PrintablePage),
         ]) {
-          GoRouter.of(tester.element(find.byType(HomePage)))
-              .go(AppRoutes.tools);
-          await tester.pumpAndSettle();
+          // The tools have a tab of their own.
+          await openArea(tester, 'Tools');
           final tile = find.text(tool);
           await tester.scrollUntilVisible(
             tile,
@@ -542,8 +541,9 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.byType(screen), findsOneWidget);
 
-          GoRouter.of(tester.element(find.byType(screen))).go(AppRoutes.home);
-          await tester.pumpAndSettle();
+          // Tapping the tab again returns to the list of tools.
+          await openArea(tester, 'Tools');
+          expect(find.byType(screen), findsNothing);
         }
       });
 
