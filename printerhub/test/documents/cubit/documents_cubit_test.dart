@@ -135,6 +135,40 @@ void main() {
       expect(backend.sharer.shared.single.files.single.path, note.path);
     });
 
+    test('is shown at once, before the account has answered, and stays '
+        'when the account cannot say', () async {
+      final note = await made('Note.pdf');
+      final cubit = build();
+      addTearDown(cubit.close);
+      final seen = <(DocumentsStatus, List<String>)>[];
+      final watching = cubit.stream.listen(
+        (state) => seen.add((state.status, names(state))),
+      );
+
+      await cubit.load();
+      await pumpEventQueue();
+
+      // Never a wait: the phone's own first, then the account's with it.
+      expect(seen.first.$1, DocumentsStatus.ready);
+      expect(seen.first.$2, ['Note.pdf']);
+      expect(seen.last.$2, hasLength(4));
+      expect(
+        seen.map((state) => state.$1),
+        everyElement(DocumentsStatus.ready),
+      );
+      await watching.cancel();
+
+      // The account refuses to answer: what is here is still shown.
+      backend.fail('GET $_documents', 500, 'server.error');
+      final refused = build();
+      addTearDown(refused.close);
+      await refused.load();
+      expect(refused.state.status, DocumentsStatus.ready);
+      expect(names(refused.state), ['Note.pdf']);
+      expect(refused.state.waiting, {note.id});
+      expect(refused.state.error, isNotNull);
+    });
+
     test('is listed once after it reaches the account', () async {
       final note = await made('Note.pdf');
       final cubit = await loaded();

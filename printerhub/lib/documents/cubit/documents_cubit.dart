@@ -259,8 +259,34 @@ class DocumentsCubit extends Cubit<DocumentsState> {
     bool quiet = false,
   }) async {
     final read = ++_reads;
-    if (!quiet) emit(DocumentsState(query: query, filter: filter));
     _library.open();
+    var quietly = quiet;
+    if (!quietly) {
+      // What this phone has is shown at once, with no wait: whatever was
+      // made here is here. The account's news is then read behind it.
+      final here = _local(query, filter);
+      if (here.isEmpty) {
+        emit(DocumentsState(query: query, filter: filter));
+      } else {
+        emit(
+          DocumentsState(
+            status: DocumentsStatus.ready,
+            query: query,
+            filter: filter,
+            documents: [for (final item in here) item.asDocument],
+            onPhone: _onPhone,
+            waiting: {
+              for (final item in here)
+                if (!item.synced) item.id,
+            },
+            thumbnails: state.thumbnails,
+          ),
+        );
+        unawaited(_draw(read));
+        // It stays on screen whatever the account answers.
+        quietly = true;
+      }
+    }
     try {
       final page = await _documentsRepository.list(
         organizationId: _organizationId,
@@ -297,8 +323,8 @@ class DocumentsCubit extends Cubit<DocumentsState> {
     } on ApiProblem catch (error) {
       if (read != _reads || isClosed) return;
       emit(
-        quiet
-            // What was read before is still worth showing.
+        quietly
+            // What is shown is still worth showing.
             ? _with(error: error)
             : DocumentsState(
                 status: DocumentsStatus.failed,

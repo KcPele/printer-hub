@@ -81,26 +81,45 @@ class _Recent extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final state = context.watch<DocumentsCubit>().state;
-    if (state.documents.isEmpty) return const SizedBox.shrink();
+    final shown = state.documents.take(limit).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(child: Text(title, style: context.textTheme.titleLarge)),
-            TextButton(
-              onPressed: () => context.push(AppRoutes.documents),
-              child: Text(l10n.documentsSeeAll),
+    // It grows into place, and what the account adds fades in, so nothing
+    // on the screen jumps.
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      alignment: Alignment.topCenter,
+      child: shown.isEmpty
+          ? const SizedBox(width: double.infinity)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(title, style: context.textTheme.titleLarge),
+                    ),
+                    TextButton(
+                      onPressed: () => context.push(AppRoutes.documents),
+                      child: Text(l10n.documentsSeeAll),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                for (final document in shown) ...[
+                  TweenAnimationBuilder<double>(
+                    // One card a document, so only a new one fades in.
+                    key: ValueKey(document.id),
+                    tween: Tween(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 220),
+                    builder: (_, shownBy, child) =>
+                        Opacity(opacity: shownBy, child: child),
+                    child: DocumentCard(document: document, state: state),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+              ],
             ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        for (final document in state.documents.take(limit)) ...[
-          DocumentCard(document: document, state: state),
-          const SizedBox(height: AppSpacing.md),
-        ],
-      ],
     );
   }
 }
