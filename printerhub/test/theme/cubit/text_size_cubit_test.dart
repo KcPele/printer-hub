@@ -6,15 +6,17 @@ import '../../helpers/helpers.dart';
 
 void main() {
   group('TextSizeCubit', () {
-    test('is full size until someone chooses', () {
-      final cubit = TextSizeCubit(preferencesRepository: emptyPreferences());
+    test('is at the standard size until someone chooses', () {
+      final cubit = TextSizeCubit(
+        preferencesRepository: emptyPreferences(textSizePercent: null),
+      );
       addTearDown(cubit.close);
 
-      expect(cubit.state, 100);
-      expect(cubit.factor, 1);
-      // Full size is the largest on offer.
-      expect(TextSizeCubit.sizes.first, 100);
-      expect(TextSizeCubit.sizes.every((size) => size <= 100), isTrue);
+      expect(cubit.state, 85);
+      expect(cubit.factor, 0.85);
+      // Full size is the largest on offer, and the smallest is 70%.
+      expect(TextSizeCubit.sizes, [100, 95, 90, 85, 80, 75, 70]);
+      expect(TextSizeCubit.sizes, contains(TextSizeCubit.standard));
     });
 
     test('starts with what was chosen on this phone', () {
@@ -27,13 +29,13 @@ void main() {
       expect(cubit.factor, 0.9);
     });
 
-    test('takes a size that is not offered as full size', () {
+    test('takes a size that is not offered as the standard size', () {
       final cubit = TextSizeCubit(
         preferencesRepository: emptyPreferences(textSizePercent: 140),
       );
       addTearDown(cubit.close);
 
-      expect(cubit.state, 100);
+      expect(cubit.state, 85);
     });
 
     test('applies a choice at once and keeps it', () async {
@@ -41,16 +43,16 @@ void main() {
       final cubit = TextSizeCubit(preferencesRepository: preferences);
       addTearDown(cubit.close);
 
-      await cubit.select(85);
+      await cubit.select(70);
 
-      expect(cubit.state, 85);
-      expect(preferences.textSizePercent, 85);
+      expect(cubit.state, 70);
+      expect(preferences.textSizePercent, 70);
 
       // Chosen again, or a size that is not offered, changes nothing.
-      await cubit.select(85);
+      await cubit.select(70);
       await cubit.select(120);
-      expect(cubit.state, 85);
-      verify(() => preferences.saveTextSizePercent(85)).called(1);
+      expect(cubit.state, 70);
+      verify(() => preferences.saveTextSizePercent(70)).called(1);
       verifyNever(() => preferences.saveTextSizePercent(120));
     });
   });

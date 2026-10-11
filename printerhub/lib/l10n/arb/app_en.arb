@@ -3738,12 +3738,56 @@
             }
         }
     },
-    "themeTextSizeBody": "Make the words smaller to fit more on the screen. 100% is the full size. This is kept on this phone.",
+    "themeTextSizeBody": "Smaller words fit more on the screen. 100% is the full size. This is kept on this phone.",
     "@themeTextSizeBody": {
         "description": "Explains the text size choice"
     },
     "documentOpenIt": "Open it to do more",
     "@documentOpenIt": {
         "description": "Button that opens a file just made in the document screen, where it can be read and worked on"
+    },
+    "pictureCrop": "Crop",
+    "@pictureCrop": {
+        "description": "Tool that cuts a picture down to a part of it"
+    },
+    "pictureHighlight": "Highlight",
+    "@pictureHighlight": {
+        "description": "Tool that draws over a picture with a highlighter"
+    },
+    "pictureTurn": "Turn",
+    "@pictureTurn": {
+        "description": "Tool that turns a picture a quarter turn"
+    },
+    "pictureApply": "Apply",
+    "@pictureApply": {
+        "description": "Button that makes the change a picture tool was taken up for"
+    },
+    "pictureCancel": "Cancel",
+    "@pictureCancel": {
+        "description": "Button that puts a picture tool down without using it"
+    },
+    "pictureSave": "Save",
+    "@pictureSave": {
+        "description": "Button that keeps the changes made to a picture"
+    },
+    "pictureUndo": "Undo",
+    "@pictureUndo": {
+        "description": "Tooltip of the button that takes back the last change to a picture"
+    },
+    "pictureFailed": "This picture cannot be shown.",
+    "@pictureFailed": {
+        "description": "Shown when a picture cannot be read"
+    },
+    "pictureChangeFailed": "That change could not be made.",
+    "@pictureChangeFailed": {
+        "description": "Shown when a change to a picture failed"
+    },
+    "pictureOpen": "Open full screen",
+    "@pictureOpen": {
+        "description": "Label for a small picture that opens full screen when tapped"
+    },
+    "documentEditedSaved": "Saved as a new document",
+    "@documentEditedSaved": {
+        "description": "Shown after a changed picture was kept as a new document"
     }
 }

@@ -3,7 +3,8 @@ import 'package:preferences_repository/preferences_repository.dart';
 
 /// Holds how large the app's words are, as a percentage of their full
 /// size. Full size is the largest: the choice only ever makes them
-/// smaller, for someone who wants more on the screen.
+/// smaller, to put more on the screen. Until someone chooses, they are at
+/// [standard].
 ///
 /// It is kept on this phone, and works on top of the phone's own text
 /// size, never in place of it.
@@ -14,11 +15,14 @@ class TextSizeCubit extends Cubit<int> {
   final PreferencesRepository _preferencesRepository;
 
   /// The sizes on offer, largest first.
-  static const List<int> sizes = [100, 95, 90, 85];
+  static const List<int> sizes = [100, 95, 90, 85, 80, 75, 70];
 
-  /// A size that was never chosen, or is no longer offered, is full size.
+  /// The size the app is first seen at.
+  static const int standard = 85;
+
+  /// A size that was never chosen, or is no longer offered, is [standard].
   static int _offered(int? percent) =>
-      sizes.contains(percent) ? percent! : sizes.first;
+      sizes.contains(percent) ? percent! : standard;
 
   /// How much the words are scaled by: 1 at full size.
   double get factor => state / 100;

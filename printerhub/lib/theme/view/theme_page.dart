@@ -61,18 +61,20 @@ class ThemePage extends StatelessWidget {
             const SizedBox(height: AppSpacing.xxl),
             Text(l10n.themeTextSize, style: context.textTheme.titleLarge),
             const SizedBox(height: AppSpacing.md),
-            SegmentedButton<int>(
-              showSelectedIcon: false,
-              segments: [
+            // More sizes than fit side by side on a phone: they wrap.
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: [
                 for (final percent in TextSizeCubit.sizes)
-                  ButtonSegment(
-                    value: percent,
+                  ChoiceChip(
                     label: Text(l10n.themeTextSizePercent(percent)),
+                    selected: context.watch<TextSizeCubit>().state == percent,
+                    showCheckmark: false,
+                    onSelected: (_) =>
+                        context.read<TextSizeCubit>().select(percent),
                   ),
               ],
-              selected: {context.watch<TextSizeCubit>().state},
-              onSelectionChanged: (chosen) =>
-                  context.read<TextSizeCubit>().select(chosen.single),
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(

@@ -34,10 +34,12 @@ class MockGoRouter extends Mock implements GoRouter;
 /// Preferences held in memory for one test.
 ///
 /// A new install by default: no theme chosen, welcome screens not seen.
+/// Its words are at full size, so a screen is tested at its largest; null
+/// is the size of a phone nobody has chosen one on.
 MockPreferencesRepository emptyPreferences({
   String? themeName,
   String? brightnessName,
-  int? textSizePercent,
+  int? textSizePercent = 100,
   bool onboardingCompleted = false,
   String? activeOrganizationId,
 }) {
