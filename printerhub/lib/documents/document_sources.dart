@@ -16,6 +16,11 @@ abstract final class DocumentSources {
   static const String note = 'note';
   static const String printable = 'printable';
   static const String editedPicture = 'edited_picture';
+  static const String signedPdf = 'signed_pdf';
+  static const String idPhoto = 'id_photo';
+  static const String bookPages = 'book_pages';
+  static const String lockedPdf = 'locked_pdf';
+  static const String searchablePdf = 'searchable_pdf';
 
   /// What the scan screen makes.
   static const Set<String> scans = {printerScan, cameraScan, joinedFiles};
@@ -33,6 +38,11 @@ abstract final class DocumentSources {
     note,
     printable,
     editedPicture,
+    signedPdf,
+    idPhoto,
+    bookPages,
+    lockedPdf,
+    searchablePdf,
     upload,
   ];
 }

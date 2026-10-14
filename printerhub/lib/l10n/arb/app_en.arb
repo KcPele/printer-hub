@@ -3589,14 +3589,6 @@
     "@toolsSoonBookBody": {
         "description": "What the planned tool Book pages will do"
     },
-    "toolsSoonEditPdf": "Sign any PDF",
-    "@toolsSoonEditPdf": {
-        "description": "Title of the planned tool: Sign any PDF"
-    },
-    "toolsSoonEditPdfBody": "Sign or watermark a PDF from anywhere",
-    "@toolsSoonEditPdfBody": {
-        "description": "What the planned tool Sign any PDF will do"
-    },
     "toolsSoonSearchable": "Searchable PDF",
     "@toolsSoonSearchable": {
         "description": "Title of the planned tool: Searchable PDF"
@@ -3927,5 +3919,13 @@
     "navTools": "Tools",
     "@navTools": {
         "description": "Bottom navigation label for the tools"
+    },
+    "toolsSign": "Sign a PDF",
+    "@toolsSign": {
+        "description": "Tool that signs or watermarks a PDF"
+    },
+    "toolsSignBody": "Sign or watermark any PDF",
+    "@toolsSignBody": {
+        "description": "What signing a PDF does"
     }
 }

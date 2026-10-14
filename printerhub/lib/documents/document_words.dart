@@ -42,6 +42,11 @@ abstract final class DocumentWords {
       DocumentSources.note => l10n.documentSourceNote,
       DocumentSources.printable => l10n.documentSourcePrintable,
       DocumentSources.editedPicture => l10n.documentSourceEdited,
+      DocumentSources.signedPdf => l10n.toolsSign,
+      DocumentSources.idPhoto => l10n.toolsSoonIdPhoto,
+      DocumentSources.bookPages => l10n.toolsSoonBook,
+      DocumentSources.lockedPdf => l10n.toolsSoonLock,
+      DocumentSources.searchablePdf => l10n.toolsSoonSearchable,
       _ => l10n.documentSourceOther,
     };
   }

@@ -68,6 +68,12 @@ List<Widget> toolTiles(BuildContext context, {bool withScan = true}) {
       onTap: () => context.push(AppRoutes.pdfToLongPicture),
     ),
     ToolTile(
+      icon: Icons.draw_outlined,
+      title: l10n.toolsSign,
+      body: l10n.toolsSignBody,
+      onTap: () => context.push(AppRoutes.signPdf),
+    ),
+    ToolTile(
       icon: Icons.merge_outlined,
       title: l10n.toolsMerge,
       body: l10n.toolsMergeBody,
@@ -187,11 +193,6 @@ List<Widget> comingTools(BuildContext context, {required bool ai}) {
             icon: Icons.menu_book_outlined,
             title: l10n.toolsSoonBook,
             body: l10n.toolsSoonBookBody,
-          ),
-          ToolTile.planned(
-            icon: Icons.draw_outlined,
-            title: l10n.toolsSoonEditPdf,
-            body: l10n.toolsSoonEditPdfBody,
           ),
           ToolTile.planned(
             icon: Icons.manage_search_outlined,

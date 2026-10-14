@@ -242,6 +242,7 @@ void main() {
 
     for (final (tool, route) in [
       ('Edit the pages', AppRoutes.documentEdit),
+      ('Sign a PDF', AppRoutes.documentSign),
       ('Extract text', AppRoutes.documentText),
       ('PDF to pictures', AppRoutes.documentPictures),
       ('PDF to long picture', AppRoutes.documentLongPicture),

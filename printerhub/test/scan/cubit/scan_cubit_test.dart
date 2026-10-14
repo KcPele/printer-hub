@@ -6,6 +6,7 @@ import 'package:api_client/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:jobs_repository/jobs_repository.dart';
+import 'package:printerhub/documents/documents.dart';
 import 'package:printerhub/scan/scan.dart';
 import 'package:printers_repository/printers_repository.dart';
 
@@ -677,6 +678,54 @@ void main() {
       expect(cubit.state.step, ScanStep.review);
       expect(cubit.state.pages, hasLength(2));
       expect(cubit.state.redrawn, isTrue);
+    });
+
+    test('may be one PDF, to be signed, kept as a signed PDF', () async {
+      backend.renderer.pageCount = 2;
+      backend.picker.next = pickedPdf();
+      final cubit = ScanCubit(
+        printersRepository: backend.printers,
+        jobsRepository: backend.jobs,
+        documentsRepository: backend.documentsKept,
+        library: backend.library,
+        sharer: backend.sharer,
+        textReader: backend.textReader,
+        camera: backend.camera,
+        picker: backend.picker,
+        renderer: backend.renderer,
+        organizationId: _org,
+        printer: null,
+        name: 'Contract',
+        madeAs: DocumentSources.signedPdf,
+        directory: backend.scans,
+      );
+      addTearDown(cubit.close);
+      expect(cubit.makes, {DocumentSources.signedPdf});
+
+      cubit.startWith(pictures: false, pdf: true);
+      for (var i = 0; i < 100 && cubit.state.pages.isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+
+      expect(cubit.state.pages, hasLength(2));
+      // Kept as the signing tool's, whatever its pages are.
+      expect(cubit.source, DocumentSources.signedPdf);
+
+      // Choosing nothing adds nothing.
+      backend.picker.next = null;
+      await cubit.addPdf();
+      expect(cubit.state.pages, hasLength(2));
+    });
+
+    test('drawn from a PDF on the phone alone are files put together, not '
+        'a printer scan', () async {
+      backend.renderer.pageCount = 1;
+      final cubit = phoneOnly();
+
+      await cubit.addDocuments([pickedPdf()]);
+
+      expect(cubit.source, DocumentSources.joinedFiles);
+      expect(cubit.makes, DocumentSources.scans);
     });
 
     test('that are all pictures leave nothing redrawn', () async {

@@ -230,6 +230,7 @@ class ScanCubit extends Cubit<ScanState> {
     required this._organizationId,
     required this._printer,
     required String name,
+    this._madeAs,
     Directory? directory,
   }) : _directory = directory ?? Directory.systemTemp,
        super(
@@ -245,6 +246,30 @@ class ScanCubit extends Cubit<ScanState> {
   final PageCamera _camera;
   final DocumentPicker _picker;
   final PageRenderer _renderer;
+
+  /// What a kept scan is recorded as, when a tool began this screen:
+  /// the PDF a person signed is the signing tool's. Null is what the
+  /// pages say it is.
+  final String? _madeAs;
+
+  /// What a kept scan is recorded as.
+  String get source {
+    final madeAs = _madeAs;
+    if (madeAs != null) return madeAs;
+    final pages = state.source;
+    // With no printer, no page is the printer's: a PDF's pages drawn here
+    // are files put together.
+    return _printer == null && pages == DocumentSources.printerScan
+        ? DocumentSources.joinedFiles
+        : pages;
+  }
+
+  /// What the last few shown on this screen came from: what it makes.
+  Set<String> get makes {
+    final madeAs = _madeAs;
+    return madeAs == null ? DocumentSources.scans : {madeAs};
+  }
+
   int _made = 0;
   bool _atCamera = false;
   bool _choosing = false;
@@ -464,9 +489,20 @@ class ScanCubit extends Cubit<ScanState> {
   /// Begins the way the screen was opened: with [pictures], by asking
   /// for some at once,
   /// or with [files], by asking for PDFs and pictures.
-  void startWith({required bool pictures, bool files = false}) {
+  void startWith({
+    required bool pictures,
+    bool files = false,
+    bool pdf = false,
+  }) {
     if (pictures) unawaited(addPictures());
     if (files) unawaited(addFiles());
+    if (pdf) unawaited(addPdf());
+  }
+
+  /// Adds one PDF the person chooses, a page a picture: the PDF that is
+  /// to be signed.
+  Future<void> addPdf() {
+    return _take(() async => [?await _picker.pickPdf()]);
   }
 
   /// Adds files the person chooses from the phone as pages, in the order
@@ -732,9 +768,9 @@ class ScanCubit extends Cubit<ScanState> {
             : state.pages.length,
         // A scan with a page from the camera is a camera scan, and the
         // printer's only when the printer made some of it.
-        source: state.source,
+        source: source,
         printerId:
-            state.source == DocumentSources.joinedFiles ||
+            source == DocumentSources.joinedFiles ||
                 state.pages.every(state.fromCamera)
             ? null
             : _printer?.id,

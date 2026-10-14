@@ -64,6 +64,13 @@ List<DocumentAction> documentTools(
         body: l10n.documentToolEditBody,
         onTap: () => open(AppRoutes.documentEdit),
       ),
+    if (document.isPdf)
+      DocumentAction(
+        icon: Icons.draw_outlined,
+        title: l10n.toolsSign,
+        body: l10n.toolsSignBody,
+        onTap: () => open(AppRoutes.documentSign),
+      ),
     if (reads && (document.isPdf || document.isPicture))
       DocumentAction(
         icon: Icons.text_snippet_outlined,

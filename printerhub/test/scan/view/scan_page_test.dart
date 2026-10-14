@@ -670,6 +670,64 @@ void main() {
         expect(find.text('Page 4'), findsOneWidget);
       });
 
+      testWidgets('signs a PDF: it is chosen, and the signature asked for '
+          'as soon as its pages are in', (tester) async {
+        backend.features = {'camera_scan': true};
+        backend.renderer.pageCount = 1;
+        backend.picker.next = pickedPdfFile(backend.scans);
+        final listed = await tester.runAsync(() => backend.printers.list(_org));
+        printers.emit(
+          PrintersState(status: PrintersStatus.ready, printers: listed!),
+        );
+        await tester.pumpApp(
+          const ScanPage(sign: true),
+          backend: backend,
+          printersCubit: printers,
+          router: router,
+        );
+        await until(tester, () => find.byType(SignView).evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SignView), findsOneWidget);
+        // Put aside, the pages are there to sign later from the finishing
+        // touches.
+        await tester.tap(find.byType(CloseButton));
+        await tester.pumpAndSettle();
+        expect(find.text('Sign a PDF'), findsOneWidget);
+        expect(find.text('Page 1'), findsOneWidget);
+        expect(
+          BlocProvider.of<ScanCubit>(tester.element(find.byType(ScanView)))
+              .source,
+          'signed_pdf',
+        );
+      });
+
+      testWidgets('shows what signing made before, where nothing was '
+          'chosen', (tester) async {
+        backend.picker.next = null;
+        backend.documentList = [
+          documentBody(name: 'Signed lease.pdf', source: 'signed_pdf'),
+          documentBody(id: 'document-2', name: 'Scan yesterday.pdf'),
+        ];
+        final listed = await tester.runAsync(() => backend.printers.list(_org));
+        printers.emit(
+          PrintersState(status: PrintersStatus.ready, printers: listed!),
+        );
+        await tester.pumpApp(
+          const ScanPage(sign: true),
+          backend: backend,
+          printersCubit: printers,
+          router: router,
+        );
+        await until(
+          tester,
+          () => find.text('Signed lease.pdf').evaluate().isNotEmpty,
+        );
+
+        expect(find.text('Made here lately'), findsOneWidget);
+        expect(find.text('Scan yesterday.pdf'), findsNothing);
+      });
+
       testWidgets('opens a page full screen when it is touched, and takes '
           'the picture it was changed to', (tester) async {
         backend.picker.pictures = [pickedPicture(backend.scans)];

@@ -37,6 +37,7 @@ class ScanPage extends StatelessWidget {
     this.startWithPictures = false,
     this.startWithFiles = false,
     this.startWithDocuments = const [],
+    this.sign = false,
     super.key,
   });
 
@@ -53,6 +54,11 @@ class ScanPage extends StatelessWidget {
   /// Documents that are already open, taken as pages at once: a document
   /// is brought here to have its pages changed.
   final List<PickedDocument> startWithDocuments;
+
+  /// True is the "Sign a PDF" tool: a PDF is chosen, or [startWithDocuments]
+  /// given, and the signature is asked for as soon as its pages are in.
+  /// What is kept is a signed PDF.
+  final bool sign;
 
   @override
   Widget build(BuildContext context) {
@@ -73,35 +79,48 @@ class ScanPage extends StatelessWidget {
     );
     return BlocProvider(
       create: (context) {
-        final cubit = ScanCubit(
-          printersRepository: context.read<PrintersRepository>(),
-          jobsRepository: context.read<JobsRepository>(),
-          documentsRepository: context.read<DocumentsRepository>(),
-          library: context.read<Library>(),
-          sharer: context.read<ScanSharer>(),
-          textReader: context.read<ScanTextReader>(),
-          camera: context.read<PageCamera>(),
-          picker: context.read<PrintDocuments>().picker,
-          renderer: context.read<PrintDocuments>().renderer,
-          organizationId: context.read<SessionCubit>().state.organization!.id,
-          printer: printer,
-          name: name,
-        )..startWith(pictures: startWithPictures, files: startWithFiles);
+        final cubit =
+            ScanCubit(
+              printersRepository: context.read<PrintersRepository>(),
+              jobsRepository: context.read<JobsRepository>(),
+              documentsRepository: context.read<DocumentsRepository>(),
+              library: context.read<Library>(),
+              sharer: context.read<ScanSharer>(),
+              textReader: context.read<ScanTextReader>(),
+              camera: context.read<PageCamera>(),
+              picker: context.read<PrintDocuments>().picker,
+              renderer: context.read<PrintDocuments>().renderer,
+              organizationId: context
+                  .read<SessionCubit>()
+                  .state
+                  .organization!
+                  .id,
+              printer: printer,
+              name: name,
+              madeAs: sign ? DocumentSources.signedPdf : null,
+            )..startWith(
+              pictures: startWithPictures,
+              files: startWithFiles,
+              pdf: sign && startWithDocuments.isEmpty,
+            );
         if (startWithDocuments.isNotEmpty) {
           unawaited(cubit.addDocuments(startWithDocuments));
         }
         return cubit;
       },
-      child: ScanView(printer: printer),
+      child: ScanView(printer: printer, sign: sign),
     );
   }
 }
 
 class ScanView extends StatelessWidget {
-  const new({required this.printer, super.key});
+  const new({required this.printer, this.sign = false, super.key});
 
   /// The printer whose scanner is used, or null for the phone alone.
   final PrinterRead? printer;
+
+  /// True asks for the signature as soon as the pages are in.
+  final bool sign;
 
   @override
   Widget build(BuildContext context) {
@@ -120,11 +139,13 @@ class ScanView extends StatelessWidget {
           (features) => features.enabled('camera_scan'),
         );
 
-    return PopScope(
+    final screen = PopScope(
       // A scan in progress is stopped or finished, not walked away from.
       canPop: step != ScanStep.scanning && step != ScanStep.saving,
       child: Scaffold(
-        appBar: AppBar(title: Text(context.l10n.scanTitle)),
+        appBar: AppBar(
+          title: Text(sign ? context.l10n.toolsSign : context.l10n.scanTitle),
+        ),
         body: SafeArea(
           child: switch (step) {
             ScanStep.choosing =>
@@ -150,6 +171,16 @@ class ScanView extends StatelessWidget {
           },
         ),
       ),
+    );
+    if (!sign) return screen;
+    // Signing a PDF: once its pages are in, the signature is asked for.
+    return BlocListener<ScanCubit, ScanState>(
+      listenWhen: (before, now) =>
+          before.pages.isEmpty &&
+          now.pages.isNotEmpty &&
+          now.step == ScanStep.review,
+      listener: (context, _) => unawaited(signPages(context)),
+      child: screen,
     );
   }
 }
@@ -214,6 +245,7 @@ class _Choose extends StatelessWidget {
           ],
           // What was scanned before is here to be found again.
           const SizedBox(height: AppSpacing.xl),
+          // A printer's scanner is only ever scanning.
           RecentDocuments(
             title: l10n.documentsRecentScans,
             sources: DocumentSources.scans,
@@ -312,8 +344,11 @@ class _CameraOnly extends StatelessWidget {
           // What was scanned before is here to be found again.
           const SizedBox(height: AppSpacing.xl),
           RecentDocuments(
-            title: l10n.documentsRecentScans,
-            sources: DocumentSources.scans,
+            // A tool that began this screen shows what it made.
+            title: context.read<ScanCubit>().makes == DocumentSources.scans
+                ? l10n.documentsRecentScans
+                : l10n.documentsRecentHere,
+            sources: context.read<ScanCubit>().makes,
           ),
         ],
       ),
@@ -585,6 +620,30 @@ class _Review extends StatelessWidget {
   }
 }
 
+/// Opens the signing screen over the scan screen, and sets the signature
+/// where it was put.
+Future<void> signPages(BuildContext context) async {
+  final cubit = context.read<ScanCubit>();
+  final state = cubit.state;
+  final store = context.read<SignatureStore>();
+  final placed = await Navigator.of(context).push<PlacedSignature>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => RepositoryProvider.value(
+        value: store,
+        child: SignPage(
+          pages: [for (final page in state.pages) page.file],
+          paper: ScanPaper.named(state.choices.mediaSize),
+          placed: state.finish.signature,
+        ),
+      ),
+    ),
+  );
+  if (placed != null) {
+    cubit.finishWith(cubit.state.finish.copyWith(signature: () => placed));
+  }
+}
+
 /// What is done to the pages as they are saved: a look, a date in the
 /// corner, a word across the page. The pages themselves are not changed,
 /// so going back and saving again undoes any of it.
@@ -592,30 +651,6 @@ class _Finishing extends StatelessWidget {
   const new({required this.enabled});
 
   final bool enabled;
-
-  /// Opens the signing screen over this one, and sets the signature
-  /// where it was put.
-  Future<void> _sign(BuildContext context) async {
-    final cubit = context.read<ScanCubit>();
-    final state = cubit.state;
-    final store = context.read<SignatureStore>();
-    final placed = await Navigator.of(context).push<PlacedSignature>(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => RepositoryProvider.value(
-          value: store,
-          child: SignPage(
-            pages: [for (final page in state.pages) page.file],
-            paper: ScanPaper.named(state.choices.mediaSize),
-            placed: state.finish.signature,
-          ),
-        ),
-      ),
-    );
-    if (placed != null) {
-      cubit.finishWith(cubit.state.finish.copyWith(signature: () => placed));
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -681,7 +716,7 @@ class _Finishing extends StatelessWidget {
             if (!state.card) ...[
               const SizedBox(height: AppSpacing.sm),
               OutlinedButton.icon(
-                onPressed: enabled ? () => _sign(context) : null,
+                onPressed: enabled ? () => signPages(context) : null,
                 icon: const Icon(Icons.draw_outlined),
                 label: Text(
                   finish.signature == null
@@ -773,7 +808,7 @@ class _Saved extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           // Each file shown as it looks, and opened by a touch.
-          MadeFiles(files: state.files, source: state.source),
+          MadeFiles(files: state.files, source: cubit.source),
           const SizedBox(height: AppSpacing.xl),
           if (state.error != null) ...[
             AppNotice(message: errorMessage(l10n, state.error)),

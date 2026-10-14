@@ -47,6 +47,9 @@ abstract final class AppRoutes {
   /// screen, begun with files.
   static const String filesToPdf = '/tools/from-files';
 
+  /// A PDF chosen, and signed or watermarked.
+  static const String signPdf = '/tools/sign';
+
   static const String scanCode = '/tools/code';
   static const String codeSheet = '/tools/qr';
   static const String note = '/tools/note';
@@ -96,6 +99,7 @@ abstract final class AppRoutes {
   /// The tools, opened on a document that is already open. Each takes a
   /// `PickedDocument` as its extra.
   static const String documentEdit = '/activity/documents/edit';
+  static const String documentSign = '/activity/documents/sign';
   static const String documentText = '/activity/documents/text';
   static const String documentPictures = '/activity/documents/pictures';
   static const String documentLongPicture = '/activity/documents/long-picture';
@@ -306,6 +310,10 @@ GoRouter createAppRouter({
                         const ScanPage(startWithFiles: true),
                   ),
                   GoRoute(
+                    path: 'sign',
+                    builder: (context, state) => const ScanPage(sign: true),
+                  ),
+                  GoRoute(
                     path: 'text',
                     builder: (context, state) => const ExtractTextPage(),
                   ),
@@ -372,6 +380,13 @@ GoRouter createAppRouter({
                         path: 'edit',
                         builder: (context, state) => ScanPage(
                           startWithDocuments: [?state.extra as PickedDocument?],
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'sign',
+                        builder: (context, state) => ScanPage(
+                          startWithDocuments: [?state.extra as PickedDocument?],
+                          sign: true,
                         ),
                       ),
                       GoRoute(

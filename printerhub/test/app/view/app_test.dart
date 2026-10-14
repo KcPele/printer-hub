@@ -466,6 +466,7 @@ void main() {
 
         for (final (route, screen) in [
           (AppRoutes.documentEdit, ScanPage),
+          (AppRoutes.documentSign, ScanPage),
           (AppRoutes.documentText, ExtractTextPage),
           (AppRoutes.documentPictures, PdfPicturesPage),
           (AppRoutes.documentLongPicture, PdfPicturesPage),
@@ -506,12 +507,16 @@ void main() {
 
       testWidgets('opens each tool from the Tools screen', (tester) async {
         backend.features = {'local_ocr': true};
-        backend.picker.pictures = [];
+        backend.picker
+          ..pictures = []
+          // Nothing is chosen where a tool asks for a file at once.
+          ..next = null;
         await pump(tester);
         await tester.pumpAndSettle();
 
         for (final (tool, screen) in [
           ('Extract text', ExtractTextPage),
+          ('Sign a PDF', ScanPage),
           ('Pictures to PDF', ScanPage),
           ('Print photos', PhotoSheetPage),
           ('PDF to pictures', PdfPicturesPage),
