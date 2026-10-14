@@ -73,7 +73,7 @@ void main() {
     await pump(tester);
 
     // Those that will work on the phone, then those that need AI.
-    await tester.scrollUntilVisible(find.text('Lock a PDF'), 120);
+    await tester.scrollUntilVisible(find.text('Searchable PDF'), 120);
     expect(find.text('Coming soon', skipOffstage: false), findsOneWidget);
     await tester.scrollUntilVisible(find.text('To Word'), 120);
     expect(

@@ -247,6 +247,7 @@ void main() {
       ('PDF to pictures', AppRoutes.documentPictures),
       ('PDF to long picture', AppRoutes.documentLongPicture),
       ('Pages per sheet', AppRoutes.documentPerSheet),
+      ('Lock a PDF', AppRoutes.documentLock),
     ]) {
       await tester.tap(find.text('More'));
       await tester.pumpAndSettle();

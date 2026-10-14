@@ -86,6 +86,12 @@ List<Widget> toolTiles(BuildContext context, {bool withScan = true}) {
       onTap: () => context.push(AppRoutes.bookPages),
     ),
     ToolTile(
+      icon: Icons.lock_outline,
+      title: l10n.toolsLock,
+      body: l10n.toolsLockBody,
+      onTap: () => context.push(AppRoutes.lockPdf),
+    ),
+    ToolTile(
       icon: Icons.merge_outlined,
       title: l10n.toolsMerge,
       body: l10n.toolsMergeBody,
@@ -200,11 +206,6 @@ List<Widget> comingTools(BuildContext context, {required bool ai}) {
             icon: Icons.manage_search_outlined,
             title: l10n.toolsSoonSearchable,
             body: l10n.toolsSoonSearchableBody,
-          ),
-          ToolTile.planned(
-            icon: Icons.lock_outline,
-            title: l10n.toolsSoonLock,
-            body: l10n.toolsSoonLockBody,
           ),
         ];
 }

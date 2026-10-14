@@ -17,6 +17,7 @@ dependencies:
   bloc: ^9.2.1
   connection_engine:
     path: packages/connection_engine
+  crypto: ^3.0.7
   device_info_plus: ^13.3.0
   documents_repository:
     path: packages/documents_repository

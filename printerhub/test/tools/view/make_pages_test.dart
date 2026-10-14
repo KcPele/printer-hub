@@ -273,6 +273,57 @@ void main() {
     });
   });
 
+  group('LockPage', () {
+    LockCubit cubitOf(WidgetTester tester) =>
+        BlocProvider.of(tester.element(find.byType(LockView)));
+
+    testWidgets('locks a PDF with a password typed the same twice', (
+      tester,
+    ) async {
+      await pump(tester, const LockPage());
+      expect(find.textContaining('asked for the password'), findsOneWidget);
+      expect(find.textContaining('not kept anywhere'), findsOneWidget);
+      expect(makeButton(tester).onPressed, isNull);
+
+      await press(tester, find.text('Choose a PDF'));
+      expect(find.text('Report.pdf'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('lock-password')),
+        'abc',
+      );
+      await tester.pump();
+      expect(find.text('Use at least 4 letters or numbers.'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('lock-password')),
+        'open sesame',
+      );
+      await tester.enterText(find.byKey(const ValueKey('lock-again')), 'open');
+      await tester.pump();
+      expect(find.text('The two passwords are not the same.'), findsOneWidget);
+      expect(makeButton(tester).onPressed, isNull);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('lock-again')),
+        'open sesame',
+      );
+      await tester.pump();
+      expect(find.text('The two passwords are not the same.'), findsNothing);
+      expect(cubitOf(tester).ready(cubitOf(tester).state.choices), isTrue);
+
+      await make(tester);
+      expect(find.byType(MadeFiles), findsOneWidget);
+    });
+
+    testWidgets('takes a PDF that is already open', (tester) async {
+      await pump(tester, LockPage(document: pickedPdf(name: 'Lease.pdf')));
+
+      expect(find.text('Lease.pdf'), findsOneWidget);
+      expect(find.text('Choose another'), findsOneWidget);
+    });
+  });
+
   group('PagesPerSheetPage', () {
     testWidgets('sets a PDF’s pages several to a sheet', (tester) async {
       await pump(tester, const PagesPerSheetPage());

@@ -53,6 +53,9 @@ abstract final class AppRoutes {
   /// Photos of an open book, split into its pages.
   static const String bookPages = '/tools/book';
 
+  /// A password put on a PDF.
+  static const String lockPdf = '/tools/lock';
+
   static const String scanCode = '/tools/code';
   static const String codeSheet = '/tools/qr';
   static const String note = '/tools/note';
@@ -110,6 +113,7 @@ abstract final class AppRoutes {
   static const String documentPictures = '/activity/documents/pictures';
   static const String documentLongPicture = '/activity/documents/long-picture';
   static const String documentPerSheet = '/activity/documents/per-sheet';
+  static const String documentLock = '/activity/documents/lock';
 
   /// One job from the history.
   static String job(String id) => '/activity/$id';
@@ -348,6 +352,10 @@ GoRouter createAppRouter({
                     builder: (context, state) => const PagesPerSheetPage(),
                   ),
                   GoRoute(
+                    path: 'lock',
+                    builder: (context, state) => const LockPage(),
+                  ),
+                  GoRoute(
                     path: 'photos',
                     builder: (context, state) => const PhotoSheetPage(),
                   ),
@@ -428,6 +436,11 @@ GoRouter createAppRouter({
                         builder: (context, state) => PagesPerSheetPage(
                           document: state.extra as PickedDocument?,
                         ),
+                      ),
+                      GoRoute(
+                        path: 'lock',
+                        builder: (context, state) =>
+                            LockPage(document: state.extra as PickedDocument?),
                       ),
                     ],
                   ),

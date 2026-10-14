@@ -97,6 +97,12 @@ List<DocumentAction> documentTools(
         body: l10n.toolsPerSheetBody,
         onTap: () => open(AppRoutes.documentPerSheet),
       ),
+      DocumentAction(
+        icon: Icons.lock_outline,
+        title: l10n.toolsLock,
+        body: l10n.toolsLockBody,
+        onTap: () => open(AppRoutes.documentLock),
+      ),
     ],
   ];
 }

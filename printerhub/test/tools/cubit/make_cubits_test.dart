@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:printerhub/documents/documents.dart';
 import 'package:printerhub/tools/tools.dart';
 
 import '../../helpers/helpers.dart';
@@ -238,6 +240,84 @@ void main() {
       expect(choices.copyWith(), choices);
       expect(choices.copyWith(kind: Printable.grid).month, 10);
       expect(choices.copyWith(paper: sheetPapers.last), isNot(choices));
+    });
+  });
+
+  group('LockCubit', () {
+    late FakeDocumentPicker picker;
+    late FakePageRenderer renderer;
+
+    LockCubit build() {
+      picker = FakeDocumentPicker();
+      renderer = FakePageRenderer()..pageCount = 2;
+      final cubit = LockCubit(
+        sharer: sharer,
+        keep: kept.keep,
+        name: 'Locked today',
+        picker: picker,
+        renderer: renderer,
+        directory: directory,
+      );
+      addTearDown(cubit.close);
+      return cubit;
+    }
+
+    test('needs a PDF and a password typed the same twice', () async {
+      final cubit = build();
+      picker.next = null;
+      await cubit.choose();
+      expect(cubit.state.choices.document, isNull);
+      expect(cubit.ready(cubit.state.choices), isFalse);
+
+      picker.next = pickedPdf();
+      await cubit.choose();
+      for (final (password, again, ready) in [
+        ('abc', 'abc', false),
+        ('abcd', 'abce', false),
+        ('abcd', 'abcd', true),
+      ]) {
+        cubit.change(
+          cubit.state.choices.copyWith(password: password, again: again),
+        );
+        expect(cubit.ready(cubit.state.choices), ready, reason: password);
+      }
+      expect(cubit.state.choices.long, isTrue);
+      expect(cubit.state.choices.matches, isTrue);
+    });
+
+    test('locks the PDF, and keeps it as a locked PDF', () async {
+      final cubit = build()
+        ..use(pickedPdf())
+        ..change(
+          const LockChoices(password: 'open sesame', again: 'open sesame'),
+        );
+      // The PDF chosen is lost when the choices are replaced whole.
+      expect(cubit.ready(cubit.state.choices), isFalse);
+      cubit.use(pickedPdf());
+
+      await cubit.make();
+
+      final file = cubit.state.file!;
+      expect(file.path, endsWith('/Locked today.pdf'));
+      expect(latin1.decode(file.readAsBytesSync()), contains('/Encrypt'));
+      expect(kept.kept.single.source, 'locked_pdf');
+      expect(cubit.source, DocumentSources.lockedPdf);
+    });
+
+    test('asks once at a time', () async {
+      final cubit = build();
+      final first = cubit.choose();
+      await cubit.choose();
+      await first;
+      expect(picker.opened, 1);
+    });
+
+    test('says nothing once the screen has gone', () async {
+      final cubit = build();
+      final choosing = cubit.choose();
+      await cubit.close();
+      await choosing;
+      expect(cubit.state.choices.document, isNull);
     });
   });
 

@@ -3581,14 +3581,6 @@
     "@toolsSoonSearchableBody": {
         "description": "What the planned tool Searchable PDF will do"
     },
-    "toolsSoonLock": "Lock a PDF",
-    "@toolsSoonLock": {
-        "description": "Title of the planned tool: Lock a PDF"
-    },
-    "toolsSoonLockBody": "Put a password on a PDF",
-    "@toolsSoonLockBody": {
-        "description": "What the planned tool Lock a PDF will do"
-    },
     "toolsSoonTranslate": "Translate a photo",
     "@toolsSoonTranslate": {
         "description": "Title of the planned tool: Translate a photo"
@@ -4005,5 +3997,60 @@
     "scanSplitHint": "Each photo of an open book becomes its left page and its right page.",
     "@scanSplitHint": {
         "description": "What splitting a book spread does"
+    },
+    "toolsLock": "Lock a PDF",
+    "@toolsLock": {
+        "description": "Tool that puts a password on a PDF"
+    },
+    "toolsLockBody": "Put a password on a PDF",
+    "@toolsLockBody": {
+        "description": "What locking a PDF does"
+    },
+    "toolsLockExplanation": "Choose a PDF and a password. Anyone who opens the new PDF is asked for the password first.",
+    "@toolsLockExplanation": {
+        "description": "What the lock tool asks for"
+    },
+    "toolsLockPassword": "Password",
+    "@toolsLockPassword": {
+        "description": "Label of the password a PDF is locked with"
+    },
+    "toolsLockAgain": "Type it again",
+    "@toolsLockAgain": {
+        "description": "Label of the password typed a second time"
+    },
+    "toolsLockMismatch": "The two passwords are not the same.",
+    "@toolsLockMismatch": {
+        "description": "Shown when the two passwords differ"
+    },
+    "toolsLockWarning": "The password is not kept anywhere, not even by PrinterHub. If it is forgotten, the locked PDF cannot be opened again.",
+    "@toolsLockWarning": {
+        "description": "A warning that a forgotten password cannot be recovered"
+    },
+    "toolsLockName": "Locked {date}",
+    "@toolsLockName": {
+        "description": "Name of a locked PDF",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "toolsLockPasswordHelp": "At least {count} letters or numbers",
+    "@toolsLockPasswordHelp": {
+        "description": "How long a PDF password must be",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "toolsLockTooShort": "Use at least {count} letters or numbers.",
+    "@toolsLockTooShort": {
+        "description": "Shown when a PDF password is too short",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
     }
 }
