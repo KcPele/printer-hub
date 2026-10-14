@@ -2656,7 +2656,12 @@
           "code_sheet",
           "note",
           "printable",
-          "edited_picture"
+          "edited_picture",
+          "signed_pdf",
+          "id_photo",
+          "book_pages",
+          "locked_pdf",
+          "searchable_pdf"
         ],
         "title": "DocumentSource",
         "type": "string"

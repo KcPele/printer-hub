@@ -24,6 +24,11 @@ class DocumentSource(enum.StrEnum):
     NOTE = "note"
     PRINTABLE = "printable"
     EDITED_PICTURE = "edited_picture"
+    SIGNED_PDF = "signed_pdf"
+    ID_PHOTO = "id_photo"
+    BOOK_PAGES = "book_pages"
+    LOCKED_PDF = "locked_pdf"
+    SEARCHABLE_PDF = "searchable_pdf"
 
 
 class StorageMode(enum.StrEnum):

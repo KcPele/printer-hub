@@ -2170,7 +2170,7 @@ export interface components {
          * DocumentSource
          * @enum {string}
          */
-        DocumentSource: "upload" | "printer_scan" | "camera_scan" | "joined_files" | "pdf_pictures" | "long_picture" | "photo_sheet" | "pages_per_sheet" | "code_sheet" | "note" | "printable" | "edited_picture";
+        DocumentSource: "upload" | "printer_scan" | "camera_scan" | "joined_files" | "pdf_pictures" | "long_picture" | "photo_sheet" | "pages_per_sheet" | "code_sheet" | "note" | "printable" | "edited_picture" | "signed_pdf" | "id_photo" | "book_pages" | "locked_pdf" | "searchable_pdf";
         /**
          * DocumentUpdate
          * @description Fields left out are unchanged.

@@ -294,6 +294,7 @@ async def test_search(client: httpx.AsyncClient, session: AsyncSession) -> None:
     assert await names(mime_type="image/jpeg") == ["Photo_100%.jpg"]
     assert await names(source="printer_scan") == ["Scan 0042.pdf"]
     assert await names(source="pdf_pictures") == ["Photo_100%.jpg"]
+    assert await names(source="signed_pdf") == []
     # Any of several.
     assert await names(source=["printer_scan", "pdf_pictures"]) == [
         "Photo_100%.jpg",

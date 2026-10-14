@@ -30,6 +30,16 @@ enum DocumentSource {
   printable('printable'),
   @JsonValue('edited_picture')
   editedPicture('edited_picture'),
+  @JsonValue('signed_pdf')
+  signedPdf('signed_pdf'),
+  @JsonValue('id_photo')
+  idPhoto('id_photo'),
+  @JsonValue('book_pages')
+  bookPages('book_pages'),
+  @JsonValue('locked_pdf')
+  lockedPdf('locked_pdf'),
+  @JsonValue('searchable_pdf')
+  searchablePdf('searchable_pdf'),
 
   /// Default value for all unparsed values, allows backward compatibility when adding new values on the backend.
   $unknown(null);
