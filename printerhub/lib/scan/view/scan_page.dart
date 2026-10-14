@@ -38,6 +38,7 @@ class ScanPage extends StatelessWidget {
     this.startWithFiles = false,
     this.startWithDocuments = const [],
     this.sign = false,
+    this.book = false,
     super.key,
   });
 
@@ -59,6 +60,10 @@ class ScanPage extends StatelessWidget {
   /// given, and the signature is asked for as soon as its pages are in.
   /// What is kept is a signed PDF.
   final bool sign;
+
+  /// True is the "Book pages" tool: photos of an open book are split at
+  /// the fold into their pages, and kept as book pages.
+  final bool book;
 
   @override
   Widget build(BuildContext context) {
@@ -97,7 +102,11 @@ class ScanPage extends StatelessWidget {
                   .id,
               printer: printer,
               name: name,
-              madeAs: sign ? DocumentSources.signedPdf : null,
+              madeAs: sign
+                  ? DocumentSources.signedPdf
+                  : book
+                  ? DocumentSources.bookPages
+                  : null,
             )..startWith(
               pictures: startWithPictures,
               files: startWithFiles,
@@ -108,19 +117,27 @@ class ScanPage extends StatelessWidget {
         }
         return cubit;
       },
-      child: ScanView(printer: printer, sign: sign),
+      child: ScanView(printer: printer, sign: sign, book: book),
     );
   }
 }
 
 class ScanView extends StatelessWidget {
-  const new({required this.printer, this.sign = false, super.key});
+  const new({
+    required this.printer,
+    this.sign = false,
+    this.book = false,
+    super.key,
+  });
 
   /// The printer whose scanner is used, or null for the phone alone.
   final PrinterRead? printer;
 
   /// True asks for the signature as soon as the pages are in.
   final bool sign;
+
+  /// True is the "Book pages" tool.
+  final bool book;
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +161,13 @@ class ScanView extends StatelessWidget {
       canPop: step != ScanStep.scanning && step != ScanStep.saving,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(sign ? context.l10n.toolsSign : context.l10n.scanTitle),
+          title: Text(
+            sign
+                ? context.l10n.toolsSign
+                : book
+                ? context.l10n.toolsBook
+                : context.l10n.scanTitle,
+          ),
         ),
         body: SafeArea(
           child: switch (step) {
@@ -277,6 +300,7 @@ class _CameraOnly extends StatelessWidget {
     final reading = context.select<ScanCubit, bool>(
       (cubit) => cubit.state.reading,
     );
+    final book = context.read<ScanCubit>().book;
 
     return SingleChildScrollView(
       padding: _padding,
@@ -288,28 +312,45 @@ class _CameraOnly extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xl),
           Text(
-            onPrinter ? l10n.scanNoScanner : l10n.scanPhoneTitle,
+            onPrinter
+                ? l10n.scanNoScanner
+                : book
+                ? l10n.toolsBook
+                : l10n.scanPhoneTitle,
             style: context.textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
-          if (camera) ...[
+          if (book) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
-              onPrinter ? l10n.scanCameraInstead : l10n.scanPhoneBody,
+              l10n.toolsBookLead,
               style: context.textTheme.bodyLarge?.copyWith(
                 color: context.colors.textMuted,
               ),
               textAlign: TextAlign.center,
             ),
+          ],
+          if (camera) ...[
+            const SizedBox(height: AppSpacing.sm),
+            if (!book)
+              Text(
+                onPrinter ? l10n.scanCameraInstead : l10n.scanPhoneBody,
+                style: context.textTheme.bodyLarge?.copyWith(
+                  color: context.colors.textMuted,
+                ),
+                textAlign: TextAlign.center,
+              ),
             const SizedBox(height: AppSpacing.md),
-            // With no glass, the camera takes the two sides of a card.
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.scanCard),
-              subtitle: Text(l10n.scanCardBody),
-              value: card,
-              onChanged: (on) => context.read<ScanCubit>().asCard(card: on),
-            ),
+            // With no glass, the camera takes the two sides of a card. A
+            // book's pages are never a card.
+            if (!book)
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.scanCard),
+                subtitle: Text(l10n.scanCardBody),
+                value: card,
+                onChanged: (on) => context.read<ScanCubit>().asCard(card: on),
+              ),
             if (failure != null) ...[
               const SizedBox(height: AppSpacing.lg),
               AppNotice(message: ScanWords.failure(l10n, failure)),
@@ -455,6 +496,17 @@ class _Review extends StatelessWidget {
             AppNotice(
               status: AppStatus.info,
               message: scans ? l10n.scanCardTurn : l10n.scanCardTurnCamera,
+            ),
+          ],
+          // A book's spreads, each to be split into its two pages.
+          if (cubit.book && cubit.spreads.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.lg),
+            AppNotice(status: AppStatus.info, message: l10n.scanSplitHint),
+            const SizedBox(height: AppSpacing.sm),
+            FilledButton.icon(
+              onPressed: saving ? null : cubit.splitSpreads,
+              icon: const Icon(Icons.auto_stories_outlined),
+              label: Text(l10n.scanSplit),
             ),
           ],
           const SizedBox(height: AppSpacing.lg),

@@ -520,6 +520,7 @@ void main() {
           ('Pictures to PDF', ScanPage),
           ('Print photos', PhotoSheetPage),
           ('ID photo maker', IdPhotoPage),
+          ('Book pages', ScanPage),
           ('PDF to pictures', PdfPicturesPage),
           ('PDF to long picture', PdfPicturesPage),
           ('Merge files', ScanPage),

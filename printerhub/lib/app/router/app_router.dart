@@ -50,6 +50,9 @@ abstract final class AppRoutes {
   /// A PDF chosen, and signed or watermarked.
   static const String signPdf = '/tools/sign';
 
+  /// Photos of an open book, split into its pages.
+  static const String bookPages = '/tools/book';
+
   static const String scanCode = '/tools/code';
   static const String codeSheet = '/tools/qr';
   static const String note = '/tools/note';
@@ -315,6 +318,10 @@ GoRouter createAppRouter({
                   GoRoute(
                     path: 'sign',
                     builder: (context, state) => const ScanPage(sign: true),
+                  ),
+                  GoRoute(
+                    path: 'book',
+                    builder: (context, state) => const ScanPage(book: true),
                   ),
                   GoRoute(
                     path: 'text',

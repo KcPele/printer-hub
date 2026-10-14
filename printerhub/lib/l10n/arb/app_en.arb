@@ -3573,14 +3573,6 @@
     "@toolsSoonAiBody": {
         "description": "Explains the planned AI tools"
     },
-    "toolsSoonBook": "Book pages",
-    "@toolsSoonBook": {
-        "description": "Title of the planned tool: Book pages"
-    },
-    "toolsSoonBookBody": "Split a two-page spread into pages",
-    "@toolsSoonBookBody": {
-        "description": "What the planned tool Book pages will do"
-    },
     "toolsSoonSearchable": "Searchable PDF",
     "@toolsSoonSearchable": {
         "description": "Title of the planned tool: Searchable PDF"
@@ -3993,5 +3985,25 @@
                 "type": "int"
             }
         }
+    },
+    "toolsBook": "Book pages",
+    "@toolsBook": {
+        "description": "Tool that splits photos of an open book into pages"
+    },
+    "toolsBookBody": "Split a two-page spread into pages",
+    "@toolsBookBody": {
+        "description": "What the book pages tool does"
+    },
+    "toolsBookLead": "Photograph an open book, two pages at a time. Each photo is then split at the fold into its two pages.",
+    "@toolsBookLead": {
+        "description": "How the book pages tool works"
+    },
+    "scanSplit": "Split into pages",
+    "@scanSplit": {
+        "description": "Button that splits each photo of an open book into its two pages"
+    },
+    "scanSplitHint": "Each photo of an open book becomes its left page and its right page.",
+    "@scanSplitHint": {
+        "description": "What splitting a book spread does"
     }
 }

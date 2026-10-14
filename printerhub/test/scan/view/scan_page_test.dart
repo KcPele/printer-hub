@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:api_client/testing.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:printer_protocols/testing.dart';
@@ -700,6 +701,49 @@ void main() {
               .source,
           'signed_pdf',
         );
+      });
+
+      testWidgets('splits photos of an open book into their pages', (
+        tester,
+      ) async {
+        backend.features = {'camera_scan': true};
+        final spread = File('${backend.scans.path}/Spread.jpg')
+          ..writeAsBytesSync(img.encodeJpg(img.Image(width: 400, height: 200)));
+        backend.picker.pictures = [PickedDocument.fromFile(spread)];
+        final listed = await tester.runAsync(() => backend.printers.list(_org));
+        printers.emit(
+          PrintersState(status: PrintersStatus.ready, printers: listed!),
+        );
+        await tester.pumpApp(
+          const ScanPage(book: true),
+          backend: backend,
+          printersCubit: printers,
+          router: router,
+        );
+        await tester.pumpAndSettle();
+        await tester.runAsync(
+          BlocProvider.of<FeaturesCubit>(tester.element(find.byType(ScanView)))
+              .load,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Book pages'), findsNWidgets(2));
+        expect(find.textContaining('two pages at a time'), findsOneWidget);
+        // A book's pages are never an ID card.
+        expect(find.text('ID card'), findsNothing);
+
+        await press(tester, find.text('Choose pictures'));
+        await until(tester, () => find.text('Page 1').evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+        expect(find.textContaining('left page and its right'), findsOneWidget);
+
+        await press(tester, find.text('Split into pages'));
+        await tester.pump();
+        await until(tester, () => find.text('Page 2').evaluate().isNotEmpty);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Page 2'), findsOneWidget);
+        expect(find.text('Split into pages'), findsNothing);
       });
 
       testWidgets('shows what signing made before, where nothing was '

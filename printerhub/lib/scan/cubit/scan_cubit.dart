@@ -14,6 +14,7 @@ import 'package:printerhub/library/library.dart';
 import 'package:printerhub/library/library_item.dart';
 import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/scan_output.dart';
+import 'package:printerhub/scan/spread.dart';
 import 'package:printers_repository/printers_repository.dart';
 
 enum ScanStep {
@@ -263,6 +264,10 @@ class ScanCubit extends Cubit<ScanState> {
         ? DocumentSources.joinedFiles
         : pages;
   }
+
+  /// True is the "Book pages" tool: photos of an open book, each split
+  /// at its fold into its two pages.
+  bool get book => _madeAs == DocumentSources.bookPages;
 
   /// What the last few shown on this screen came from: what it makes.
   Set<String> get makes {
@@ -691,6 +696,65 @@ class ScanCubit extends Cubit<ScanState> {
         pages: pages,
       ),
     );
+  }
+
+  /// The pages that are halves of a spread already, by their file's
+  /// path: they are not split again.
+  final Set<String> _halves = {};
+
+  /// The picture pages that could still be split in two.
+  List<ScannedPage> get spreads => [
+    for (final page in state.pages)
+      if (page.mimeType != 'application/pdf' &&
+          !_halves.contains(page.file.path))
+        page,
+  ];
+
+  /// Splits every page that is a photo of an open book into its two
+  /// pages, left then right, at the fold.
+  Future<void> splitSpreads() async {
+    final spreads = this.spreads;
+    if (state.step != ScanStep.review ||
+        state.reading ||
+        _choosing ||
+        spreads.isEmpty) {
+      return;
+    }
+    _choosing = true;
+    emit(state._with(reading: true));
+    try {
+      final halves = <ScannedPage, List<ScannedPage>>{};
+      for (final page in spreads) {
+        final bytes = await page.file.readAsBytes();
+        final (left, right) = await Isolate.run(() => splitSpread(bytes));
+        halves[page] = [await _ownPage(left), await _ownPage(right)];
+      }
+      if (isClosed) return;
+      final camera = {
+        for (final page in spreads)
+          if (state.fromCamera(page))
+            for (final half in halves[page]!) half.file.path,
+      };
+      for (final page in spreads) {
+        if (!state.fromPhone(page)) _delete([page.file]);
+      }
+      _halves.addAll([
+        for (final pair in halves.values)
+          for (final half in pair) half.file.path,
+      ]);
+      emit(
+        state._with(
+          pages: [
+            for (final page in state.pages) ...halves[page] ?? [page],
+          ],
+          cameraPages: {...state.cameraPages, ...camera},
+        ),
+      );
+    } on Object {
+      if (!isClosed) emit(state._with(failure: 'scan.unreadable_file'));
+    } finally {
+      _choosing = false;
+    }
   }
 
   /// Moves the page at [from] so that it ends up at [to].

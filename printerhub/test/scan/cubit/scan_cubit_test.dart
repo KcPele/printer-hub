@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:jobs_repository/jobs_repository.dart';
 import 'package:printerhub/documents/documents.dart';
+import 'package:printerhub/print/print.dart';
 import 'package:printerhub/scan/scan.dart';
 import 'package:printers_repository/printers_repository.dart';
 
@@ -715,6 +716,109 @@ void main() {
       backend.picker.next = null;
       await cubit.addPdf();
       expect(cubit.state.pages, hasLength(2));
+    });
+
+    group('of an open book', () {
+      ScanCubit bookCubit() {
+        final cubit = ScanCubit(
+          printersRepository: backend.printers,
+          jobsRepository: backend.jobs,
+          documentsRepository: backend.documentsKept,
+          library: backend.library,
+          sharer: backend.sharer,
+          textReader: backend.textReader,
+          camera: backend.camera,
+          picker: backend.picker,
+          renderer: backend.renderer,
+          organizationId: _org,
+          printer: null,
+          name: 'Chapter one',
+          madeAs: DocumentSources.bookPages,
+          directory: backend.scans,
+        );
+        addTearDown(cubit.close);
+        return cubit;
+      }
+
+      /// A photo of a spread, wider than it is tall.
+      PickedDocument spread(String name) {
+        final file = File('${backend.scans.path}/$name')
+          ..writeAsBytesSync(img.encodeJpg(img.Image(width: 400, height: 200)));
+        return PickedDocument.fromFile(file);
+      }
+
+      test('are split at the fold into their two pages, in order', () async {
+        backend.picker.pictures = [spread('One.jpg'), spread('Two.jpg')];
+        final cubit = bookCubit();
+        expect(cubit.book, isTrue);
+        expect(cubit.makes, {DocumentSources.bookPages});
+        // Nothing to split before there are pages.
+        await cubit.splitSpreads();
+        expect(cubit.state.pages, isEmpty);
+
+        await cubit.addPictures();
+        final [one, two] = cubit.state.pages;
+        expect(cubit.spreads, [one, two]);
+
+        final splitting = cubit.splitSpreads();
+        expect(cubit.state.reading, isTrue);
+        await splitting;
+
+        final pages = cubit.state.pages;
+        expect(pages, hasLength(4));
+        expect(cubit.state.reading, isFalse);
+        final halves = [
+          for (final page in pages) img.decodeJpg(page.file.readAsBytesSync())!,
+        ];
+        expect(halves.map((half) => half.width), [200, 200, 200, 200]);
+        // Halves are not split again, and the photos chosen are left as
+        // they were.
+        expect(cubit.spreads, isEmpty);
+        expect(File(one.file.path).existsSync(), isTrue);
+        expect(cubit.source, DocumentSources.bookPages);
+
+        // A photo added later is a spread of its own.
+        backend.picker.pictures = [spread('Three.jpg')];
+        await cubit.addPictures();
+        expect(cubit.spreads, hasLength(1));
+      });
+
+      test('keep a camera page a camera page', () async {
+        final cubit = bookCubit();
+        await cubit.useCamera();
+        final taken = cubit.state.pages.single;
+
+        await cubit.splitSpreads();
+
+        expect(cubit.state.pages, hasLength(2));
+        expect(cubit.state.pages.every(cubit.state.fromCamera), isTrue);
+        // The camera's photo was the app's own, and goes.
+        expect(taken.file.existsSync(), isFalse);
+      });
+
+      test('say when a photo cannot be read', () async {
+        backend.picker.pictures = [spread('One.jpg')];
+        final cubit = bookCubit();
+        await cubit.addPictures();
+        File(cubit.state.pages.single.file.path).deleteSync();
+
+        await cubit.splitSpreads();
+
+        expect(cubit.state.failure, 'scan.unreadable_file');
+        expect(cubit.state.reading, isFalse);
+        expect(cubit.state.pages, hasLength(1));
+      });
+
+      test('say nothing once the screen has gone', () async {
+        backend.picker.pictures = [spread('One.jpg')];
+        final cubit = bookCubit();
+        await cubit.addPictures();
+        final splitting = cubit.splitSpreads();
+        await cubit.close();
+        await splitting;
+
+        expect(cubit.state.pages, hasLength(1));
+      });
     });
 
     test('drawn from a PDF on the phone alone are files put together, not '
