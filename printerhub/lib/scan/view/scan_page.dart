@@ -79,9 +79,14 @@ class ScanPage extends StatelessWidget {
     }
 
     // Named for the day it is made on, until the person says otherwise.
-    final name = context.l10n.scanName(
-      MaterialLocalizations.of(context).formatMediumDate(DateTime.now()),
-    );
+    final today = MaterialLocalizations.of(context)
+        .formatMediumDate(DateTime.now());
+    // A tool's result is named for what it is, and a scan for being one.
+    final name = sign
+        ? context.l10n.toolsSignName(today)
+        : book
+        ? context.l10n.toolsBookName(today)
+        : context.l10n.scanName(today);
     return BlocProvider(
       create: (context) {
         final cubit =
@@ -846,7 +851,11 @@ class _Saved extends StatelessWidget {
           Icon(Icons.check_circle_outline, size: 72, color: tone.foreground),
           const SizedBox(height: AppSpacing.lg),
           Text(
-            l10n.scanSavedTitle,
+            switch (cubit.source) {
+              DocumentSources.signedPdf => l10n.toolsSignReady,
+              DocumentSources.bookPages => l10n.toolsBookReady,
+              _ => l10n.scanSavedTitle,
+            },
             style: textTheme.headlineSmall,
             textAlign: TextAlign.center,
           ),

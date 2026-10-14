@@ -4056,5 +4056,31 @@
     "toolsSearchableReadyBody": "Its words can now be searched, selected and copied.",
     "@toolsSearchableReadyBody": {
         "description": "What a searchable PDF allows"
+    },
+    "toolsSignName": "Signed {date}",
+    "@toolsSignName": {
+        "description": "Name of a signed PDF",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "toolsBookName": "Book pages {date}",
+    "@toolsBookName": {
+        "description": "Name of a book's pages",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "toolsSignReady": "Your signed PDF is ready",
+    "@toolsSignReady": {
+        "description": "Shown once a signed PDF is saved"
+    },
+    "toolsBookReady": "Your pages are ready",
+    "@toolsBookReady": {
+        "description": "Shown once a book's pages are saved"
     }
 }

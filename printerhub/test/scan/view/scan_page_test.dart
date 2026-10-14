@@ -696,6 +696,10 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Sign a PDF'), findsOneWidget);
         expect(find.text('Page 1'), findsOneWidget);
+        expect(find.textContaining('Signed '), findsOneWidget);
+        await press(tester, find.widgetWithText(FilledButton, 'Save'));
+        await settle(tester);
+        expect(find.text('Your signed PDF is ready'), findsOneWidget);
         expect(
           BlocProvider.of<ScanCubit>(tester.element(find.byType(ScanView)))
               .source,
@@ -744,6 +748,12 @@ void main() {
 
         expect(find.text('Page 2'), findsOneWidget);
         expect(find.text('Split into pages'), findsNothing);
+        expect(find.textContaining('Book pages '), findsOneWidget);
+
+        // Kept as a book's pages, and called that.
+        await press(tester, find.widgetWithText(FilledButton, 'Save'));
+        await settle(tester);
+        expect(find.text('Your pages are ready'), findsOneWidget);
       });
 
       testWidgets('shows what signing made before, where nothing was '
