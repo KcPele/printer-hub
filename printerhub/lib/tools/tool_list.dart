@@ -74,6 +74,12 @@ List<Widget> toolTiles(BuildContext context, {bool withScan = true}) {
       onTap: () => context.push(AppRoutes.signPdf),
     ),
     ToolTile(
+      icon: Icons.badge_outlined,
+      title: l10n.toolsIdPhoto,
+      body: l10n.toolsIdPhotoBody,
+      onTap: () => context.push(AppRoutes.idPhoto),
+    ),
+    ToolTile(
       icon: Icons.merge_outlined,
       title: l10n.toolsMerge,
       body: l10n.toolsMergeBody,
@@ -184,11 +190,6 @@ List<Widget> comingTools(BuildContext context, {required bool ai}) {
           ),
         ]
       : [
-          ToolTile.planned(
-            icon: Icons.badge_outlined,
-            title: l10n.toolsSoonIdPhoto,
-            body: l10n.toolsSoonIdPhotoBody,
-          ),
           ToolTile.planned(
             icon: Icons.menu_book_outlined,
             title: l10n.toolsSoonBook,

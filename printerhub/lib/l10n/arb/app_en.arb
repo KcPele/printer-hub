@@ -3573,14 +3573,6 @@
     "@toolsSoonAiBody": {
         "description": "Explains the planned AI tools"
     },
-    "toolsSoonIdPhoto": "ID photo maker",
-    "@toolsSoonIdPhoto": {
-        "description": "Title of the planned tool: ID photo maker"
-    },
-    "toolsSoonIdPhotoBody": "Passport and visa photos at official sizes",
-    "@toolsSoonIdPhotoBody": {
-        "description": "What the planned tool ID photo maker will do"
-    },
     "toolsSoonBook": "Book pages",
     "@toolsSoonBook": {
         "description": "Title of the planned tool: Book pages"
@@ -3927,5 +3919,79 @@
     "toolsSignBody": "Sign or watermark any PDF",
     "@toolsSignBody": {
         "description": "What signing a PDF does"
+    },
+    "toolsIdPhoto": "ID photo maker",
+    "@toolsIdPhoto": {
+        "description": "Tool that makes passport and visa photos"
+    },
+    "toolsIdPhotoBody": "Passport and visa photos at official sizes",
+    "@toolsIdPhotoBody": {
+        "description": "What the ID photo maker does"
+    },
+    "toolsIdPhotoExplanation": "Choose a clear photo of your face against a plain background. You then frame it, and get a sheet of photos at the exact size to print and cut.",
+    "@toolsIdPhotoExplanation": {
+        "description": "What the ID photo maker asks for"
+    },
+    "toolsIdPhotoChoose": "Choose a photo",
+    "@toolsIdPhotoChoose": {
+        "description": "Button that chooses the photo for ID photos"
+    },
+    "toolsIdPhotoAnother": "Choose another photo",
+    "@toolsIdPhotoAnother": {
+        "description": "Button that changes the photo for ID photos"
+    },
+    "toolsIdPhotoSize": "Size",
+    "@toolsIdPhotoSize": {
+        "description": "Label above the choice of official photo size"
+    },
+    "toolsIdPhotoSize3545": "35 × 45 mm · most passports, Schengen and UK visas",
+    "@toolsIdPhotoSize3545": {
+        "description": "An official photo size"
+    },
+    "toolsIdPhotoSize5151": "51 × 51 mm · US passport and visa",
+    "@toolsIdPhotoSize5151": {
+        "description": "An official photo size"
+    },
+    "toolsIdPhotoSize3348": "33 × 48 mm · China visa",
+    "@toolsIdPhotoSize3348": {
+        "description": "An official photo size"
+    },
+    "toolsIdPhotoSize5070": "50 × 70 mm · Canada passport",
+    "@toolsIdPhotoSize5070": {
+        "description": "An official photo size"
+    },
+    "toolsIdPhotoFrame": "Move and pinch the photo until your face fills the outline.",
+    "@toolsIdPhotoFrame": {
+        "description": "How to frame an ID photo"
+    },
+    "toolsIdPhotoCheck": "Offices have their own rules on background, expression and glasses. Check them before you print.",
+    "@toolsIdPhotoCheck": {
+        "description": "A caution about official photo rules"
+    },
+    "toolsIdPhotoMake": "Create photo sheet",
+    "@toolsIdPhotoMake": {
+        "description": "Button that makes the sheet of ID photos"
+    },
+    "toolsIdPhotoReady": "Your ID photos are ready",
+    "@toolsIdPhotoReady": {
+        "description": "Shown once the ID photo sheet is made"
+    },
+    "toolsIdPhotoName": "ID photos {date}",
+    "@toolsIdPhotoName": {
+        "description": "Name of a sheet of ID photos",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "toolsIdPhotoCopies": "{count, plural, =1{One photo on the sheet. Print it at full size (100%) for the size to come out right.} other{{count} photos on the sheet. Print it at full size (100%) for the size to come out right.}}",
+    "@toolsIdPhotoCopies": {
+        "description": "How many ID photos one sheet holds, and how to print it",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
     }
 }

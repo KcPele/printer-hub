@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -42,14 +43,55 @@ const double _marginMm = 6;
 const double _gapMm = 4;
 
 /// How many passport photos one sheet of [paper] holds.
-int passportPhotosOn(ScanPaper paper) {
+int passportPhotosOn(ScanPaper paper) =>
+    photosFitOn(paper, widthMm: passportWidthMm, heightMm: passportHeightMm);
+
+/// How many photos [widthMm] by [heightMm] one sheet of [paper] holds,
+/// with a margin round the sheet and a gap between them to cut along.
+int photosFitOn(
+  ScanPaper paper, {
+  required double widthMm,
+  required double heightMm,
+}) {
   final columns =
-      ((paper.widthMm - 2 * _marginMm + _gapMm) / (passportWidthMm + _gapMm))
-          .floor();
-  final rows =
-      ((paper.heightMm - 2 * _marginMm + _gapMm) / (passportHeightMm + _gapMm))
-          .floor();
-  return columns * rows;
+      ((paper.widthMm - 2 * _marginMm + _gapMm) / (widthMm + _gapMm)).floor();
+  final rows = ((paper.heightMm - 2 * _marginMm + _gapMm) / (heightMm + _gapMm))
+      .floor();
+  return max(0, columns) * max(0, rows);
+}
+
+/// A sheet of [paper] filled with copies of [picture], each [widthMm] by
+/// [heightMm] at full size, cut to fill and outlined faintly to cut
+/// along.
+pw.Page copiesSheet({
+  required pw.ImageProvider picture,
+  required ScanPaper paper,
+  required double widthMm,
+  required double heightMm,
+}) {
+  final count = photosFitOn(paper, widthMm: widthMm, heightMm: heightMm);
+  return pw.Page(
+    pageFormat: PdfPageFormat(
+      paper.widthMm * PdfPageFormat.mm,
+      paper.heightMm * PdfPageFormat.mm,
+      marginAll: _marginMm * PdfPageFormat.mm,
+    ),
+    build: (_) => pw.Wrap(
+      spacing: _gapMm * PdfPageFormat.mm,
+      runSpacing: _gapMm * PdfPageFormat.mm,
+      children: [
+        for (var i = 0; i < count; i++)
+          pw.Container(
+            width: widthMm * PdfPageFormat.mm,
+            height: heightMm * PdfPageFormat.mm,
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey400, width: 0.3),
+            ),
+            child: pw.ClipRect(child: pw.Image(picture, fit: pw.BoxFit.cover)),
+          ),
+      ],
+    ),
+  );
 }
 
 /// Lays [photos] out on sheets of [paper] as [layout] says, and writes
@@ -76,27 +118,14 @@ Future<File> photoSheet({
   const gap = _gapMm * PdfPageFormat.mm;
 
   if (layout == PhotoLayout.passport) {
-    final count = passportPhotosOn(paper);
     // Each picture fills a sheet of its own with copies of itself.
     for (final picture in pictures) {
       document.addPage(
-        pw.Page(
-          pageFormat: sheet,
-          build: (_) => pw.Wrap(
-            spacing: gap,
-            runSpacing: gap,
-            children: [
-              for (var i = 0; i < count; i++)
-                pw.SizedBox(
-                  width: passportWidthMm * PdfPageFormat.mm,
-                  height: passportHeightMm * PdfPageFormat.mm,
-                  // Cut to fill, as a passport photo is.
-                  child: pw.ClipRect(
-                    child: pw.Image(picture, fit: pw.BoxFit.cover),
-                  ),
-                ),
-            ],
-          ),
+        copiesSheet(
+          picture: picture,
+          paper: paper,
+          widthMm: passportWidthMm,
+          heightMm: passportHeightMm,
         ),
       );
     }

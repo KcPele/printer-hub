@@ -65,6 +65,9 @@ abstract final class AppRoutes {
   /// Photos laid out on a sheet to print.
   static const String photoSheet = '/tools/photos';
 
+  /// Passport and visa photos at an official size.
+  static const String idPhoto = '/tools/id-photo';
+
   /// A PDF's pages as pictures.
   static const String pdfToPictures = '/tools/pictures';
 
@@ -340,6 +343,10 @@ GoRouter createAppRouter({
                   GoRoute(
                     path: 'photos',
                     builder: (context, state) => const PhotoSheetPage(),
+                  ),
+                  GoRoute(
+                    path: 'id-photo',
+                    builder: (context, state) => const IdPhotoPage(),
                   ),
                   GoRoute(
                     path: 'pictures',

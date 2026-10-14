@@ -43,7 +43,7 @@ abstract final class DocumentWords {
       DocumentSources.printable => l10n.documentSourcePrintable,
       DocumentSources.editedPicture => l10n.documentSourceEdited,
       DocumentSources.signedPdf => l10n.toolsSign,
-      DocumentSources.idPhoto => l10n.toolsSoonIdPhoto,
+      DocumentSources.idPhoto => l10n.toolsIdPhoto,
       DocumentSources.bookPages => l10n.toolsSoonBook,
       DocumentSources.lockedPdf => l10n.toolsSoonLock,
       DocumentSources.searchablePdf => l10n.toolsSoonSearchable,
