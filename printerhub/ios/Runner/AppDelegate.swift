@@ -135,6 +135,27 @@ final class ScanText {
       binaryMessenger: messenger
     )
     channel.setMethodCallHandler { [weak self] call, result in
+      if let self = self, call.method == "lines",
+        let path = call.arguments as? String
+      {
+        DispatchQueue.global(qos: .userInitiated).async {
+          do {
+            let lines = try self.lines(URL(fileURLWithPath: path))
+            DispatchQueue.main.async { result(lines) }
+          } catch {
+            DispatchQueue.main.async {
+              result(
+                FlutterError(
+                  code: "scan_text.unreadable",
+                  message: error.localizedDescription,
+                  details: nil
+                )
+              )
+            }
+          }
+        }
+        return
+      }
       guard let self = self, call.method == "read",
         let paths = call.arguments as? [String]
       else {
@@ -161,6 +182,29 @@ final class ScanText {
       }
     }
     self.channel = channel
+  }
+
+  /// The lines of words in one picture, each with where it sits: its
+  /// left, top, width, and height as parts of the picture, from its top
+  /// left corner. A PDF made from the picture lays the words there,
+  /// unseen, so they can be found and picked out.
+  private func lines(_ picture: URL) throws -> [[String: Any]] {
+    let request = VNRecognizeTextRequest()
+    request.recognitionLevel = .accurate
+    request.usesLanguageCorrection = true
+    try VNImageRequestHandler(url: picture, options: [:]).perform([request])
+    return (request.results ?? []).compactMap { line in
+      guard let text = line.topCandidates(1).first?.string else { return nil }
+      // Vision measures from the bottom left corner.
+      let box = line.boundingBox
+      return [
+        "text": text,
+        "left": Double(box.minX),
+        "top": Double(1 - box.maxY),
+        "width": Double(box.width),
+        "height": Double(box.height),
+      ]
+    }
   }
 
   /// The lines of one page, top to bottom.

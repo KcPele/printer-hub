@@ -72,10 +72,10 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await pump(tester);
 
-    // Those that will work on the phone, then those that need AI.
-    await tester.scrollUntilVisible(find.text('Searchable PDF'), 120);
-    expect(find.text('Coming soon', skipOffstage: false), findsOneWidget);
+    // Every tool that works on the phone works now: what is planned
+    // needs AI.
     await tester.scrollUntilVisible(find.text('To Word'), 120);
+    expect(find.text('Coming soon', skipOffstage: false), findsNothing);
     expect(
       find.text('Coming soon: AI tools', skipOffstage: false),
       findsOneWidget,

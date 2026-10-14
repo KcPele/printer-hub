@@ -78,6 +78,13 @@ List<DocumentAction> documentTools(
         body: l10n.toolsTextBody,
         onTap: () => open(AppRoutes.documentText),
       ),
+    if (reads && (document.isPdf || document.isPicture))
+      DocumentAction(
+        icon: Icons.manage_search_outlined,
+        title: l10n.toolsSearchable,
+        body: l10n.toolsSearchableBody,
+        onTap: () => open(AppRoutes.documentSearchable),
+      ),
     if (document.isPdf) ...[
       DocumentAction(
         icon: Icons.image_outlined,

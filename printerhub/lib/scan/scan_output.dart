@@ -22,6 +22,43 @@ abstract interface class ScanTextReader {
   /// The words in [pictures], one page after another. Empty when there
   /// are none. Throws when this phone cannot read them.
   Future<String> read(List<File> pictures);
+
+  /// The lines of words in one [picture], each with where it sits. Empty
+  /// when there are none. Throws when this phone cannot read them.
+  Future<List<TextLine>> lines(File picture);
+}
+
+/// A line of words read in a picture, and where it sits: its left, top,
+/// width, and height as parts of the picture, from its top left corner.
+class TextLine extends Equatable {
+  const new({
+    required this.text,
+    required this.left,
+    required this.top,
+    required this.width,
+    required this.height,
+  });
+
+  /// Read from what the phone's text reader hands back.
+  factory fromMap(Map<Object?, Object?> map) {
+    double part(String key) => (map[key]! as num).toDouble().clamp(0, 1);
+    return TextLine(
+      text: map['text']! as String,
+      left: part('left'),
+      top: part('top'),
+      width: part('width'),
+      height: part('height'),
+    );
+  }
+
+  final String text;
+  final double left;
+  final double top;
+  final double width;
+  final double height;
+
+  @override
+  List<Object?> get props => [text, left, top, width, height];
 }
 
 /// The phone's own document camera: it finds a page's edges, straightens

@@ -31,22 +31,17 @@ class ToolsPage extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             ToolGrid(tiles: toolTiles(context)),
-            for (final (title, body, ai) in [
-              (l10n.toolsSoonTitle, l10n.toolsSoonBody, false),
-              (l10n.toolsSoonAiTitle, l10n.toolsSoonAiBody, true),
-            ]) ...[
-              const SizedBox(height: AppSpacing.xxl),
-              Text(title, style: context.textTheme.titleLarge),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                body,
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: context.colors.textMuted,
-                ),
+            const SizedBox(height: AppSpacing.xxl),
+            Text(l10n.toolsSoonAiTitle, style: context.textTheme.titleLarge),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.toolsSoonAiBody,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colors.textMuted,
               ),
-              const SizedBox(height: AppSpacing.lg),
-              ToolGrid(tiles: comingTools(context, ai: ai)),
-            ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            ToolGrid(tiles: comingTools(context)),
           ],
         ),
       ),

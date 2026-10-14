@@ -244,6 +244,7 @@ void main() {
       ('Edit the pages', AppRoutes.documentEdit),
       ('Sign a PDF', AppRoutes.documentSign),
       ('Extract text', AppRoutes.documentText),
+      ('Searchable PDF', AppRoutes.documentSearchable),
       ('PDF to pictures', AppRoutes.documentPictures),
       ('PDF to long picture', AppRoutes.documentLongPicture),
       ('Pages per sheet', AppRoutes.documentPerSheet),
@@ -252,6 +253,9 @@ void main() {
       await tester.tap(find.text('More'));
       await tester.pumpAndSettle();
       expect(find.text('Do more with it'), findsOneWidget);
+      // There are more than the sheet shows at once.
+      await tester.ensureVisible(find.text(tool));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(tool));
       await tester.pumpAndSettle();
 

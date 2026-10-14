@@ -472,6 +472,7 @@ void main() {
           (AppRoutes.documentLongPicture, PdfPicturesPage),
           (AppRoutes.documentPerSheet, PagesPerSheetPage),
           (AppRoutes.documentLock, LockPage),
+          (AppRoutes.documentSearchable, SearchablePage),
         ]) {
           unawaited(router().push(route, extra: document.picked));
           await tester.pump();
@@ -523,6 +524,7 @@ void main() {
           ('ID photo maker', IdPhotoPage),
           ('Book pages', ScanPage),
           ('Lock a PDF', LockPage),
+          ('Searchable PDF', SearchablePage),
           ('PDF to pictures', PdfPicturesPage),
           ('PDF to long picture', PdfPicturesPage),
           ('Merge files', ScanPage),

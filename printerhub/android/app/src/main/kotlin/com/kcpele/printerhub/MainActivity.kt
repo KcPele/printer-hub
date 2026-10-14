@@ -74,8 +74,11 @@ class MainActivity : FlutterActivity() {
             "printerhub/scan_text",
         ).setMethodCallHandler { call, result ->
             val paths = call.arguments as? List<*>
+            val path = call.arguments as? String
             if (call.method == "read" && paths != null) {
                 readText(paths.filterIsInstance<String>(), result)
+            } else if (call.method == "lines" && path != null) {
+                readLines(path, result)
             } else {
                 result.notImplemented()
             }
@@ -189,6 +192,47 @@ class MainActivity : FlutterActivity() {
             }
         }
         next(0)
+    }
+
+    /**
+     * The lines of words in one picture, each with where it sits: its
+     * left, top, width, and height as parts of the picture, from its top
+     * left corner. A PDF made from the picture lays the words there,
+     * unseen, so they can be found and picked out.
+     */
+    private fun readLines(path: String, result: MethodChannel.Result) {
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        try {
+            val image = InputImage.fromFilePath(this, Uri.fromFile(File(path)))
+            // The boxes are given the way up the picture is seen.
+            val turned = image.rotationDegrees == 90 || image.rotationDegrees == 270
+            val width = (if (turned) image.height else image.width).toDouble()
+            val height = (if (turned) image.width else image.height).toDouble()
+            recognizer.process(image)
+                .addOnSuccessListener { read ->
+                    recognizer.close()
+                    result.success(
+                        read.textBlocks.flatMap { it.lines }.mapNotNull { line ->
+                            line.boundingBox?.let { box ->
+                                mapOf(
+                                    "text" to line.text,
+                                    "left" to box.left / width,
+                                    "top" to box.top / height,
+                                    "width" to box.width() / width,
+                                    "height" to box.height() / height,
+                                )
+                            }
+                        },
+                    )
+                }
+                .addOnFailureListener { error ->
+                    recognizer.close()
+                    result.error("scan_text.unreadable", error.message, null)
+                }
+        } catch (error: Exception) {
+            recognizer.close()
+            result.error("scan_text.unreadable", error.message, null)
+        }
     }
 
     /**

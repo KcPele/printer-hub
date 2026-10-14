@@ -207,6 +207,18 @@ class FakeScanTextReader implements ScanTextReader {
     if (fails) throw const FormatException('unreadable');
     return [for (final _ in pictures) text].join('\n');
   }
+
+  /// The lines every picture has, where none are given: [text], across the
+  /// top of the page.
+  List<TextLine>? pageLines;
+
+  @override
+  Future<List<TextLine>> lines(File picture) async {
+    asked.add([picture.path]);
+    if (fails) throw const FormatException('unreadable');
+    return pageLines ??
+        [TextLine(text: text, left: 0.1, top: 0.1, width: 0.8, height: 0.05)];
+  }
 }
 
 /// Stands in for the library, and remembers what it was handed to keep.

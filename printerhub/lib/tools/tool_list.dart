@@ -91,6 +91,13 @@ List<Widget> toolTiles(BuildContext context, {bool withScan = true}) {
       body: l10n.toolsLockBody,
       onTap: () => context.push(AppRoutes.lockPdf),
     ),
+    if (reads)
+      ToolTile(
+        icon: Icons.manage_search_outlined,
+        title: l10n.toolsSearchable,
+        body: l10n.toolsSearchableBody,
+        onTap: () => context.push(AppRoutes.searchablePdf),
+      ),
     ToolTile(
       icon: Icons.merge_outlined,
       title: l10n.toolsMerge,
@@ -137,75 +144,67 @@ List<Widget> toolTiles(BuildContext context, {bool withScan = true}) {
 }
 
 /// The tools that are planned and not built yet, shown greyed so people
-/// know what is on the way. None can be opened. With [ai], those that will
-/// need an AI service; without, those that will work on the phone.
+/// know what is on the way. None can be opened. Each will need an AI
+/// service, so a document would leave the phone to be worked on.
 ///
 /// A tool leaves this list, and joins [toolTiles], the day it works.
-List<Widget> comingTools(BuildContext context, {required bool ai}) {
+List<Widget> comingTools(BuildContext context) {
   final l10n = context.l10n;
-  return ai
-      ? [
-          ToolTile.planned(
-            icon: Icons.translate_outlined,
-            title: l10n.toolsSoonTranslate,
-            body: l10n.toolsSoonTranslateBody,
-          ),
-          ToolTile.planned(
-            icon: Icons.auto_awesome_outlined,
-            title: l10n.toolsSoonChat,
-            body: l10n.toolsSoonChatBody,
-          ),
-          ToolTile.planned(
-            icon: Icons.lightbulb_outline,
-            title: l10n.toolsSoonSolver,
-            body: l10n.toolsSoonSolverBody,
-          ),
-          ToolTile.planned(
-            icon: Icons.article_outlined,
-            title: l10n.toolsSoonWord,
-            body: l10n.toolsSoonWordBody,
-          ),
-          ToolTile.planned(
-            icon: Icons.table_chart_outlined,
-            title: l10n.toolsSoonExcel,
-            body: l10n.toolsSoonExcelBody,
-          ),
-          ToolTile.planned(
-            icon: Icons.slideshow_outlined,
-            title: l10n.toolsSoonSlides,
-            body: l10n.toolsSoonSlidesBody,
-          ),
-          ToolTile.planned(
-            icon: Icons.functions_outlined,
-            title: l10n.toolsSoonFormula,
-            body: l10n.toolsSoonFormulaBody,
-          ),
-          ToolTile.planned(
-            icon: Icons.auto_fix_high_outlined,
-            title: l10n.toolsSoonErase,
-            body: l10n.toolsSoonEraseBody,
-          ),
-          ToolTile.planned(
-            icon: Icons.cleaning_services_outlined,
-            title: l10n.toolsSoonMarks,
-            body: l10n.toolsSoonMarksBody,
-          ),
-          ToolTile.planned(
-            icon: Icons.photo_filter_outlined,
-            title: l10n.toolsSoonRestore,
-            body: l10n.toolsSoonRestoreBody,
-          ),
-          ToolTile.planned(
-            icon: Icons.pin_outlined,
-            title: l10n.toolsSoonCount,
-            body: l10n.toolsSoonCountBody,
-          ),
-        ]
-      : [
-          ToolTile.planned(
-            icon: Icons.manage_search_outlined,
-            title: l10n.toolsSoonSearchable,
-            body: l10n.toolsSoonSearchableBody,
-          ),
-        ];
+  return [
+    ToolTile.planned(
+      icon: Icons.translate_outlined,
+      title: l10n.toolsSoonTranslate,
+      body: l10n.toolsSoonTranslateBody,
+    ),
+    ToolTile.planned(
+      icon: Icons.auto_awesome_outlined,
+      title: l10n.toolsSoonChat,
+      body: l10n.toolsSoonChatBody,
+    ),
+    ToolTile.planned(
+      icon: Icons.lightbulb_outline,
+      title: l10n.toolsSoonSolver,
+      body: l10n.toolsSoonSolverBody,
+    ),
+    ToolTile.planned(
+      icon: Icons.article_outlined,
+      title: l10n.toolsSoonWord,
+      body: l10n.toolsSoonWordBody,
+    ),
+    ToolTile.planned(
+      icon: Icons.table_chart_outlined,
+      title: l10n.toolsSoonExcel,
+      body: l10n.toolsSoonExcelBody,
+    ),
+    ToolTile.planned(
+      icon: Icons.slideshow_outlined,
+      title: l10n.toolsSoonSlides,
+      body: l10n.toolsSoonSlidesBody,
+    ),
+    ToolTile.planned(
+      icon: Icons.functions_outlined,
+      title: l10n.toolsSoonFormula,
+      body: l10n.toolsSoonFormulaBody,
+    ),
+    ToolTile.planned(
+      icon: Icons.auto_fix_high_outlined,
+      title: l10n.toolsSoonErase,
+      body: l10n.toolsSoonEraseBody,
+    ),
+    ToolTile.planned(
+      icon: Icons.cleaning_services_outlined,
+      title: l10n.toolsSoonMarks,
+      body: l10n.toolsSoonMarksBody,
+    ),
+    ToolTile.planned(
+      icon: Icons.photo_filter_outlined,
+      title: l10n.toolsSoonRestore,
+      body: l10n.toolsSoonRestoreBody,
+    ),
+    ToolTile.planned(
+      icon: Icons.pin_outlined,
+      title: l10n.toolsSoonCount,
+      body: l10n.toolsSoonCountBody,
+    ),
+  ];
 }

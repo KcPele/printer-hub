@@ -56,6 +56,9 @@ abstract final class AppRoutes {
   /// A password put on a PDF.
   static const String lockPdf = '/tools/lock';
 
+  /// A scan made into a PDF whose words can be searched.
+  static const String searchablePdf = '/tools/searchable';
+
   static const String scanCode = '/tools/code';
   static const String codeSheet = '/tools/qr';
   static const String note = '/tools/note';
@@ -114,6 +117,7 @@ abstract final class AppRoutes {
   static const String documentLongPicture = '/activity/documents/long-picture';
   static const String documentPerSheet = '/activity/documents/per-sheet';
   static const String documentLock = '/activity/documents/lock';
+  static const String documentSearchable = '/activity/documents/searchable';
 
   /// One job from the history.
   static String job(String id) => '/activity/$id';
@@ -356,6 +360,10 @@ GoRouter createAppRouter({
                     builder: (context, state) => const LockPage(),
                   ),
                   GoRoute(
+                    path: 'searchable',
+                    builder: (context, state) => const SearchablePage(),
+                  ),
+                  GoRoute(
                     path: 'photos',
                     builder: (context, state) => const PhotoSheetPage(),
                   ),
@@ -441,6 +449,12 @@ GoRouter createAppRouter({
                         path: 'lock',
                         builder: (context, state) =>
                             LockPage(document: state.extra as PickedDocument?),
+                      ),
+                      GoRoute(
+                        path: 'searchable',
+                        builder: (context, state) => SearchablePage(
+                          document: state.extra as PickedDocument?,
+                        ),
                       ),
                     ],
                   ),

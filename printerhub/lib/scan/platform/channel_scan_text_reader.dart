@@ -21,4 +21,16 @@ class ChannelScanTextReader implements ScanTextReader {
     ]);
     return text ?? '';
   }
+
+  @override
+  Future<List<TextLine>> lines(File picture) async {
+    final lines = await _channel.invokeListMethod<Map<Object?, Object?>>(
+      'lines',
+      picture.path,
+    );
+    return [
+      for (final line in lines ?? const <Map<Object?, Object?>>[])
+        TextLine.fromMap(line),
+    ];
+  }
 }

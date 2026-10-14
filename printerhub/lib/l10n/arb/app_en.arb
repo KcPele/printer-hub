@@ -3557,14 +3557,6 @@
     "@themeBrightnessBody": {
         "description": "Explains the light or dark choice"
     },
-    "toolsSoonTitle": "Coming soon",
-    "@toolsSoonTitle": {
-        "description": "Title above the tools that are planned and not built yet"
-    },
-    "toolsSoonBody": "Tools we are building next. They are shown here so you know what is on the way.",
-    "@toolsSoonBody": {
-        "description": "Explains the planned tools"
-    },
     "toolsSoonAiTitle": "Coming soon: AI tools",
     "@toolsSoonAiTitle": {
         "description": "Title above the planned tools that use AI"
@@ -3572,14 +3564,6 @@
     "toolsSoonAiBody": "These need an AI service, so a document would leave your phone to be worked on. Each will ask first.",
     "@toolsSoonAiBody": {
         "description": "Explains the planned AI tools"
-    },
-    "toolsSoonSearchable": "Searchable PDF",
-    "@toolsSoonSearchable": {
-        "description": "Title of the planned tool: Searchable PDF"
-    },
-    "toolsSoonSearchableBody": "Make the words in a scan selectable",
-    "@toolsSoonSearchableBody": {
-        "description": "What the planned tool Searchable PDF will do"
     },
     "toolsSoonTranslate": "Translate a photo",
     "@toolsSoonTranslate": {
@@ -4052,5 +4036,25 @@
                 "type": "int"
             }
         }
+    },
+    "toolsSearchable": "Searchable PDF",
+    "@toolsSearchable": {
+        "description": "Tool that makes the words in a scan selectable"
+    },
+    "toolsSearchableBody": "Make the words in a scan selectable",
+    "@toolsSearchableBody": {
+        "description": "What the searchable PDF tool does"
+    },
+    "toolsSearchableExplanation": "Choose a scan or a picture. The words are read on your phone and kept in a new PDF that looks the same, so you can search it and copy from it.",
+    "@toolsSearchableExplanation": {
+        "description": "What the searchable PDF tool does, in full"
+    },
+    "toolsSearchableReady": "Your searchable PDF is ready",
+    "@toolsSearchableReady": {
+        "description": "Shown once a searchable PDF is made"
+    },
+    "toolsSearchableReadyBody": "Its words can now be searched, selected and copied.",
+    "@toolsSearchableReadyBody": {
+        "description": "What a searchable PDF allows"
     }
 }

@@ -46,7 +46,7 @@ abstract final class DocumentWords {
       DocumentSources.idPhoto => l10n.toolsIdPhoto,
       DocumentSources.bookPages => l10n.toolsBook,
       DocumentSources.lockedPdf => l10n.toolsLock,
-      DocumentSources.searchablePdf => l10n.toolsSoonSearchable,
+      DocumentSources.searchablePdf => l10n.toolsSearchable,
       _ => l10n.documentSourceOther,
     };
   }
