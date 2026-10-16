@@ -91,4 +91,53 @@ void main() {
     expect(at(0.2), at(0.2));
     expect(at(0.2), isNot(at(0.3)));
   });
+
+  group('a photo of a signature', () {
+    /// A photo of paper [paper] light, with a dark scribble on it.
+    Uint8List photo({int paper = 235, int width = 400, bool ink = true}) {
+      final picture = img.fill(
+        img.Image(width: width, height: 200),
+        color: img.ColorRgb8(paper, paper, paper - 5),
+      );
+      if (ink) {
+        img.drawLine(
+          picture,
+          x1: 100,
+          y1: 120,
+          x2: 300,
+          y2: 80,
+          color: img.ColorRgb8(30, 30, 40),
+          thickness: 6,
+        );
+      }
+      return img.encodeJpg(picture, quality: 95);
+    }
+
+    test('keeps the ink, makes the paper see-through, and cuts close to the '
+        'ink', () {
+      final png = img.decodePng(signatureFromPicture(photo())!)!;
+
+      // Cut to the line, with a little room.
+      expect(png.width, inInclusiveRange(200, 230));
+      expect(png.height, lessThan(80));
+      // The corners were paper, and are now nothing.
+      expect(png.getPixel(0, 0).a, 0);
+      // The middle of the line is ink, and solid.
+      final middle = png.getPixel(png.width ~/ 2, png.height ~/ 2);
+      expect(middle.a, greaterThan(200));
+      expect(middle.r, lessThan(60));
+    });
+
+    test('is made smaller when the photo is very large', () {
+      final png = img.decodePng(signatureFromPicture(photo(width: 2400))!)!;
+      expect(png.width, lessThan(1200));
+    });
+
+    test('has nothing to give when there is no ink, the photo is dark all '
+        'over, or it is not a picture', () {
+      expect(signatureFromPicture(photo(ink: false)), isNull);
+      expect(signatureFromPicture(photo(paper: 40, ink: false)), isNull);
+      expect(signatureFromPicture(Uint8List.fromList([1, 2, 3, 4])), isNull);
+    });
+  });
 }

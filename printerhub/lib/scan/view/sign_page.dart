@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:printerhub/l10n/l10n.dart';
+import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/cubit/sign_cubit.dart';
 import 'package:printerhub/scan/scan_output.dart';
 import 'package:printerhub/scan/signature.dart';
@@ -34,6 +35,7 @@ class SignPage extends StatelessWidget {
           store: context.read<SignatureStore>(),
           pages: pages.length,
           sheetAspect: paper.widthMm / paper.heightMm,
+          picker: context.read<PrintDocuments>().picker,
           placed: placed,
         );
         unawaited(cubit.load());
@@ -171,6 +173,7 @@ class _Pad extends StatelessWidget {
                   onPressed: state.drawn ? cubit.wipe : null,
                   child: Text(l10n.signClear),
                 ),
+                const _FromPicture(),
               ],
             );
           },
@@ -318,6 +321,35 @@ class _Place extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         TextButton(onPressed: cubit.redraw, child: Text(l10n.signRedraw)),
+        const _FromPicture(),
+      ],
+    );
+  }
+}
+
+/// Takes a photo of a signature on paper instead of drawing one, and says
+/// when no signature could be found in it.
+class _FromPicture extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final unreadable = context.select<SignCubit, bool>(
+      (cubit) => cubit.state.unreadable,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (unreadable) ...[
+          const SizedBox(height: AppSpacing.sm),
+          AppNotice(message: l10n.signPictureUnreadable),
+        ],
+        TextButton.icon(
+          onPressed: context.read<SignCubit>().fromPicture,
+          icon: const Icon(Icons.photo_library_outlined),
+          label: Text(l10n.signFromPicture),
+        ),
       ],
     );
   }

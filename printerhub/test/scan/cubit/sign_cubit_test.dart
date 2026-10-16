@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:local_store/local_store.dart';
+import 'package:printerhub/print/print.dart';
 import 'package:printerhub/scan/scan.dart';
+
+import '../../helpers/helpers.dart';
 
 void main() {
   late InMemorySecureStore values;
@@ -197,5 +201,139 @@ void main() {
     final redraw = redrawing.redraw();
     await redrawing.close();
     await redraw;
+  });
+
+  group('from a photo', () {
+    late Directory directory;
+    late FakeDocumentPicker picker;
+
+    setUp(() {
+      directory = Directory.systemTemp.createTempSync('sign_photo');
+      picker = FakeDocumentPicker();
+    });
+    tearDown(() => directory.deleteSync(recursive: true));
+
+    PickedDocument signed({bool ink = true}) {
+      final picture = img.fill(
+        img.Image(width: 300, height: 150),
+        color: img.ColorRgb8(240, 240, 240),
+      );
+      if (ink) {
+        img.drawLine(
+          picture,
+          x1: 50,
+          y1: 90,
+          x2: 250,
+          y2: 60,
+          color: img.ColorRgb8(20, 20, 20),
+          thickness: 6,
+        );
+      }
+      final file = File('${directory.path}/Signature.jpg')
+        ..writeAsBytesSync(img.encodeJpg(picture));
+      return PickedDocument.fromFile(file);
+    }
+
+    SignCubit withPicker() {
+      final cubit = SignCubit(
+        store: store,
+        pages: 3,
+        sheetAspect: 210 / 297,
+        picker: picker,
+      );
+      addTearDown(cubit.close);
+      return cubit;
+    }
+
+    test('takes the signature in it, and keeps it for next time', () async {
+      picker.pictures = [signed()];
+      final cubit = withPicker();
+      await cubit.load();
+
+      await cubit.fromPicture();
+
+      expect(cubit.state.signature, isNotNull);
+      expect(cubit.state.unreadable, isFalse);
+      expect(cubit.state.aspect, greaterThan(1));
+      expect(await store.read(), cubit.state.signature);
+    });
+
+    test('says when no signature is in it, or it cannot be read', () async {
+      picker.pictures = [signed(ink: false)];
+      final cubit = withPicker();
+      await cubit.load();
+
+      await cubit.fromPicture();
+      expect(cubit.state.unreadable, isTrue);
+      expect(cubit.state.signature, isNull);
+
+      final gone = signed();
+      File(gone.path).deleteSync();
+      picker.pictures = [gone];
+      await cubit.fromPicture();
+      expect(cubit.state.unreadable, isTrue);
+
+      // Anything else that is done clears what was said.
+      cubit.wipe();
+      expect(cubit.state.unreadable, isFalse);
+    });
+
+    test('changes nothing when none is chosen, asks once at a time, and '
+        'is not offered with nothing to choose from', () async {
+      picker.pictures = [];
+      final cubit = withPicker();
+      await cubit.fromPicture();
+      expect(cubit.state.signature, isNull);
+
+      picker.pictures = [signed()];
+      final first = cubit.fromPicture();
+      await cubit.fromPicture();
+      await first;
+      expect(picker.opened, 2);
+
+      final none = build();
+      await none.fromPicture();
+      expect(none.state.signature, isNull);
+    });
+
+    test('says nothing once the screen has gone', () async {
+      picker.pictures = [signed()];
+      final cubit = SignCubit(
+        store: store,
+        pages: 3,
+        sheetAspect: 210 / 297,
+        picker: picker,
+      );
+      final taking = cubit.fromPicture();
+      await cubit.close();
+      await taking;
+      expect(cubit.state.signature, isNull);
+
+      picker.pictures = [signed(ink: false)];
+      final failing = SignCubit(
+        store: store,
+        pages: 3,
+        sheetAspect: 210 / 297,
+        picker: picker,
+      );
+      final failed = failing.fromPicture();
+      await failing.close();
+      await failed;
+      expect(failing.state.unreadable, isFalse);
+
+      final gone = signed();
+      File(gone.path).deleteSync();
+      picker.pictures = [gone];
+      final missing = SignCubit(
+        store: store,
+        pages: 3,
+        sheetAspect: 210 / 297,
+        picker: picker,
+      );
+      final lost = missing.fromPicture();
+      await missing.close();
+      await lost;
+      expect(missing.state.unreadable, isFalse);
+    });
   });
 }

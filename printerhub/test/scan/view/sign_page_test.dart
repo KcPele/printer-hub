@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:material_ui/material_ui.dart';
+import 'package:printerhub/print/print.dart';
 import 'package:printerhub/scan/scan.dart';
 
 import '../../helpers/helpers.dart';
@@ -60,6 +61,17 @@ void main() {
     return closedWith;
   }
 
+  /// Lets the photo, which is read in real time, be read.
+  Future<void> until(WidgetTester tester, bool Function() done) async {
+    for (var i = 0; i < 100 && !done(); i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 10)),
+      );
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    await tester.pumpAndSettle();
+  }
+
   SignCubit cubitOf(WidgetTester tester) =>
       BlocProvider.of<SignCubit>(tester.element(find.byType(SignView)));
 
@@ -91,6 +103,56 @@ void main() {
 
       expect(find.text('Place it here'), findsOneWidget);
       expect(backend.signatureValues.values, isNotEmpty);
+    });
+
+    testWidgets('takes a signature from a photo, on the pad or in place of '
+        'the one kept', (tester) async {
+      final picture = img.fill(
+        img.Image(width: 300, height: 150),
+        color: img.ColorRgb8(240, 240, 240),
+      );
+      img.drawLine(
+        picture,
+        x1: 50,
+        y1: 90,
+        x2: 250,
+        y2: 60,
+        color: img.ColorRgb8(20, 20, 20),
+        thickness: 6,
+      );
+      final photo = File('${directory.path}/Signature.jpg')
+        ..writeAsBytesSync(img.encodeJpg(picture));
+      final blank = File('${directory.path}/Blank.jpg')
+        ..writeAsBytesSync(
+          img.encodeJpg(
+            img.fill(
+              img.Image(width: 300, height: 150),
+              color: img.ColorRgb8(240, 240, 240),
+            ),
+          ),
+        );
+      await open(tester);
+
+      // A photo with no signature in it is said so.
+      backend.picker.pictures = [PickedDocument.fromFile(blank)];
+      await press(tester, find.text('Choose a photo of your signature'));
+      await until(tester, () => cubitOf(tester).state.unreadable);
+      expect(
+        find.textContaining('No signature could be found'),
+        findsOneWidget,
+      );
+
+      backend.picker.pictures = [PickedDocument.fromFile(photo)];
+      await press(tester, find.text('Choose a photo of your signature'));
+      await until(tester, () => cubitOf(tester).state.signature != null);
+      expect(find.text('Place it here'), findsOneWidget);
+      expect(find.textContaining('No signature could be found'), findsNothing);
+
+      // And another, in place of that one.
+      final first = cubitOf(tester).state.signature;
+      await press(tester, find.text('Choose a photo of your signature'));
+      await until(tester, () => cubitOf(tester).state.signature != first);
+      expect(find.text('Place it here'), findsOneWidget);
     });
 
     testWidgets('places a kept signature: dragged, sized, and on the sheet '

@@ -139,3 +139,67 @@ Uint8List? signaturePng(
   );
   return img.encodePng(cut);
 }
+
+/// A photo of a signature on paper, as the signature alone: dark ink on
+/// nothing, the paper made see-through, cut close to the ink.
+///
+/// The paper is taken to be the lighter part of the photo; whatever is
+/// clearly darker is ink, kept as dark as it was. Null when no ink can be
+/// told from the paper.
+Uint8List? signatureFromPicture(Uint8List bytes) {
+  img.Image? decoded;
+  try {
+    decoded = img.decodeImage(bytes);
+  } on Object {
+    // Not a picture this can read.
+    return null;
+  }
+  if (decoded == null) return null;
+  var picture = img.bakeOrientation(decoded);
+  // A phone's photo is far larger than a signature needs to be.
+  if (picture.width > 1200) picture = img.copyResize(picture, width: 1200);
+
+  // How light the paper is: the lightness most of the photo has.
+  final lightness = <num>[for (final pixel in picture) pixel.luminance]..sort();
+  final paper = lightness[(lightness.length * 0.6).floor()];
+  final threshold = paper - 60;
+  if (threshold <= 0) return null;
+
+  final ink = img.Image(
+    width: picture.width,
+    height: picture.height,
+    numChannels: 4,
+  );
+  var left = picture.width;
+  var top = picture.height;
+  var right = -1;
+  var bottom = -1;
+  var inked = 0;
+  for (final pixel in picture) {
+    final light = pixel.luminance;
+    if (light >= threshold) continue;
+    // The darker, the more solid.
+    final alpha = (255 * (1 - light / threshold)).clamp(90, 255).round();
+    ink.setPixelRgba(pixel.x, pixel.y, 20, 20, 20, alpha);
+    inked++;
+    left = min(left, pixel.x);
+    top = min(top, pixel.y);
+    right = max(right, pixel.x);
+    bottom = max(bottom, pixel.y);
+  }
+  // A few specks are not a signature.
+  if (inked < 30) return null;
+
+  const room = 8;
+  final x = max(0, left - room);
+  final y = max(0, top - room);
+  return img.encodePng(
+    img.copyCrop(
+      ink,
+      x: x,
+      y: y,
+      width: min(picture.width, right + room + 1) - x,
+      height: min(picture.height, bottom + room + 1) - y,
+    ),
+  );
+}

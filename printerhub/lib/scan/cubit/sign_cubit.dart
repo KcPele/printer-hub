@@ -1,8 +1,11 @@
+import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:printerhub/print/documents.dart';
 import 'package:printerhub/scan/signature.dart';
 
 class SignState extends Equatable {
@@ -15,6 +18,7 @@ class SignState extends Equatable {
     this.x = 0.58,
     this.y = 0.82,
     this.width = 0.32,
+    this.unreadable = false,
   });
 
   /// True until the phone has been asked for a signature kept earlier.
@@ -37,6 +41,9 @@ class SignState extends Equatable {
   final double y;
   final double width;
 
+  /// True when a photo was chosen and no signature could be found in it.
+  final bool unreadable;
+
   /// True when there is ink on the pad.
   bool get drawn => strokes.any((stroke) => stroke.isNotEmpty);
 
@@ -49,6 +56,7 @@ class SignState extends Equatable {
     double? x,
     double? y,
     double? width,
+    bool unreadable = false,
   }) {
     return SignState(
       loading: loading ?? this.loading,
@@ -59,6 +67,7 @@ class SignState extends Equatable {
       x: x ?? this.x,
       y: y ?? this.y,
       width: width ?? this.width,
+      unreadable: unreadable,
     );
   }
 
@@ -72,6 +81,7 @@ class SignState extends Equatable {
     x,
     y,
     width,
+    unreadable,
   ];
 }
 
@@ -82,6 +92,7 @@ class SignCubit extends Cubit<SignState> {
     required this._store,
     required this._pages,
     required this._sheetAspect,
+    this._picker,
     PlacedSignature? placed,
   }) : super(
          placed == null
@@ -96,6 +107,11 @@ class SignCubit extends Cubit<SignState> {
        );
 
   final SignatureStore _store;
+
+  /// Where a photo of a signature is chosen from. Null where there is
+  /// none to choose from.
+  final DocumentPicker? _picker;
+  bool _choosing = false;
 
   /// How many sheets the scan has.
   final int _pages;
@@ -166,6 +182,38 @@ class SignCubit extends Cubit<SignState> {
         state._with(signature: () => png, aspect: aspect, strokes: const []),
       ),
     );
+  }
+
+  /// Takes a photo of a signature on paper the person chooses as the
+  /// signature, with the paper made see-through, and keeps it on the
+  /// phone for next time.
+  Future<void> fromPicture() async {
+    final picker = _picker;
+    if (picker == null || _choosing) return;
+    _choosing = true;
+    try {
+      final chosen = await picker.pickPictures();
+      if (isClosed || chosen.isEmpty) return;
+      final bytes = await File(chosen.first.path).readAsBytes();
+      final png = await Isolate.run(() => signatureFromPicture(bytes));
+      final aspect = png == null ? null : signatureAspect(png);
+      if (isClosed) return;
+      if (png == null || aspect == null) {
+        emit(state._with(unreadable: true));
+        return;
+      }
+      await _store.save(png);
+      if (isClosed) return;
+      emit(
+        _fitted(
+          state._with(signature: () => png, aspect: aspect, strokes: const []),
+        ),
+      );
+    } on FileSystemException {
+      if (!isClosed) emit(state._with(unreadable: true));
+    } finally {
+      _choosing = false;
+    }
   }
 
   /// Goes back to the pad to draw another, and forgets the one kept.

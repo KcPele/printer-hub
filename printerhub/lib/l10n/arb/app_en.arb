@@ -4082,5 +4082,13 @@
     "toolsBookReady": "Your pages are ready",
     "@toolsBookReady": {
         "description": "Shown once a book's pages are saved"
+    },
+    "signFromPicture": "Choose a photo of your signature",
+    "@signFromPicture": {
+        "description": "Button that takes a signature from a photo of it on paper"
+    },
+    "signPictureUnreadable": "No signature could be found in that photo. Sign on plain white paper in dark ink, and take the photo in good light.",
+    "@signPictureUnreadable": {
+        "description": "Shown when a photo of a signature could not be used"
     }
 }
