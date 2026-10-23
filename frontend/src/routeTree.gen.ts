@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as DeleteAccountRouteImport } from './routes/delete-account'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminFeatureSwitchesRouteImport } from './routes/admin.feature-switches'
 import { Route as AdminPrinterFamiliesRouteImport } from './routes/admin.printer-families'
@@ -23,6 +25,16 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeleteAccountRoute = DeleteAccountRouteImport.update({
+  id: '/delete-account',
+  path: '/delete-account',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -44,12 +56,16 @@ const AdminPrinterFamiliesRoute = AdminPrinterFamiliesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/delete-account': typeof DeleteAccountRoute
+  '/privacy': typeof PrivacyRoute
   '/admin/feature-switches': typeof AdminFeatureSwitchesRoute
   '/admin/printer-families': typeof AdminPrinterFamiliesRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/delete-account': typeof DeleteAccountRoute
+  '/privacy': typeof PrivacyRoute
   '/admin/feature-switches': typeof AdminFeatureSwitchesRoute
   '/admin/printer-families': typeof AdminPrinterFamiliesRoute
   '/admin': typeof AdminIndexRoute
@@ -58,6 +74,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/delete-account': typeof DeleteAccountRoute
+  '/privacy': typeof PrivacyRoute
   '/admin/feature-switches': typeof AdminFeatureSwitchesRoute
   '/admin/printer-families': typeof AdminPrinterFamiliesRoute
   '/admin/': typeof AdminIndexRoute
@@ -67,15 +85,25 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/delete-account'
+    | '/privacy'
     | '/admin/feature-switches'
     | '/admin/printer-families'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin/feature-switches' | '/admin/printer-families' | '/admin'
+  to:
+    | '/'
+    | '/delete-account'
+    | '/privacy'
+    | '/admin/feature-switches'
+    | '/admin/printer-families'
+    | '/admin'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/delete-account'
+    | '/privacy'
     | '/admin/feature-switches'
     | '/admin/printer-families'
     | '/admin/'
@@ -84,6 +112,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  DeleteAccountRoute: typeof DeleteAccountRoute
+  PrivacyRoute: typeof PrivacyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -100,6 +130,20 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delete-account': {
+      id: '/delete-account'
+      path: '/delete-account'
+      fullPath: '/delete-account'
+      preLoaderRoute: typeof DeleteAccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -143,6 +187,8 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  DeleteAccountRoute: DeleteAccountRoute,
+  PrivacyRoute: PrivacyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

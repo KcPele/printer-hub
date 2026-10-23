@@ -17,3 +17,13 @@ export const SITE_DESCRIPTION =
 
 /** The picture a link to the site unfurls with: 1200 by 630. */
 export const SHARE_IMAGE = `${SITE_URL}/og-image.png`;
+
+/**
+ * Where people write about their data and their account. It is printed on
+ * the privacy and account pages, and given to Google Play, so the mailbox
+ * must exist and be read.
+ */
+export const CONTACT_EMAIL = "support@printerhub.kcpele.com";
+
+/** The day the privacy policy last changed. */
+export const POLICY_UPDATED = "23 October 2026";

@@ -164,11 +164,14 @@ export function Footer() {
 						<a href="#top" style={{ color: "rgba(255,255,255,0.85)" }}>
 							About
 						</a>
-						<a href="#privacy" style={{ color: "rgba(255,255,255,0.85)" }}>
-							Privacy
+						<a href="/privacy" style={{ color: "rgba(255,255,255,0.85)" }}>
+							Privacy policy
 						</a>
-						<a href="#privacy" style={{ color: "rgba(255,255,255,0.85)" }}>
-							Terms
+						<a
+							href="/delete-account"
+							style={{ color: "rgba(255,255,255,0.85)" }}
+						>
+							Delete your account
 						</a>
 					</div>
 				</div>
