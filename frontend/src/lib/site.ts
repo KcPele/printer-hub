@@ -23,7 +23,7 @@ export const SHARE_IMAGE = `${SITE_URL}/og-image.png`;
  * the privacy and account pages, and given to Google Play, so the mailbox
  * must exist and be read.
  */
-export const CONTACT_EMAIL = "support@printerhub.kcpele.com";
+export const CONTACT_EMAIL = "support@kcpele.com";
 
 /** The day the privacy policy last changed. */
 export const POLICY_UPDATED = "23 October 2026";
