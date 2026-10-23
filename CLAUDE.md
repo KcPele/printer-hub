@@ -15,6 +15,7 @@ Backend-first, mobile-first printer and scanner platform. This repo is a monorep
 | Milestones and fixed interface names | `docs/superpowers/plans/2026-10-07-backend-mvp.md` |
 | Commands | `make help` |
 | Hosting, environment variables, push setup | `docs/deployment.md` |
+| Publishing the Android app: upload key, `make app-release`, Play Console answers, store listing | `docs/play-store.md` |
 | Printer simulator endpoints and faults | `backend/simulator/README.md` |
 | What real printers and scanners do differently, and how the app copes | `docs/printer-compatibility.md` |
 | API contract | `backend/openapi.json`, or `/api/docs` on a running server |

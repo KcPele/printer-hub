@@ -112,6 +112,12 @@ app-brand: ## Regenerate the app icon and launch image from the mark in printerh
 app-goldens: ## Regenerate the golden images after an intended visual change
 	cd printerhub/packages/app_ui && flutter test --update-goldens --tags golden
 
+.PHONY: app-release
+app-release: ## Build the Play Store upload (an .aab), signed with the key named in printerhub/android/key.properties
+	@test -f printerhub/android/key.properties || { echo "printerhub/android/key.properties is missing: see docs/play-store.md"; exit 1; }
+	cd printerhub && flutter build appbundle --release --flavor production --target lib/main_production.dart
+	@echo "Upload: printerhub/build/app/outputs/bundle/productionRelease/app-production-release.aab"
+
 .PHONY: app-dev
 app-dev: ## Run the Flutter app's development flavor on a connected device or simulator
 	cd printerhub && flutter run --flavor development --target lib/main_development.dart
