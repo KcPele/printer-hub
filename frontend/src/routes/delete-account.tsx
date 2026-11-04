@@ -24,7 +24,7 @@ function DeleteAccountPage() {
 	return (
 		<LegalPage
 			title="Delete your account"
-			lead="You can delete your PrinterHub account, and what is kept in it, whenever you like."
+			lead="You can delete your PrinterHub account, or only some of what is kept in it, whenever you like."
 		>
 			<LegalSection title="In the app">
 				<ol>
@@ -44,6 +44,32 @@ function DeleteAccountPage() {
 					<a href={mail}>{CONTACT_EMAIL}</a> from the address you signed up
 					with, asking us to delete your account. We reply to confirm it is you,
 					then delete it within 30 days, and tell you when it is done.
+				</p>
+			</LegalSection>
+
+			<LegalSection title="Delete some of your data, and keep your account">
+				<ul>
+					<li>
+						A document: in Documents, open the menu beside it and choose Delete.
+						It is removed from your account and from this phone.
+					</li>
+					<li>
+						A printer: open it in Printers and choose Remove printer. Its job
+						history stays with the workspace.
+					</li>
+					<li>
+						Saved settings: when printing, open Saved settings and delete the
+						one you no longer want.
+					</li>
+					<li>
+						A workspace: in Settings, under Workspace, leave it, or delete it if
+						you own it, with its printers, presets and history.
+					</li>
+				</ul>
+				<p>
+					To have anything else deleted, such as your print and scan history,
+					email <a href={mail}>{CONTACT_EMAIL}</a> saying what you want removed.
+					We do it within 30 days and tell you when it is done.
 				</p>
 			</LegalSection>
 
