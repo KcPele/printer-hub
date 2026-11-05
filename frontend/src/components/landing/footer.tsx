@@ -190,6 +190,7 @@ export function Footer() {
 					}}
 				>
 					<span>© 2026 PrinterHub. All rights reserved.</span>
+					<span>Made with love by Kc Pele, for Maurine.</span>
 					<span>
 						AirPrint, Mopria and other names belong to their respective owners.
 					</span>
